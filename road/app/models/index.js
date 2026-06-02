@@ -26,6 +26,8 @@ db.roles = require("./role.model.js")(sequelize, Sequelize);
 db.permissions = require("./permission.model.js")(sequelize, Sequelize);
 db.role_permissions = require("./role_permission.model.js")(sequelize, Sequelize);
 db.attendances = require("./attendance.model.js")(sequelize, Sequelize);
+db.actions = require("./action.model.js")(sequelize, Sequelize);
+db.feedbacks = require("./feedback.model.js")(sequelize, Sequelize);
 db.infos = require("./info.model.js")(sequelize, Sequelize);
 db.Categories = require("./category.model.js")(sequelize, Sequelize);
 db.users = require("./user.model.js")(sequelize, Sequelize);
@@ -117,6 +119,12 @@ db.permissions.belongsToMany(db.roles, {
 
 db.attendances.belongsTo(db.users, { foreignKey: "user_id", as: "user" });
 db.users.hasMany(db.attendances, { foreignKey: "user_id" });
+
+db.actions.belongsTo(db.users, { foreignKey: "user_id", as: "user" });
+db.users.hasMany(db.actions, { foreignKey: "user_id" });
+
+db.feedbacks.belongsTo(db.users, { foreignKey: "user_id", as: "user" });
+db.users.hasMany(db.feedbacks, { foreignKey: "user_id" });
 
 db.accidents.belongsTo(db.users, { foreignKey: "user_id" });
 db.users.hasMany(db.accidents, { foreignKey: "user_id" });

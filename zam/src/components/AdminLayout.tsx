@@ -27,6 +27,8 @@ import {
   TruckOutlined,
   IdcardOutlined,
   ClockCircleOutlined,
+  FlagOutlined,
+  MessageOutlined,
 } from '@ant-design/icons';
 import { usePathname, useRouter } from 'next/navigation';
 
@@ -141,6 +143,8 @@ const userMenu = (
   useEffect(() => {
     if (
       pathname.startsWith('/admin/attendance') ||
+      pathname.startsWith('/admin/action') ||
+      pathname.startsWith('/admin/feedback') ||
       pathname.startsWith('/admin/user') ||
       pathname.startsWith('/admin/role')
     ) {
@@ -185,6 +189,8 @@ const userMenu = (
     children: [
       { key: '/admin/user', icon: <UserOutlined />, label: 'Хэрэглэгч нар', permission: 'user:read' },
       { key: '/admin/role', icon: <KeyOutlined />, label: 'Эрхийн зохицуулалт', permission: 'role:read' },
+      { key: '/admin/action', icon: <FlagOutlined />, label: 'Арга хэмжээ', permission: 'action:read' },
+      { key: '/admin/feedback', icon: <MessageOutlined />, label: 'Санал хүсэлт', permission: 'feedback:read' },
       {
         key: '/admin/attendance',
         icon: <ClockCircleOutlined />,
