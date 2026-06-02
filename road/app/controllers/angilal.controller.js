@@ -102,7 +102,6 @@ exports.findOne = (req, res) => {
 // Update a Categories by the id in the request
 exports.update = (req, res) => {
   const id = req.params.id;
-  console.log(req.body);
   const updateData = {
     name: req.body.name || null,
     is_shown: req.body.is_shown !== undefined ? String(req.body.is_shown) : null // Ensure is_shown is a string ("0" or "1")
@@ -113,7 +112,7 @@ exports.update = (req, res) => {
   })
     .then(num => {
       if (num == 1) {
-        return category.findByPk(id); // Fetch the updated entry
+        return Angilal.findByPk(id); // Fetch the updated entry
       } else {
         throw new Error(`Cannot update category with id=${id}. Maybe category was not found or req.body is empty!`);
       }
@@ -179,9 +178,9 @@ exports.deleteAll = (req, res) => {
 
 // find all published Categories
 exports.findAllPublished = (req, res) => {
-  category.findAll({ where: { published: true } })
+  Angilal.findAll({ where: { is_shown: '1' } })
     .then(data => {
-      res.send(data);
+      res.send({ success: true, data });
     })
     .catch(err => {
       res.status(500).send({

@@ -14,6 +14,7 @@ dayjs.extend(isSameOrBefore);
 interface Category {
   id: number;
   name: string;
+  createdAt?: string;
 }
 
 
@@ -60,18 +61,21 @@ const columns: ColumnsType<Category> = [
   },
 ];
 
+  const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/api/angilal`;
+
   const handleDelete = async (id: number) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/angilal/${id}`, {
+      const response = await fetch(`${API_BASE}/${id}`, {
         method: "DELETE",
       });
   
       if (response.ok) {
         console.log("Deleted successfully");
-        const refreshed = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/angilal`);
+        const refreshed = await fetch(API_BASE);
         const refreshedResult = await refreshed.json();
         if (refreshedResult.success) {
-            setRegionData(refreshedResult.data);
+            setRegionData(refreshedResult.data || []);
+            setPagination((prev) => ({ ...prev, total: (refreshedResult.data || []).length }));
         }
       } else {
         console.error("Failed to delete");
@@ -87,11 +91,12 @@ const columns: ColumnsType<Category> = [
      
   
         // Always fetch deliveries on page/size change
-        const deliveryRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/angilal`);
+        const deliveryRes = await fetch(API_BASE);
         const deliveriesResult = await deliveryRes.json();
   
         if (deliveriesResult.success) {
-            setRegionData(deliveriesResult.data);
+            setRegionData(deliveriesResult.data || []);
+            setPagination((prev) => ({ ...prev, total: (deliveriesResult.data || []).length }));
           
         }
       } catch (error) {
@@ -126,7 +131,7 @@ const columns: ColumnsType<Category> = [
       };
   
       // Send the POST request
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/angilal`, {
+      const response = await fetch(API_BASE, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -138,10 +143,11 @@ const columns: ColumnsType<Category> = [
   
       if (result.success) {
         // Optionally refresh the delivery list
-        const refreshed = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/angilal`);
+        const refreshed = await fetch(API_BASE);
         const refreshedResult = await refreshed.json();
         if (refreshedResult.success) {
-            setRegionData(refreshedResult.data);
+            setRegionData(refreshedResult.data || []);
+            setPagination((prev) => ({ ...prev, total: (refreshedResult.data || []).length }));
         }
   
         // Reset form and close drawer
@@ -200,7 +206,7 @@ const columns: ColumnsType<Category> = [
  <Drawer
         title="Ангилал үүсгэх"
         placement="right"
-        visible={isDrawerVisible}
+        open={isDrawerVisible}
         onClose={handleCloseDrawer}
         width="400px"  // Adjust the width as needed
         height="100%"  // Full height
