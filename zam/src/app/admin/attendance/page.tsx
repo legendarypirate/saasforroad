@@ -54,7 +54,7 @@ export default function AttendancePage() {
   };
 
   useEffect(() => {
-    document.title = 'Ирц хяналт';
+    document.title = 'Ирцийн хяналт';
     fetchData();
   }, [dateStr]);
 
@@ -96,7 +96,7 @@ export default function AttendancePage() {
 
   return (
     <div>
-      <h1 style={{ marginBottom: 24 }}>Ирц хяналт — Замын компани</h1>
+      <h1 style={{ marginBottom: 24 }}>Ирцийн хяналт</h1>
 
       <Space style={{ marginBottom: 24 }}>
         <span>Огноо:</span>

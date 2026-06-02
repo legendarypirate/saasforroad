@@ -25,6 +25,8 @@ import {
   BankOutlined,
   SettingOutlined,
   TruckOutlined,
+  IdcardOutlined,
+  ClockCircleOutlined,
 } from '@ant-design/icons';
 import { usePathname, useRouter } from 'next/navigation';
 
@@ -73,13 +75,15 @@ const showConfirm = (handleLogout: () => void) => {
 // Recursively filter menu items by permission
 function filterMenuByPermission(items: MenuItemType[], userPermissions: string[]): MenuItemType[] {
   return items
-    .filter(item => hasPermission(item.permission || '', userPermissions))
     .map(item => {
       if (item.children) {
-        return { ...item, children: filterMenuByPermission(item.children, userPermissions) };
+        const children = filterMenuByPermission(item.children, userPermissions);
+        if (children.length === 0) return null;
+        return { ...item, children };
       }
-      return item;
-    });
+      return hasPermission(item.permission || '', userPermissions) ? item : null;
+    })
+    .filter((item): item is MenuItemType => item !== null);
 }
 
 
@@ -90,6 +94,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isPending, startTransition] = useTransition();
 
   const [userPermissions, setUserPermissions] = useState<string[]>([]);
+  const [openKeys, setOpenKeys] = useState<string[]>([]);
 
   const showConfirm = () => {
     Modal.confirm({
@@ -133,14 +138,19 @@ const userMenu = (
     setUserPermissions(getUserPermissions());
   }, []);
 
+  useEffect(() => {
+    if (pathname.startsWith('/admin/attendance')) {
+      setOpenKeys((prev) => (prev.includes('hr') ? prev : [...prev, 'hr']));
+    }
+  }, [pathname]);
+
   const handleMenuClick: MenuProps['onClick'] = (e) => {
-    if (e.key === '/admin/logout') return;
+    if (e.key === '/admin/logout' || e.key === 'hr') return;
     setLoading(true);
     router.push(e.key);
     setTimeout(() => setLoading(false), 500);
   };
 
- 
   const menuItems: MenuItemType[] = [
     { key: '/admin', icon: <DashboardOutlined />, label: 'Хянах самбар' },
   { key: '/admin/accident', icon: <AlertOutlined />, label: 'Ослын дуудлага' },
@@ -166,7 +176,19 @@ const userMenu = (
   { key: '/admin/notification', icon: <BellOutlined />, label: 'Мэдэгдэл' },
   { key: '/admin/user', icon: <UserOutlined />, label: 'Хэрэглэгч нар', permission: 'user:read' },
   { key: '/admin/role', icon: <KeyOutlined />, label: 'Эрхийн зохицуулалт', permission: 'role:read' },
-  { key: '/admin/attendance', icon: <FileTextOutlined />, label: 'Ирц хяналт', permission: 'attendance:read' },
+  {
+    key: 'hr',
+    icon: <IdcardOutlined />,
+    label: 'HR удирдлага',
+    children: [
+      {
+        key: '/admin/attendance',
+        icon: <ClockCircleOutlined />,
+        label: 'Ирцийн хяналт',
+        permission: 'attendance:read',
+      },
+    ],
+  },
 
   ];
 
@@ -183,6 +205,8 @@ const userMenu = (
           theme="dark"
           mode="inline"
           selectedKeys={[pathname]}
+          openKeys={openKeys}
+          onOpenChange={setOpenKeys}
           onClick={handleMenuClick}
           items={filteredMenuItems as MenuProps['items']}
         />
