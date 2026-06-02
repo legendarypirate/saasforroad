@@ -5,8 +5,6 @@ import { useParams, useRouter } from 'next/navigation';
 import {
   Tabs,
   Card,
-  Row,
-  Col,
   Descriptions,
   Typography,
   Button,
@@ -15,6 +13,7 @@ import {
   Table,
   Space,
   Tag,
+  Select,
   message,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -41,6 +40,29 @@ interface ActionRow {
   createdAt: string;
 }
 
+interface SchoolRow {
+  key: string;
+  schoolName: string;
+  major: string;
+  degree: string;
+  graduationYear: string;
+}
+
+interface FamilyRow {
+  key: string;
+  maritalStatus: string;
+  childrenCount: string;
+  familyNote: string;
+}
+
+interface EmergencyRow {
+  key: string;
+  name: string;
+  relation: string;
+  phone: string;
+  address: string;
+}
+
 export default function UserDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -48,11 +70,15 @@ export default function UserDetailPage() {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<UserDetail | null>(null);
   const [actions, setActions] = useState<ActionRow[]>([]);
+  const [schools, setSchools] = useState<SchoolRow[]>([]);
+  const [families, setFamilies] = useState<FamilyRow[]>([]);
+  const [emergencies, setEmergencies] = useState<EmergencyRow[]>([]);
+  const [actionSaving, setActionSaving] = useState(false);
 
   const [schoolForm] = Form.useForm();
   const [familyForm] = Form.useForm();
   const [emergencyForm] = Form.useForm();
-  const [licenseForm] = Form.useForm();
+  const [disciplineForm] = Form.useForm();
 
   const userId = useMemo(() => Number(id), [id]);
 
@@ -106,6 +132,67 @@ export default function UserDetailPage() {
 
   const fakeSave = () => message.success('Хадгаллаа (дараагийн алхам: DB холболт)');
 
+  const addSchool = async () => {
+    const values = await schoolForm.validateFields();
+    setSchools((prev) => [...prev, { key: `${Date.now()}`, ...values }]);
+    schoolForm.resetFields();
+  };
+
+  const addFamily = async () => {
+    const values = await familyForm.validateFields();
+    setFamilies((prev) => [...prev, { key: `${Date.now()}`, ...values }]);
+    familyForm.resetFields();
+  };
+
+  const addEmergency = async () => {
+    const values = await emergencyForm.validateFields();
+    setEmergencies((prev) => [...prev, { key: `${Date.now()}`, ...values }]);
+    emergencyForm.resetFields();
+  };
+
+  const addDisciplinaryAction = async () => {
+    if (!userId) return;
+    const values = await disciplineForm.validateFields();
+    setActionSaving(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/action`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...values, user_id: userId }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || 'Алдаа гарлаа');
+      message.success('Сахилгын арга хэмжээ нэмэгдлээ');
+      disciplineForm.resetFields();
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      message.error('Сахилгын арга хэмжээ нэмэх үед алдаа гарлаа');
+    } finally {
+      setActionSaving(false);
+    }
+  };
+
+  const schoolColumns: ColumnsType<SchoolRow> = [
+    { title: 'Сургууль', dataIndex: 'schoolName' },
+    { title: 'Мэргэжил', dataIndex: 'major' },
+    { title: 'Зэрэг', dataIndex: 'degree' },
+    { title: 'Төгссөн он', dataIndex: 'graduationYear' },
+  ];
+
+  const familyColumns: ColumnsType<FamilyRow> = [
+    { title: 'Гэрлэлтийн байдал', dataIndex: 'maritalStatus' },
+    { title: 'Хүүхдийн тоо', dataIndex: 'childrenCount' },
+    { title: 'Тэмдэглэл', dataIndex: 'familyNote' },
+  ];
+
+  const emergencyColumns: ColumnsType<EmergencyRow> = [
+    { title: 'Нэр', dataIndex: 'name' },
+    { title: 'Хамаарал', dataIndex: 'relation' },
+    { title: 'Утас', dataIndex: 'phone' },
+    { title: 'Хаяг', dataIndex: 'address' },
+  ];
+
   const items = [
     {
       key: 'general',
@@ -129,15 +216,22 @@ export default function UserDetailPage() {
       label: 'Төгссөн сургууль',
       children: (
         <Card>
-          <Form form={schoolForm} layout="vertical" onFinish={fakeSave}>
-            <Row gutter={16}>
-              <Col span={12}><Form.Item name="schoolName" label="Сургуулийн нэр"><Input /></Form.Item></Col>
-              <Col span={12}><Form.Item name="major" label="Мэргэжил"><Input /></Form.Item></Col>
-              <Col span={12}><Form.Item name="degree" label="Зэрэг"><Input placeholder="Бакалавр, Магистр..." /></Form.Item></Col>
-              <Col span={12}><Form.Item name="graduationYear" label="Төгссөн он"><Input /></Form.Item></Col>
-            </Row>
-            <Button type="primary" htmlType="submit">Хадгалах</Button>
+          <Form form={schoolForm} layout="inline" style={{ marginBottom: 16 }}>
+            <Form.Item name="schoolName" rules={[{ required: true, message: 'Сургууль' }]}>
+              <Input placeholder="Сургуулийн нэр" />
+            </Form.Item>
+            <Form.Item name="major" rules={[{ required: true, message: 'Мэргэжил' }]}>
+              <Input placeholder="Мэргэжил" />
+            </Form.Item>
+            <Form.Item name="degree">
+              <Input placeholder="Зэрэг" />
+            </Form.Item>
+            <Form.Item name="graduationYear">
+              <Input placeholder="Төгссөн он" />
+            </Form.Item>
+            <Button type="primary" onClick={addSchool}>Нэмэх</Button>
           </Form>
+          <Table rowKey="key" columns={schoolColumns} dataSource={schools} pagination={false} />
         </Card>
       ),
     },
@@ -146,14 +240,19 @@ export default function UserDetailPage() {
       label: 'Гэр бүлийн байдал',
       children: (
         <Card>
-          <Form form={familyForm} layout="vertical" onFinish={fakeSave}>
-            <Row gutter={16}>
-              <Col span={12}><Form.Item name="maritalStatus" label="Гэрлэлтийн байдал"><Input /></Form.Item></Col>
-              <Col span={12}><Form.Item name="childrenCount" label="Хүүхдийн тоо"><Input /></Form.Item></Col>
-              <Col span={24}><Form.Item name="familyNote" label="Тэмдэглэл"><Input.TextArea rows={3} /></Form.Item></Col>
-            </Row>
-            <Button type="primary" htmlType="submit">Хадгалах</Button>
+          <Form form={familyForm} layout="inline" style={{ marginBottom: 16 }}>
+            <Form.Item name="maritalStatus" rules={[{ required: true, message: 'Гэрлэлтийн байдал' }]}>
+              <Input placeholder="Гэрлэлтийн байдал" />
+            </Form.Item>
+            <Form.Item name="childrenCount">
+              <Input placeholder="Хүүхдийн тоо" />
+            </Form.Item>
+            <Form.Item name="familyNote">
+              <Input placeholder="Тэмдэглэл" style={{ width: 320 }} />
+            </Form.Item>
+            <Button type="primary" onClick={addFamily}>Нэмэх</Button>
           </Form>
+          <Table rowKey="key" columns={familyColumns} dataSource={families} pagination={false} />
         </Card>
       ),
     },
@@ -162,31 +261,22 @@ export default function UserDetailPage() {
       label: 'Яаралтай үед холбоо барих хүмүүс',
       children: (
         <Card>
-          <Form form={emergencyForm} layout="vertical" onFinish={fakeSave}>
-            <Row gutter={16}>
-              <Col span={8}><Form.Item name="name" label="Нэр"><Input /></Form.Item></Col>
-              <Col span={8}><Form.Item name="relation" label="Хамаарал"><Input placeholder="Эцэг, эх, эхнэр..." /></Form.Item></Col>
-              <Col span={8}><Form.Item name="phone" label="Утас"><Input /></Form.Item></Col>
-              <Col span={24}><Form.Item name="address" label="Хаяг"><Input /></Form.Item></Col>
-            </Row>
-            <Button type="primary" htmlType="submit">Хадгалах</Button>
+          <Form form={emergencyForm} layout="inline" style={{ marginBottom: 16 }}>
+            <Form.Item name="name" rules={[{ required: true, message: 'Нэр' }]}>
+              <Input placeholder="Нэр" />
+            </Form.Item>
+            <Form.Item name="relation">
+              <Input placeholder="Хамаарал" />
+            </Form.Item>
+            <Form.Item name="phone" rules={[{ required: true, message: 'Утас' }]}>
+              <Input placeholder="Утас" />
+            </Form.Item>
+            <Form.Item name="address">
+              <Input placeholder="Хаяг" style={{ width: 280 }} />
+            </Form.Item>
+            <Button type="primary" onClick={addEmergency}>Нэмэх</Button>
           </Form>
-        </Card>
-      ),
-    },
-    {
-      key: 'license',
-      label: 'Жолооны үнэмлэх',
-      children: (
-        <Card>
-          <Form form={licenseForm} layout="vertical" onFinish={fakeSave}>
-            <Row gutter={16}>
-              <Col span={8}><Form.Item name="licenseNo" label="Үнэмлэх №"><Input /></Form.Item></Col>
-              <Col span={8}><Form.Item name="category" label="Ангилал"><Input placeholder="B, C, CE..." /></Form.Item></Col>
-              <Col span={8}><Form.Item name="expiry" label="Хүчинтэй хугацаа"><Input placeholder="YYYY-MM-DD" /></Form.Item></Col>
-            </Row>
-            <Button type="primary" htmlType="submit">Хадгалах</Button>
-          </Form>
+          <Table rowKey="key" columns={emergencyColumns} dataSource={emergencies} pagination={false} />
         </Card>
       ),
     },
@@ -195,6 +285,24 @@ export default function UserDetailPage() {
       label: 'Сахилгын арга хэмжээ',
       children: (
         <Card>
+          <Form form={disciplineForm} layout="inline" style={{ marginBottom: 16 }}>
+            <Form.Item name="title" rules={[{ required: true, message: 'Гарчиг' }]}>
+              <Input placeholder="Арга хэмжээний гарчиг" style={{ width: 220 }} />
+            </Form.Item>
+            <Form.Item name="description">
+              <Input placeholder="Тайлбар" style={{ width: 260 }} />
+            </Form.Item>
+            <Form.Item name="status" initialValue="open">
+              <Select style={{ width: 130 }} options={[{ value: 'open', label: 'open' }, { value: 'done', label: 'done' }]} />
+            </Form.Item>
+            <Form.Item name="priority" initialValue="medium">
+              <Select
+                style={{ width: 130 }}
+                options={[{ value: 'low', label: 'low' }, { value: 'medium', label: 'medium' }, { value: 'high', label: 'high' }]}
+              />
+            </Form.Item>
+            <Button type="primary" loading={actionSaving} onClick={addDisciplinaryAction}>Нэмэх</Button>
+          </Form>
           <Table rowKey="id" columns={actionColumns} dataSource={actions} pagination={{ pageSize: 8 }} />
         </Card>
       ),
