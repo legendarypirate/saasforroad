@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Table, Space, Input, Button, Tag } from 'antd';
+import { Table, Space, Input, Button, Tag, message, Upload } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { UploadOutlined } from '@ant-design/icons';
 
 interface ActionRow {
   id: number;
@@ -10,6 +11,7 @@ interface ActionRow {
   description?: string;
   status?: string;
   priority?: string;
+  document_url?: string;
   createdAt: string;
   user?: {
     username?: string;
@@ -24,6 +26,7 @@ export default function ActionPage() {
   const [username, setUsername] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [uploadingId, setUploadingId] = useState<number | null>(null);
 
   const query = useMemo(() => {
     const p = new URLSearchParams();
@@ -52,6 +55,27 @@ export default function ActionPage() {
     fetchActions();
   }, []);
 
+  const uploadDocument = async (actionId: number, file: File) => {
+    const body = new FormData();
+    body.append('file', file);
+    setUploadingId(actionId);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/action/${actionId}/upload-document`, {
+        method: 'POST',
+        body,
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || 'Upload failed');
+      message.success('Баримт амжилттай хавсаргалаа');
+      fetchActions();
+    } catch (err) {
+      console.error(err);
+      message.error('Баримт хавсаргахад алдаа гарлаа');
+    } finally {
+      setUploadingId(null);
+    }
+  };
+
   const columns: ColumnsType<ActionRow> = [
     { title: 'Гарчиг', dataIndex: 'title' },
     { title: 'Тайлбар', dataIndex: 'description', render: (v) => v || '—' },
@@ -62,6 +86,35 @@ export default function ActionPage() {
       title: 'Төлөв',
       dataIndex: 'status',
       render: (v) => <Tag color={v === 'done' ? 'green' : 'blue'}>{v || 'open'}</Tag>,
+    },
+    {
+      title: 'Баримт',
+      render: (_, r) =>
+        r.document_url ? (
+          <a href={`${process.env.NEXT_PUBLIC_API_URL}/assets/documents/${r.document_url}`} target="_blank" rel="noreferrer">
+            Үзэх
+          </a>
+        ) : (
+          '—'
+        ),
+    },
+    {
+      title: 'Үйлдэл',
+      key: 'action',
+      render: (_, r) => (
+        <Upload
+          showUploadList={false}
+          accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+          beforeUpload={(file) => {
+            uploadDocument(r.id, file);
+            return false;
+          }}
+        >
+          <Button size="small" icon={<UploadOutlined />} loading={uploadingId === r.id}>
+            Баримт хавсаргах
+          </Button>
+        </Upload>
+      ),
     },
     { title: 'Огноо', dataIndex: 'createdAt', render: (v) => new Date(v).toLocaleString() },
   ];

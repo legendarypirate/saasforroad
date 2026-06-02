@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Space, Drawer, Form, Input, Select, message } from 'antd';
+import { Table, Button, Space, Drawer, Form, Input, Select, message, Switch, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
@@ -21,8 +21,13 @@ interface User {
   role_id: number;
   role?: string;
   roleRecord?: Role;
+  is_active?: string | boolean | number;
   createdAt: string;
   updatedAt: string;
+}
+
+function isUserActive(value: User['is_active']) {
+  return value === true || value === 1 || value === '1' || value === 'true';
 }
 
 export default function UsersPage() {
@@ -31,6 +36,7 @@ export default function UsersPage() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
+  const [togglingId, setTogglingId] = useState<number | null>(null);
   const [form] = Form.useForm();
 
   const fetchRoles = async () => {
@@ -68,6 +74,29 @@ export default function UsersPage() {
     form.resetFields();
   };
 
+  const toggleActive = async (user: User, active: boolean) => {
+    setTogglingId(user.id);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/${user.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: active ? '1' : '0' }),
+      });
+      const result = await res.json();
+      if (!result.success) throw new Error(result.message || 'Шинэчлэхэд алдаа');
+
+      setUsers((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, is_active: active ? '1' : '0' } : u))
+      );
+      message.success(active ? 'Ажилтан идэвхтэй боллоо' : 'Ажилтан идэвхгүй боллоо');
+    } catch (err) {
+      console.error(err);
+      message.error('Төлөв өөрчлөхөд алдаа гарлаа');
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
   const handleFormSubmit = async () => {
     try {
       const values = await form.validateFields();
@@ -96,6 +125,23 @@ export default function UsersPage() {
     {
       title: 'Эрх',
       render: (_, record) => record.roleRecord?.name || record.role || '—',
+    },
+    {
+      title: 'Төлөв',
+      key: 'status',
+      render: (_, record) => {
+        const active = isUserActive(record.is_active);
+        return (
+          <Space>
+            <Switch
+              checked={active}
+              loading={togglingId === record.id}
+              onChange={(checked) => toggleActive(record, checked)}
+            />
+            <Tag color={active ? 'green' : 'red'}>{active ? 'Идэвхтэй' : 'Гарсан'}</Tag>
+          </Space>
+        );
+      },
     },
     {
       title: 'Үйлдэл',

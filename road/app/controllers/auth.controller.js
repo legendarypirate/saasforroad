@@ -65,6 +65,10 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials!" });
     }
 
+    if (user.is_active === '0' || user.is_active === 0 || user.is_active === false || user.is_active === 'false') {
+      return res.status(403).json({ message: "Энэ хэрэглэгч идэвхгүй байна" });
+    }
+
     const passwordMatch = await bcrypt.compare(password, user.password);
 
     if (!passwordMatch) {
@@ -107,6 +111,10 @@ exports.mobile_login = async (req, res) => {
 
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials!" });
+    }
+
+    if (user.is_active === '0' || user.is_active === 0 || user.is_active === false || user.is_active === 'false') {
+      return res.status(403).json({ message: "Энэ хэрэглэгч идэвхгүй байна" });
     }
 
     const roleInfo = await resolveUserRole(user);

@@ -20,6 +20,10 @@ module.exports = (sequelize, Sequelize) => {
       type: Sequelize.STRING,
       defaultValue: "medium",
     },
+    document_url: {
+      type: Sequelize.STRING,
+      allowNull: true,
+    },
   });
 
   return Action;

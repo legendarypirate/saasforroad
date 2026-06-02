@@ -4,6 +4,8 @@ module.exports = (app) => {
 
   router.post("/", action.create);
   router.get("/", action.findAll);
+  router.post("/:id/upload-document", action.uploadDocument);
+  router.delete("/:id", action.delete);
 
   app.use("/api/action", router);
 };

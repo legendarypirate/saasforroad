@@ -14,9 +14,11 @@ import {
   Space,
   Tag,
   Select,
+  Popconfirm,
   message,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
 
@@ -128,6 +130,20 @@ export default function UserDetailPage() {
       dataIndex: 'createdAt',
       render: (v) => new Date(v).toLocaleString(),
     },
+    {
+      title: 'Үйлдэл',
+      key: 'action',
+      render: (_, record) => (
+        <Popconfirm
+          title="Энэ мөрийг устгах уу?"
+          okText="Тийм"
+          cancelText="Үгүй"
+          onConfirm={() => deleteDisciplinaryAction(record.id)}
+        >
+          <Button danger type="text" icon={<DeleteOutlined />} />
+        </Popconfirm>
+      ),
+    },
   ];
 
   const fakeSave = () => message.success('Хадгаллаа (дараагийн алхам: DB холболт)');
@@ -138,16 +154,28 @@ export default function UserDetailPage() {
     schoolForm.resetFields();
   };
 
+  const deleteSchool = (key: string) => {
+    setSchools((prev) => prev.filter((r) => r.key !== key));
+  };
+
   const addFamily = async () => {
     const values = await familyForm.validateFields();
     setFamilies((prev) => [...prev, { key: `${Date.now()}`, ...values }]);
     familyForm.resetFields();
   };
 
+  const deleteFamily = (key: string) => {
+    setFamilies((prev) => prev.filter((r) => r.key !== key));
+  };
+
   const addEmergency = async () => {
     const values = await emergencyForm.validateFields();
     setEmergencies((prev) => [...prev, { key: `${Date.now()}`, ...values }]);
     emergencyForm.resetFields();
+  };
+
+  const deleteEmergency = (key: string) => {
+    setEmergencies((prev) => prev.filter((r) => r.key !== key));
   };
 
   const addDisciplinaryAction = async () => {
@@ -173,17 +201,46 @@ export default function UserDetailPage() {
     }
   };
 
+  const deleteDisciplinaryAction = async (actionId: number) => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/action/${actionId}`, {
+        method: 'DELETE',
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || 'Устгах үед алдаа гарлаа');
+      message.success('Сахилгын арга хэмжээ устгагдлаа');
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      message.error('Сахилгын арга хэмжээ устгах үед алдаа гарлаа');
+    }
+  };
+
   const schoolColumns: ColumnsType<SchoolRow> = [
     { title: 'Сургууль', dataIndex: 'schoolName' },
     { title: 'Мэргэжил', dataIndex: 'major' },
     { title: 'Зэрэг', dataIndex: 'degree' },
     { title: 'Төгссөн он', dataIndex: 'graduationYear' },
+    {
+      title: 'Үйлдэл',
+      key: 'action',
+      render: (_, record) => (
+        <Button danger type="text" icon={<DeleteOutlined />} onClick={() => deleteSchool(record.key)} />
+      ),
+    },
   ];
 
   const familyColumns: ColumnsType<FamilyRow> = [
     { title: 'Гэрлэлтийн байдал', dataIndex: 'maritalStatus' },
     { title: 'Хүүхдийн тоо', dataIndex: 'childrenCount' },
     { title: 'Тэмдэглэл', dataIndex: 'familyNote' },
+    {
+      title: 'Үйлдэл',
+      key: 'action',
+      render: (_, record) => (
+        <Button danger type="text" icon={<DeleteOutlined />} onClick={() => deleteFamily(record.key)} />
+      ),
+    },
   ];
 
   const emergencyColumns: ColumnsType<EmergencyRow> = [
@@ -191,6 +248,13 @@ export default function UserDetailPage() {
     { title: 'Хамаарал', dataIndex: 'relation' },
     { title: 'Утас', dataIndex: 'phone' },
     { title: 'Хаяг', dataIndex: 'address' },
+    {
+      title: 'Үйлдэл',
+      key: 'action',
+      render: (_, record) => (
+        <Button danger type="text" icon={<DeleteOutlined />} onClick={() => deleteEmergency(record.key)} />
+      ),
+    },
   ];
 
   const items = [
@@ -229,7 +293,7 @@ export default function UserDetailPage() {
             <Form.Item name="graduationYear">
               <Input placeholder="Төгссөн он" />
             </Form.Item>
-            <Button type="primary" onClick={addSchool}>Нэмэх</Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={addSchool} />
           </Form>
           <Table rowKey="key" columns={schoolColumns} dataSource={schools} pagination={false} />
         </Card>
@@ -250,7 +314,7 @@ export default function UserDetailPage() {
             <Form.Item name="familyNote">
               <Input placeholder="Тэмдэглэл" style={{ width: 320 }} />
             </Form.Item>
-            <Button type="primary" onClick={addFamily}>Нэмэх</Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={addFamily} />
           </Form>
           <Table rowKey="key" columns={familyColumns} dataSource={families} pagination={false} />
         </Card>
@@ -274,7 +338,7 @@ export default function UserDetailPage() {
             <Form.Item name="address">
               <Input placeholder="Хаяг" style={{ width: 280 }} />
             </Form.Item>
-            <Button type="primary" onClick={addEmergency}>Нэмэх</Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={addEmergency} />
           </Form>
           <Table rowKey="key" columns={emergencyColumns} dataSource={emergencies} pagination={false} />
         </Card>
@@ -301,7 +365,7 @@ export default function UserDetailPage() {
                 options={[{ value: 'low', label: 'low' }, { value: 'medium', label: 'medium' }, { value: 'high', label: 'high' }]}
               />
             </Form.Item>
-            <Button type="primary" loading={actionSaving} onClick={addDisciplinaryAction}>Нэмэх</Button>
+            <Button type="primary" icon={<PlusOutlined />} loading={actionSaving} onClick={addDisciplinaryAction} />
           </Form>
           <Table rowKey="id" columns={actionColumns} dataSource={actions} pagination={{ pageSize: 8 }} />
         </Card>
