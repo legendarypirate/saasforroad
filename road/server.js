@@ -25,10 +25,12 @@ app.use("/assets", express.static(path.join(__dirname, "app", "assets")));
 // Import models (Make sure to update the path if necessary)y
 const db = require("./app/models");
 
-// Sync database and handle any errors
+const { seedPermissionsAndRoles } = require("./app/utils/seed");
+
 db.sequelize.sync()
-  .then(() => {
+  .then(async () => {
     console.log("Synced db.");
+    await seedPermissionsAndRoles();
   })
   .catch((err) => {
     console.log("Failed to sync db: " + err.message);
@@ -69,6 +71,9 @@ require("./app/routes/warehouse.routes")(app);
 
 // Role-related routes
 require("./app/routes/role.routes")(app);
+require("./app/routes/permission.routes")(app);
+require("./app/routes/role_permission.routes")(app);
+require("./app/routes/attendance.routes")(app);
 
 // Word-related routes
 require("./app/routes/word.routes")(app);

@@ -1,7 +1,8 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs"); // Using bcryptjs for hashing and comparing passwords
 const db = require("../models");
-const User = db.users;  // Assuming your users table is named 'users'
+const User = db.users;
+const { resolveUserRole } = require("../utils/roleHelper");
 const secretKey = 'your_secret_key';  // You can store this key in .env for better security
 const axios = require("axios");
 
@@ -59,14 +60,23 @@ exports.login = async (req, res) => {
 
   try {
     const user = await User.findOne({ where: { username } });
-   
+
+    if (!user) {
+      return res.status(401).json({ message: "Invalid credentials!" });
+    }
+
     const passwordMatch = await bcrypt.compare(password, user.password);
 
     if (!passwordMatch) {
       return res.status(401).json({ message: "Invalid credentials!" });
     }
 
-    const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, secretKey, { expiresIn: "30m" });
+    const roleInfo = await resolveUserRole(user);
+    const token = jwt.sign(
+      { id: user.id, username: user.username, role: roleInfo.role, role_id: roleInfo.role_id },
+      secretKey,
+      { expiresIn: "30m" }
+    );
 
     res.json({
       success: true,
@@ -74,8 +84,10 @@ exports.login = async (req, res) => {
       user: {
         id: user.id,
         username: user.username,
-        role: user.role
-      }
+        role: roleInfo.role,
+        role_id: roleInfo.role_id,
+        permissions: roleInfo.permissions,
+      },
     });
   } catch (err) {
     console.error(err);
@@ -93,8 +105,13 @@ exports.mobile_login = async (req, res) => {
   try {
     const user = await User.findOne({ where: { phone } });
 
-    if (!user || user.role !== "user") {
+    if (!user) {
       return res.status(401).json({ message: "Invalid credentials!" });
+    }
+
+    const roleInfo = await resolveUserRole(user);
+    if (!roleInfo.mobile_access) {
+      return res.status(401).json({ message: "Энэ хэрэглэгч апп ашиглах эрхгүй" });
     }
 
     const passwordMatch = await bcrypt.compare(password, user.password);
@@ -103,7 +120,11 @@ exports.mobile_login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials!" });
     }
 
-    const token = jwt.sign({ id: user.id, phone: user.phone, role: user.role }, secretKey, { expiresIn: "30m" });
+    const token = jwt.sign(
+      { id: user.id, phone: user.phone, role: roleInfo.role, role_id: roleInfo.role_id },
+      secretKey,
+      { expiresIn: "30m" }
+    );
 
     res.json({
       success: true,
@@ -111,8 +132,10 @@ exports.mobile_login = async (req, res) => {
       user: {
         id: user.id,
         phone: user.phone,
-        role: user.role
-      }
+        username: user.username,
+        role: roleInfo.role,
+        role_id: roleInfo.role_id,
+      },
     });
   } catch (err) {
     console.error(err);

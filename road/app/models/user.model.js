@@ -7,7 +7,10 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.STRING
       },
       role: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+      },
+      role_id: {
+        type: Sequelize.INTEGER,
       },
       phone: {
         type: Sequelize.STRING

@@ -23,6 +23,9 @@ db.sequelize = sequelize;
 
 // Register all the models
 db.roles = require("./role.model.js")(sequelize, Sequelize);
+db.permissions = require("./permission.model.js")(sequelize, Sequelize);
+db.role_permissions = require("./role_permission.model.js")(sequelize, Sequelize);
+db.attendances = require("./attendance.model.js")(sequelize, Sequelize);
 db.infos = require("./info.model.js")(sequelize, Sequelize);
 db.Categories = require("./category.model.js")(sequelize, Sequelize);
 db.users = require("./user.model.js")(sequelize, Sequelize);
@@ -96,6 +99,24 @@ db.horooBoundary.belongsTo(db.district, { foreignKey: "district_id" });
 db.materials.hasMany(db.stocks, { foreignKey: "item_id" });
 db.warehouses.hasMany(db.stocks, { foreignKey: "warehouse_id" });
 // Define the relationships here
+
+db.users.belongsTo(db.roles, { foreignKey: "role_id", as: "roleRecord" });
+db.roles.hasMany(db.users, { foreignKey: "role_id" });
+
+db.roles.belongsToMany(db.permissions, {
+  through: db.role_permissions,
+  foreignKey: "roleId",
+  otherKey: "permissionId",
+  as: "permissions",
+});
+db.permissions.belongsToMany(db.roles, {
+  through: db.role_permissions,
+  foreignKey: "permissionId",
+  otherKey: "roleId",
+});
+
+db.attendances.belongsTo(db.users, { foreignKey: "user_id", as: "user" });
+db.users.hasMany(db.attendances, { foreignKey: "user_id" });
 
 db.accidents.belongsTo(db.users, { foreignKey: "user_id" });
 db.users.hasMany(db.accidents, { foreignKey: "user_id" });

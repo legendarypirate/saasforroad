@@ -1,13 +1,15 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Space, Drawer, Form, message, Switch, Divider } from 'antd';
+import { Table, Button, Space, Drawer, Form, message, Switch, Divider, Input } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { EditOutlined } from '@ant-design/icons';
+import { EditOutlined, PlusOutlined } from '@ant-design/icons';
 
 interface Role {
   id: number;
   name: string;
+  description?: string;
+  mobile_access?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -23,7 +25,9 @@ export default function RolePermissionPage() {
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
+  const [createDrawerVisible, setCreateDrawerVisible] = useState(false);
   const [form] = Form.useForm();
+  const [createForm] = Form.useForm();
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [rolePermissions, setRolePermissions] = useState<number[]>([]);
 
@@ -39,7 +43,7 @@ export default function RolePermissionPage() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/role`);
       const result = await res.json();
       if (result.success) setRoles(result.data);
-      else message.error('Failed to load roles');
+      else message.error('Эрх ачаалахад алдаа гарлаа');
     } catch (err) {
       console.error('Error fetching roles:', err);
     } finally {
@@ -52,9 +56,30 @@ export default function RolePermissionPage() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/permission`);
       const result = await res.json();
       if (result.success) setPermissions(result.data);
-      else message.error('Failed to load permissions');
     } catch (err) {
       console.error('Error fetching permissions:', err);
+    }
+  };
+
+  const handleCreateRole = async () => {
+    try {
+      const values = await createForm.validateFields();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/role`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
+      });
+      const result = await res.json();
+      if (res.ok) {
+        message.success('Эрх амжилттай үүслээ');
+        setCreateDrawerVisible(false);
+        createForm.resetFields();
+        fetchRoles();
+      } else {
+        message.error(result.message || 'Үүсгэхэд алдаа гарлаа');
+      }
+    } catch {
+      message.error('Мэдээлэл буруу байна');
     }
   };
 
@@ -82,33 +107,32 @@ export default function RolePermissionPage() {
       });
       const result = await res.json();
       if (res.ok) {
-        message.success('Permissions updated');
+        message.success('Эрх хадгалагдлаа');
         setDrawerVisible(false);
         setRolePermissions([]);
         form.resetFields();
       } else {
-        message.error(result.message || 'Failed to update permissions');
+        message.error(result.message || 'Хадгалахад алдаа гарлаа');
       }
-    } catch (err) {
-      message.error('Error submitting permissions');
+    } catch {
+      message.error('Алдаа гарлаа');
     }
   };
 
   const columns: ColumnsType<Role> = [
+    { title: 'Эрхийн нэр', dataIndex: 'name' },
+    { title: 'Тайлбар', dataIndex: 'description' },
     {
-      title: 'Role',
-      dataIndex: 'name',
+      title: 'Апп нэвтрэх',
+      dataIndex: 'mobile_access',
+      render: (v: boolean) => (v ? 'Тийм' : 'Үгүй'),
     },
     {
-      title: 'Actions',
+      title: 'Үйлдэл',
       render: (_, record) => (
         <Space>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => openPermissionDrawer(record)}
-          >
-            Edit Permissions
+          <Button type="link" icon={<EditOutlined />} onClick={() => openPermissionDrawer(record)}>
+            Эрх тохируулах
           </Button>
         </Space>
       ),
@@ -117,16 +141,42 @@ export default function RolePermissionPage() {
 
   return (
     <div>
-      <h1 style={{ marginBottom: 24 }}>Role Permissions</h1>
-      <Table
-        columns={columns}
-        dataSource={roles}
-        rowKey="id"
-        loading={loading}
-      />
+      <h1 style={{ marginBottom: 24 }}>Эрхийн зохицуулалт</h1>
+      <Space style={{ marginBottom: 16 }}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateDrawerVisible(true)}>
+          + Шинэ эрх үүсгэх
+        </Button>
+      </Space>
+
+      <Table columns={columns} dataSource={roles} rowKey="id" loading={loading} />
 
       <Drawer
-        title={`Edit Permissions: ${selectedRole?.name}`}
+        title="Шинэ эрх үүсгэх"
+        width={400}
+        onClose={() => {
+          setCreateDrawerVisible(false);
+          createForm.resetFields();
+        }}
+        open={createDrawerVisible}
+      >
+        <Form form={createForm} layout="vertical" onFinish={handleCreateRole}>
+          <Form.Item name="name" label="Эрхийн нэр" rules={[{ required: true }]}>
+            <Input placeholder="Жишээ: Ажилчин" />
+          </Form.Item>
+          <Form.Item name="description" label="Тайлбар">
+            <Input.TextArea rows={2} />
+          </Form.Item>
+          <Form.Item name="mobile_access" label="Апп-аар нэвтрэх эрх" valuePropName="checked">
+            <Switch />
+          </Form.Item>
+          <Button type="primary" htmlType="submit" block>
+            Хадгалах
+          </Button>
+        </Form>
+      </Drawer>
+
+      <Drawer
+        title={`Эрх тохируулах: ${selectedRole?.name}`}
         width={480}
         onClose={() => {
           setDrawerVisible(false);
@@ -134,10 +184,9 @@ export default function RolePermissionPage() {
           setRolePermissions([]);
         }}
         open={drawerVisible}
-        bodyStyle={{ paddingBottom: 80 }}
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item label="Permissions">
+          <Form.Item label="Цэсний эрхүүд">
             {permissions.map((p) => (
               <Form.Item key={p.id} style={{ marginBottom: 12 }}>
                 <Space>
@@ -151,19 +200,15 @@ export default function RolePermissionPage() {
                       }
                     }}
                   />
-                  <span>{`${p.module} - ${p.action}`}</span>
+                  <span>{`${p.module} — ${p.action}`}</span>
                 </Space>
               </Form.Item>
             ))}
           </Form.Item>
-
           <Divider />
-
-          <Form.Item>
-            <Button type="primary" htmlType="submit" block>
-              Save Permissions
-            </Button>
-          </Form.Item>
+          <Button type="primary" htmlType="submit" block>
+            Хадгалах
+          </Button>
         </Form>
       </Drawer>
     </div>

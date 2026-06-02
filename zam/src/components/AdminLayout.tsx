@@ -53,11 +53,9 @@ function getUserPermissions(): string[] {
 
 // Check if the user has a specific permission
 function hasPermission(permission: string, userPermissions: string[]): boolean {
-  // If no permission required, allow
   if (!permission) return true;
-
-  // Some menu keys may have compound permissions separated by comma or so, if needed handle here.
-  // For now, just a simple includes:
+  // No permissions loaded yet (legacy admin) — show all menus
+  if (userPermissions.length === 0) return true;
   return userPermissions.includes(permission);
 }
 
@@ -166,7 +164,9 @@ const userMenu = (
 
   { key: '/admin/document', icon: <FileDoneOutlined />, label: 'Баримт бичиг' },
   { key: '/admin/notification', icon: <BellOutlined />, label: 'Мэдэгдэл' },
-  { key: '/admin/user', icon: <UserOutlined />, label: 'Хэрэглэгч нар' },
+  { key: '/admin/user', icon: <UserOutlined />, label: 'Хэрэглэгч нар', permission: 'user:read' },
+  { key: '/admin/role', icon: <KeyOutlined />, label: 'Эрхийн зохицуулалт', permission: 'role:read' },
+  { key: '/admin/attendance', icon: <FileTextOutlined />, label: 'Ирц хяналт', permission: 'attendance:read' },
 
   ];
 

@@ -12,15 +12,15 @@ exports.create = (req, res) => {
     return;
   }
 
-  // Create a Role
   const cat = {
-    name: req.body.name
+    name: req.body.name,
+    description: req.body.description || null,
+    mobile_access: req.body.mobile_access === true,
   };
 
-  // Save Role in the database
   Role.create(cat)
     .then(data => {
-      res.send(data);
+      res.send({ success: true, data });
     })
     .catch(err => {
       res.status(500).send({

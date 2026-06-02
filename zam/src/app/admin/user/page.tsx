@@ -1,11 +1,16 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Space, Drawer, Form, Input, Select } from 'antd';
+import { Table, Button, Space, Drawer, Form, Input, Select, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@ant-design/icons';
 
 const { Option } = Select;
+
+interface Role {
+  id: number;
+  name: string;
+}
 
 interface User {
   id: number;
@@ -13,42 +18,48 @@ interface User {
   email: string;
   phone: string;
   role_id: number;
+  role?: string;
+  roleRecord?: Role;
   createdAt: string;
   updatedAt: string;
 }
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [form] = Form.useForm();
 
+  const fetchRoles = async () => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/role`);
+      const result = await res.json();
+      if (result.success) setRoles(result.data);
+    } catch (err) {
+      console.error('Fetch roles error:', err);
+    }
+  };
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user`);
+      const result = await res.json();
+      if (result.success) setUsers(result.data);
+      else message.error(result.message || 'Ачаалахад алдаа');
+    } catch (err) {
+      console.error('Fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     document.title = 'Хэрэглэгч';
-
-    const fetchUsers = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user`);
-        const result = await res.json();
-        if (result.success) {
-          setUsers(result.data);
-        } else {
-          console.error('Failed to load users:', result.message);
-        }
-      } catch (err) {
-        console.error('Fetch error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
+    fetchRoles();
     fetchUsers();
   }, []);
-
-  const handleCreateUser = () => {
-    setDrawerVisible(true);
-  };
 
   const handleDrawerClose = () => {
     setDrawerVisible(false);
@@ -58,78 +69,31 @@ export default function UsersPage() {
   const handleFormSubmit = async () => {
     try {
       const values = await form.validateFields();
-  
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(values), // includes username, phone, email, role_id, password
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
       });
-  
       const result = await response.json();
-  
-      if (response.ok) {
-        console.log('User created:', result);
-        // Optionally refresh user list
-        setUsers((prev) => [...prev, result]);
-        // Close drawer and reset form
+      if (response.ok && result.success) {
+        message.success('Хэрэглэгч үүслээ');
+        fetchUsers();
         handleDrawerClose();
       } else {
-        console.error('Failed to create user:', result.message);
+        message.error(result.message || 'Үүсгэхэд алдаа');
       }
-    } catch (error) {
-      console.error('Validation or request failed:', error);
+    } catch {
+      message.error('Мэдээлэл буруу байна');
     }
   };
-  
+
   const columns: ColumnsType<User> = [
+    { title: 'Нэвтрэх нэр', dataIndex: 'username' },
+    { title: 'И-мэйл', dataIndex: 'email' },
+    { title: 'Утас', dataIndex: 'phone' },
     {
-      title: 'Username',
-      dataIndex: 'username',
-    },
-    {
-      title: 'Email',
-      dataIndex: 'email',
-    },
-    {
-      title: 'Phone',
-      dataIndex: 'phone',
-    },
-    {
-      title: 'Role',
-      dataIndex: 'role_id',
-      render: (role_id: number) => {
-        const roles: Record<number, string> = {
-          1: 'admin',
-          2: 'customer',
-          3: 'driver',
-        };
-        return roles[role_id] || `Role ${role_id}`;
-      },
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_, record) => (
-        <Space>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => alert(`Edit ${record.username}`)}
-          >
-            Edit
-          </Button>
-          <Button
-            type="link"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => alert(`Delete ${record.username}`)}
-          >
-            Delete
-          </Button>
-        </Space>
-      ),
+      title: 'Эрх',
+      render: (_, record) => record.roleRecord?.name || record.role || '—',
     },
   ];
 
@@ -137,59 +101,39 @@ export default function UsersPage() {
     <div>
       <h1 style={{ marginBottom: 24 }}>Хэрэглэгч</h1>
       <Space style={{ marginBottom: 16, width: '100%' }} wrap>
-        <Button
-          type="primary"
-          style={{ marginLeft: 'auto' }}
-          onClick={handleCreateUser}
-        >
+        <Button type="primary" style={{ marginLeft: 'auto' }} icon={<PlusOutlined />} onClick={() => setDrawerVisible(true)}>
           + Хэрэглэгч үүсгэх
         </Button>
       </Space>
 
-      <Table
-        columns={columns}
-        dataSource={users}
-        rowKey="id"
-        loading={loading}
-      />
+      <Table columns={columns} dataSource={users} rowKey="id" loading={loading} />
 
-      {/* Drawer for creating a user */}
-      <Drawer
-        title="Хэрэглэгч үүсгэх"
-        width={400}
-        onClose={handleDrawerClose}
-        visible={drawerVisible}
-        bodyStyle={{ paddingBottom: 80 }}
-      >
+      <Drawer title="Хэрэглэгч үүсгэх" width={400} onClose={handleDrawerClose} open={drawerVisible}>
         <Form layout="vertical" form={form} onFinish={handleFormSubmit}>
-          <Form.Item name="username" label="Username" rules={[{ required: true }]}>
-            <Input placeholder="Username" />
+          <Form.Item name="username" label="Нэвтрэх нэр" rules={[{ required: true }]}>
+            <Input placeholder="Нэвтрэх нэр" />
           </Form.Item>
-          <Form.Item name="email" label="Email">
-            <Input placeholder="Email" />
+          <Form.Item name="email" label="И-мэйл">
+            <Input placeholder="И-мэйл" />
           </Form.Item>
-          <Form.Item name="phone" label="Phone">
-            <Input placeholder="Phone" />
+          <Form.Item name="phone" label="Утас" rules={[{ required: true }]}>
+            <Input placeholder="Утасны дугаар" />
           </Form.Item>
-          <Form.Item name="role_id" label="Role" rules={[{ required: true }]}>
-            <Select placeholder="Select role">
-              <Option value={1}>Admin</Option>
-              <Option value={2}>Nyarav</Option>
-              <Option value={3}>Project Manager</Option>
+          <Form.Item name="role_id" label="Эрх" rules={[{ required: true }]}>
+            <Select placeholder="Эрх сонгох">
+              {roles.map((r) => (
+                <Option key={r.id} value={r.id}>
+                  {r.name}
+                </Option>
+              ))}
             </Select>
           </Form.Item>
-          <Form.Item
-            name="password"
-            label="Password"
-            rules={[{ required: true, message: 'Please enter a password' }]}
-          >
-            <Input.Password placeholder="Password" />
+          <Form.Item name="password" label="Нууц үг" rules={[{ required: true }]}>
+            <Input.Password placeholder="Нууц үг" />
           </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" block>
-              Хадгалах
-            </Button>
-          </Form.Item>
+          <Button type="primary" htmlType="submit" block>
+            Хадгалах
+          </Button>
         </Form>
       </Drawer>
     </div>
