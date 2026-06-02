@@ -43,7 +43,7 @@ interface ActionRow {
 }
 
 interface SchoolRow {
-  key: string;
+  id: number;
   schoolName: string;
   major: string;
   degree: string;
@@ -77,6 +77,7 @@ export default function UserDetailPage() {
   const [emergencies, setEmergencies] = useState<EmergencyRow[]>([]);
   const [actionSaving, setActionSaving] = useState(false);
   const [emergencySaving, setEmergencySaving] = useState(false);
+  const [schoolSaving, setSchoolSaving] = useState(false);
 
   const [schoolForm] = Form.useForm();
   const [familyForm] = Form.useForm();
@@ -89,20 +90,33 @@ export default function UserDetailPage() {
     if (!userId) return;
     setLoading(true);
     try {
-      const [userRes, actionRes, emergencyRes] = await Promise.all([
+      const [userRes, actionRes, emergencyRes, schoolRes] = await Promise.all([
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/${userId}`),
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/action?user_id=${userId}`),
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/emergency_contact?user_id=${userId}`),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/education?user_id=${userId}`),
       ]);
 
       const userJson = await userRes.json();
       const actionJson = await actionRes.json();
       const emergencyJson = await emergencyRes.json();
+      const schoolJson = await schoolRes.json();
 
       const userData = userJson.data ?? userJson;
       setUser(userData || null);
       if (actionJson.success) setActions(actionJson.data || []);
       if (emergencyJson.success) setEmergencies(emergencyJson.data || []);
+      if (schoolJson.success) {
+        setSchools(
+          (schoolJson.data || []).map((s: any) => ({
+            id: s.id,
+            schoolName: s.school_name,
+            major: s.major || "",
+            degree: s.degree || "",
+            graduationYear: s.graduation_year || "",
+          }))
+        );
+      }
     } catch (err) {
       console.error(err);
       message.error('Хэрэглэгчийн мэдээлэл ачаалах үед алдаа гарлаа');
@@ -154,12 +168,46 @@ export default function UserDetailPage() {
 
   const addSchool = async () => {
     const values = await schoolForm.validateFields();
-    setSchools((prev) => [...prev, { key: `${Date.now()}`, ...values }]);
-    schoolForm.resetFields();
+    if (!userId) return;
+    setSchoolSaving(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/education`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: userId,
+          school_name: values.schoolName,
+          major: values.major,
+          degree: values.degree,
+          graduation_year: values.graduationYear,
+        }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || "Хадгалах үед алдаа");
+      schoolForm.resetFields();
+      message.success("Төгссөн сургууль нэмэгдлээ");
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      message.error("Төгссөн сургууль хадгалахад алдаа гарлаа");
+    } finally {
+      setSchoolSaving(false);
+    }
   };
 
-  const deleteSchool = (key: string) => {
-    setSchools((prev) => prev.filter((r) => r.key !== key));
+  const deleteSchool = async (id: number) => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/education/${id}`, {
+        method: "DELETE",
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || "Устгах үед алдаа");
+      message.success("Төгссөн сургууль устгагдлаа");
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      message.error("Төгссөн сургууль устгах үед алдаа гарлаа");
+    }
   };
 
   const addFamily = async () => {
@@ -257,7 +305,7 @@ export default function UserDetailPage() {
       title: 'Үйлдэл',
       key: 'action',
       render: (_, record) => (
-        <Button danger type="text" icon={<DeleteOutlined />} onClick={() => deleteSchool(record.key)} />
+        <Button danger type="text" icon={<DeleteOutlined />} onClick={() => deleteSchool(record.id)} />
       ),
     },
   ];
@@ -325,9 +373,9 @@ export default function UserDetailPage() {
             <Form.Item name="graduationYear">
               <Input placeholder="Төгссөн он" />
             </Form.Item>
-            <Button type="primary" icon={<PlusOutlined />} onClick={addSchool} />
+            <Button type="primary" icon={<PlusOutlined />} loading={schoolSaving} onClick={addSchool} />
           </Form>
-          <Table rowKey="key" columns={schoolColumns} dataSource={schools} pagination={false} />
+          <Table rowKey="id" columns={schoolColumns} dataSource={schools} pagination={false} />
         </Card>
       ),
     },
