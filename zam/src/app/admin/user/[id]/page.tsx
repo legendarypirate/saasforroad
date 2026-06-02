@@ -58,7 +58,7 @@ interface FamilyRow {
 }
 
 interface EmergencyRow {
-  key: string;
+  id: number;
   name: string;
   relation: string;
   phone: string;
@@ -76,6 +76,7 @@ export default function UserDetailPage() {
   const [families, setFamilies] = useState<FamilyRow[]>([]);
   const [emergencies, setEmergencies] = useState<EmergencyRow[]>([]);
   const [actionSaving, setActionSaving] = useState(false);
+  const [emergencySaving, setEmergencySaving] = useState(false);
 
   const [schoolForm] = Form.useForm();
   const [familyForm] = Form.useForm();
@@ -88,17 +89,20 @@ export default function UserDetailPage() {
     if (!userId) return;
     setLoading(true);
     try {
-      const [userRes, actionRes] = await Promise.all([
+      const [userRes, actionRes, emergencyRes] = await Promise.all([
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/${userId}`),
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/action?user_id=${userId}`),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/emergency_contact?user_id=${userId}`),
       ]);
 
       const userJson = await userRes.json();
       const actionJson = await actionRes.json();
+      const emergencyJson = await emergencyRes.json();
 
       const userData = userJson.data ?? userJson;
       setUser(userData || null);
       if (actionJson.success) setActions(actionJson.data || []);
+      if (emergencyJson.success) setEmergencies(emergencyJson.data || []);
     } catch (err) {
       console.error(err);
       message.error('Хэрэглэгчийн мэдээлэл ачаалах үед алдаа гарлаа');
@@ -170,12 +174,40 @@ export default function UserDetailPage() {
 
   const addEmergency = async () => {
     const values = await emergencyForm.validateFields();
-    setEmergencies((prev) => [...prev, { key: `${Date.now()}`, ...values }]);
-    emergencyForm.resetFields();
+    if (!userId) return;
+    setEmergencySaving(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/emergency_contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...values, user_id: userId }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || 'Хадгалах үед алдаа');
+      emergencyForm.resetFields();
+      message.success('Яаралтай холбоо барих хүн нэмэгдлээ');
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      message.error('Яаралтай холбоо барих хүн хадгалахад алдаа гарлаа');
+    } finally {
+      setEmergencySaving(false);
+    }
   };
 
-  const deleteEmergency = (key: string) => {
-    setEmergencies((prev) => prev.filter((r) => r.key !== key));
+  const deleteEmergency = async (id: number) => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/emergency_contact/${id}`, {
+        method: 'DELETE',
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || 'Устгах үед алдаа');
+      message.success('Яаралтай холбоо барих хүн устгагдлаа');
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      message.error('Яаралтай холбоо барих хүн устгах үед алдаа гарлаа');
+    }
   };
 
   const addDisciplinaryAction = async () => {
@@ -252,7 +284,7 @@ export default function UserDetailPage() {
       title: 'Үйлдэл',
       key: 'action',
       render: (_, record) => (
-        <Button danger type="text" icon={<DeleteOutlined />} onClick={() => deleteEmergency(record.key)} />
+        <Button danger type="text" icon={<DeleteOutlined />} onClick={() => deleteEmergency(record.id)} />
       ),
     },
   ];
@@ -338,9 +370,9 @@ export default function UserDetailPage() {
             <Form.Item name="address">
               <Input placeholder="Хаяг" style={{ width: 280 }} />
             </Form.Item>
-            <Button type="primary" icon={<PlusOutlined />} onClick={addEmergency} />
+            <Button type="primary" icon={<PlusOutlined />} loading={emergencySaving} onClick={addEmergency} />
           </Form>
-          <Table rowKey="key" columns={emergencyColumns} dataSource={emergencies} pagination={false} />
+          <Table rowKey="id" columns={emergencyColumns} dataSource={emergencies} pagination={false} />
         </Card>
       ),
     },

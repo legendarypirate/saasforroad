@@ -76,6 +76,7 @@ require("./app/routes/role_permission.routes")(app);
 require("./app/routes/attendance.routes")(app);
 require("./app/routes/action.routes")(app);
 require("./app/routes/feedback.routes")(app);
+require("./app/routes/emergency_contact.routes")(app);
 
 // Word-related routes
 require("./app/routes/word.routes")(app);
