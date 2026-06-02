@@ -139,7 +139,11 @@ const userMenu = (
   }, []);
 
   useEffect(() => {
-    if (pathname.startsWith('/admin/attendance')) {
+    if (
+      pathname.startsWith('/admin/attendance') ||
+      pathname.startsWith('/admin/user') ||
+      pathname.startsWith('/admin/role')
+    ) {
       setOpenKeys((prev) => (prev.includes('hr') ? prev : [...prev, 'hr']));
     }
   }, [pathname]);
@@ -174,13 +178,13 @@ const userMenu = (
 
   { key: '/admin/document', icon: <FileDoneOutlined />, label: 'Баримт бичиг' },
   { key: '/admin/notification', icon: <BellOutlined />, label: 'Мэдэгдэл' },
-  { key: '/admin/user', icon: <UserOutlined />, label: 'Хэрэглэгч нар', permission: 'user:read' },
-  { key: '/admin/role', icon: <KeyOutlined />, label: 'Эрхийн зохицуулалт', permission: 'role:read' },
   {
     key: 'hr',
     icon: <IdcardOutlined />,
     label: 'HR удирдлага',
     children: [
+      { key: '/admin/user', icon: <UserOutlined />, label: 'Хэрэглэгч нар', permission: 'user:read' },
+      { key: '/admin/role', icon: <KeyOutlined />, label: 'Эрхийн зохицуулалт', permission: 'role:read' },
       {
         key: '/admin/attendance',
         icon: <ClockCircleOutlined />,

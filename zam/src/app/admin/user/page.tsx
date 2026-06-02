@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Space, Drawer, Form, Input, Select, message } from 'antd';
+import { Table, Button, Space, Drawer, Form, Input, Select, message, Descriptions } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined } from '@ant-design/icons';
 
@@ -29,6 +29,8 @@ export default function UsersPage() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
+  const [detailVisible, setDetailVisible] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [form] = Form.useForm();
 
   const fetchRoles = async () => {
@@ -95,6 +97,21 @@ export default function UsersPage() {
       title: 'Эрх',
       render: (_, record) => record.roleRecord?.name || record.role || '—',
     },
+    {
+      title: 'Үйлдэл',
+      key: 'action',
+      render: (_, record) => (
+        <Button
+          type="link"
+          onClick={() => {
+            setSelectedUser(record);
+            setDetailVisible(true);
+          }}
+        >
+          Дэлгэрэнгүй
+        </Button>
+      ),
+    },
   ];
 
   return (
@@ -107,6 +124,30 @@ export default function UsersPage() {
       </Space>
 
       <Table columns={columns} dataSource={users} rowKey="id" loading={loading} />
+
+      <Drawer
+        title="Хэрэглэгчийн дэлгэрэнгүй"
+        width={480}
+        onClose={() => {
+          setDetailVisible(false);
+          setSelectedUser(null);
+        }}
+        open={detailVisible}
+      >
+        {selectedUser && (
+          <Descriptions column={1} bordered size="small">
+            <Descriptions.Item label="ID">{selectedUser.id}</Descriptions.Item>
+            <Descriptions.Item label="Нэвтрэх нэр">{selectedUser.username || '—'}</Descriptions.Item>
+            <Descriptions.Item label="И-мэйл">{selectedUser.email || '—'}</Descriptions.Item>
+            <Descriptions.Item label="Утас">{selectedUser.phone || '—'}</Descriptions.Item>
+            <Descriptions.Item label="Эрх">
+              {selectedUser.roleRecord?.name || selectedUser.role || '—'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Үүссэн огноо">{selectedUser.createdAt || '—'}</Descriptions.Item>
+            <Descriptions.Item label="Шинэчлэгдсэн огноо">{selectedUser.updatedAt || '—'}</Descriptions.Item>
+          </Descriptions>
+        )}
+      </Drawer>
 
       <Drawer title="Хэрэглэгч үүсгэх" width={400} onClose={handleDrawerClose} open={drawerVisible}>
         <Form layout="vertical" form={form} onFinish={handleFormSubmit}>
