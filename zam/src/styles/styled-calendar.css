@@ -200,11 +200,6 @@
 .styled-calendar-body .fc .fc-daygrid-day.fc-day-today .fc-bg-event {
   opacity: 0.45 !important;
 }
-  font-weight: 600 !important;
-  color: var(--cal-accent) !important;
-  border-radius: 6px;
-  padding: 2px 6px;
-}
 
 .styled-calendar-body .fc .fc-popover {
   border-radius: 12px !important;

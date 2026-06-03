@@ -4,9 +4,7 @@ import React from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import type { EventClickArg, DateClickArg, EventInput, ToolbarInput } from '@fullcalendar/core';
-import '@fullcalendar/core/index.css';
-import '@fullcalendar/daygrid/index.css';
+import type { EventClickArg, DatePointApi, EventInput, ToolbarInput } from '@fullcalendar/core';
 import '@/styles/styled-calendar.css';
 
 export type CalendarLegendItem = { label: string; color: string };
@@ -17,7 +15,7 @@ export interface StyledFullCalendarProps {
   subtitle?: string;
   legend?: CalendarLegendItem[];
   onEventClick?: (info: EventClickArg) => void;
-  onDateClick?: (arg: DateClickArg) => void;
+  onDateClick?: (arg: DatePointApi) => void;
   editable?: boolean;
   selectable?: boolean;
   initialView?: 'dayGridMonth' | 'dayGridWeek';
@@ -60,7 +58,7 @@ export default function StyledFullCalendar({
   initialDate,
   dayMaxEvents = 4,
 }: StyledFullCalendarProps) {
-  const headerToolbar: ToolbarInput =
+  const headerToolbar: ToolbarInput | false =
     headerToolbarProp === false
       ? false
       : headerToolbarProp ?? {

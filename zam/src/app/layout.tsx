@@ -23,6 +23,8 @@ export default function RootLayout({
   return (
     <html lang="mn" className={nunito.variable}>
       <body className={`${nunito.className} antialiased`}>
+        {/* FullCalendar v6 injects CSS into this anchor (Next.js client navigation) */}
+        <style data-fullcalendar="" />
         <Providers>{children}</Providers>
       </body>
     </html>
