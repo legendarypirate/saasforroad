@@ -30,28 +30,55 @@ const USER_PROFILE_COLUMNS = [
   "cycle_start_date",
 ];
 
-async function ensureUserProfileColumns(sequelize) {
+function resolveTableName(UserModel) {
+  const ref = UserModel.getTableName();
+  if (typeof ref === "string") return ref;
+  return ref.tableName;
+}
+
+async function resolveExistingUserTable(sequelize, UserModel) {
+  const modelTable = resolveTableName(UserModel);
+  const [rows] = await sequelize.query(`
+    SELECT table_name
+    FROM information_schema.tables
+    WHERE table_schema = 'public'
+      AND table_name IN ('users', 'user', '${modelTable}')
+  `);
+
+  const names = rows.map((r) => r.table_name);
+  if (names.includes(modelTable)) return modelTable;
+  if (names.includes("users")) return "users";
+  if (names.includes("user")) return "user";
+  return modelTable;
+}
+
+async function ensureUserProfileColumns(sequelize, UserModel) {
+  const tableName = await resolveExistingUserTable(sequelize, UserModel);
+  console.log(`Ensuring user profile columns on table: ${tableName}`);
+
   for (const column of USER_PROFILE_COLUMNS) {
     await sequelize.query(
-      `ALTER TABLE users ADD COLUMN IF NOT EXISTS "${column}" VARCHAR(255);`
+      `ALTER TABLE "${tableName}" ADD COLUMN IF NOT EXISTS "${column}" VARCHAR(255);`
     );
   }
-  await sequelize.query(
-    `ALTER TABLE users ADD COLUMN IF NOT EXISTS "extended_cycle" BOOLEAN DEFAULT false;`
-  );
-  await sequelize.query(
-    `ALTER TABLE users ADD COLUMN IF NOT EXISTS "cycle_work_days" INTEGER DEFAULT 22;`
-  );
-  await sequelize.query(
-    `ALTER TABLE users ADD COLUMN IF NOT EXISTS "cycle_rest_days" INTEGER DEFAULT 8;`
-  );
-  await sequelize.query(
-    `ALTER TABLE users ADD COLUMN IF NOT EXISTS "daily_work_hours" DECIMAL(4,2) DEFAULT 8;`
-  );
+
+  const extraColumns = [
+    `ALTER TABLE "${tableName}" ADD COLUMN IF NOT EXISTS "extended_cycle" BOOLEAN DEFAULT false;`,
+    `ALTER TABLE "${tableName}" ADD COLUMN IF NOT EXISTS "cycle_work_days" INTEGER DEFAULT 22;`,
+    `ALTER TABLE "${tableName}" ADD COLUMN IF NOT EXISTS "cycle_rest_days" INTEGER DEFAULT 8;`,
+    `ALTER TABLE "${tableName}" ADD COLUMN IF NOT EXISTS "daily_work_hours" DECIMAL(4,2) DEFAULT 8;`,
+  ];
+
+  for (const sql of extraColumns) {
+    await sequelize.query(sql);
+  }
 }
 
-async function ensureSchema(sequelize) {
-  await ensureUserProfileColumns(sequelize);
+async function ensureSchema(sequelize, UserModel) {
+  if (!UserModel) {
+    throw new Error("User model is required for ensureSchema");
+  }
+  await ensureUserProfileColumns(sequelize, UserModel);
 }
 
-module.exports = { ensureSchema, ensureUserProfileColumns };
+module.exports = { ensureSchema, ensureUserProfileColumns, resolveTableName, resolveExistingUserTable };

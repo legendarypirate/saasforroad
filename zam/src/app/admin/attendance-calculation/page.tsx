@@ -6,12 +6,12 @@ import {
   Col,
   DatePicker,
   Form,
+  Input,
   InputNumber,
   Row,
   Select,
   Space,
   Statistic,
-  Switch,
   Table,
   Tabs,
   Tag,
@@ -20,6 +20,7 @@ import {
   Button,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -47,6 +48,17 @@ interface DayReport {
   scheduleLabel: string;
   dayType: string;
   cycleDay?: number | null;
+  override?: string;
+  overrideLabel?: string;
+}
+
+interface ScheduleExceptionRow {
+  id: number;
+  user_id: number;
+  start_date: string;
+  end_date: string;
+  override_type: 'skip_rest' | 'force_rest';
+  reason?: string;
 }
 
 interface CalendarResponse {
@@ -74,6 +86,7 @@ interface CalendarResponse {
     attendanceRate: number;
     unscheduledWorkDays: number;
   };
+  exceptions: ScheduleExceptionRow[];
 }
 
 interface PayrollRow {
@@ -98,6 +111,11 @@ const ROTATION_PRESETS = [
   { label: '21/7', work: 21, rest: 7, hours: 8 },
   { label: '22/8 (12ц)', work: 22, rest: 8, hours: 11 },
   { label: '21/7 (12ц)', work: 21, rest: 7, hours: 11 },
+];
+
+const OVERRIDE_OPTIONS = [
+  { value: 'skip_rest', label: 'Амралт алгассан (ажилласан)' },
+  { value: 'force_rest', label: 'Нэмэлт амралт' },
 ];
 
 function isRotationSchedule(type?: string) {
@@ -137,7 +155,9 @@ export default function AttendanceCalculationPage() {
   const [loadingCalendar, setLoadingCalendar] = useState(false);
   const [loadingPayroll, setLoadingPayroll] = useState(false);
   const [savingSchedule, setSavingSchedule] = useState(false);
+  const [exceptionSaving, setExceptionSaving] = useState(false);
   const [scheduleForm] = Form.useForm();
+  const [exceptionForm] = Form.useForm();
   const scheduleType = Form.useWatch('work_schedule_type', scheduleForm);
 
   const monthStr = selectedMonth.format('YYYY-MM');
@@ -174,7 +194,6 @@ export default function AttendanceCalculationPage() {
         cycle_work_days: u.cycle_work_days ?? 22,
         cycle_rest_days: u.cycle_rest_days ?? 8,
         daily_work_hours: u.daily_work_hours ?? (u.work_schedule_type === 'field_12h' ? 11 : 8),
-        extended_cycle: Boolean(u.extended_cycle),
       });
     } catch (err) {
       console.error(err);
@@ -223,7 +242,7 @@ export default function AttendanceCalculationPage() {
           cycle_work_days: values.cycle_work_days,
           cycle_rest_days: values.cycle_rest_days,
           daily_work_hours: values.daily_work_hours,
-          extended_cycle: values.extended_cycle,
+          extended_cycle: false,
         }),
       });
       const json = await res.json();
@@ -236,6 +255,51 @@ export default function AttendanceCalculationPage() {
       message.error('Хадгалахад алдаа гарлаа');
     } finally {
       setSavingSchedule(false);
+    }
+  };
+
+  const addException = async () => {
+    if (!selectedUserId) return;
+    const values = await exceptionForm.validateFields();
+    const [start, end] = values.date_range as [Dayjs, Dayjs];
+    setExceptionSaving(true);
+    try {
+      const res = await fetch(`${apiBase}/api/schedule_exception`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: selectedUserId,
+          start_date: start.format('YYYY-MM-DD'),
+          end_date: end.format('YYYY-MM-DD'),
+          override_type: values.override_type,
+          reason: values.reason,
+        }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || 'Алдаа');
+      exceptionForm.resetFields();
+      message.success('Exception нэмэгдлээ');
+      fetchCalendar();
+      fetchPayroll();
+    } catch (err) {
+      console.error(err);
+      message.error('Exception нэмэхэд алдаа гарлаа');
+    } finally {
+      setExceptionSaving(false);
+    }
+  };
+
+  const deleteException = async (id: number) => {
+    try {
+      const res = await fetch(`${apiBase}/api/schedule_exception/${id}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || 'Алдаа');
+      message.success('Устгагдлаа');
+      fetchCalendar();
+      fetchPayroll();
+    } catch (err) {
+      console.error(err);
+      message.error('Устгах үед алдаа гарлаа');
     }
   };
 
@@ -292,7 +356,31 @@ export default function AttendanceCalculationPage() {
     {
       title: 'Төлөв',
       dataIndex: 'statusLabel',
-      render: (v, r) => <Tag color={statusColor(r.status)}>{v}</Tag>,
+      render: (v, r) => (
+        <Space direction="vertical" size={0}>
+          <Tag color={statusColor(r.status)}>{v}</Tag>
+          {r.override === 'skip_rest' && <Text type="warning" style={{ fontSize: 12 }}>Exception</Text>}
+        </Space>
+      ),
+    },
+  ];
+
+  const exceptionColumns: ColumnsType<ScheduleExceptionRow> = [
+    { title: 'Эхлэх', dataIndex: 'start_date' },
+    { title: 'Дуусах', dataIndex: 'end_date' },
+    {
+      title: 'Төрөл',
+      dataIndex: 'override_type',
+      render: (v) => OVERRIDE_OPTIONS.find((o) => o.value === v)?.label || v,
+    },
+    { title: 'Шалтгаан', dataIndex: 'reason', render: (v) => v || '—' },
+    {
+      title: 'Үйлдэл',
+      key: 'action',
+      width: 80,
+      render: (_, record) => (
+        <Button danger type="text" icon={<DeleteOutlined />} onClick={() => deleteException(record.id)} />
+      ),
     },
   ];
 
@@ -410,21 +498,9 @@ export default function AttendanceCalculationPage() {
                       </Space>
                     )}
 
-                    <Space align="center" wrap>
-                      {isRotationSchedule(scheduleType) && (
-                        <Form.Item
-                          name="extended_cycle"
-                          label="Амралтгүй үргэлжлүүлэх"
-                          valuePropName="checked"
-                          style={{ marginBottom: 0 }}
-                        >
-                          <Switch />
-                        </Form.Item>
-                      )}
-                      <Button type="primary" loading={savingSchedule} onClick={saveSchedule}>
-                        Хадгалах
-                      </Button>
-                    </Space>
+                    <Button type="primary" loading={savingSchedule} onClick={saveSchedule}>
+                      Хадгалах
+                    </Button>
                   </Form>
                   {isRotationSchedule(scheduleType) && (
                     <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
@@ -433,6 +509,46 @@ export default function AttendanceCalculationPage() {
                     </Text>
                   )}
                 </Card>
+
+                {isRotationSchedule(scheduleType) && (
+                  <Card size="small" title="Нэг удаагийн exception (амралт алгасах / нэмэлт амралт)">
+                    <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
+                      Зөвхөн тухайн хугацаанд л хүчинтэй. Бусад ээлжид хэвийн 22/8, 21/7 горим
+                      үргэлжилнэ — нэг удаа дундаа амралтгүй ажилласан тохиолдолд энд бүртгэнэ.
+                    </Text>
+                    <Form form={exceptionForm} layout="inline" style={{ marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+                      <Form.Item
+                        name="date_range"
+                        rules={[{ required: true, message: 'Огноо' }]}
+                      >
+                        <DatePicker.RangePicker placeholder={['Эхлэх', 'Дуусах']} />
+                      </Form.Item>
+                      <Form.Item
+                        name="override_type"
+                        initialValue="skip_rest"
+                        rules={[{ required: true }]}
+                      >
+                        <Select style={{ width: 240 }} options={OVERRIDE_OPTIONS} />
+                      </Form.Item>
+                      <Form.Item name="reason">
+                        <Input placeholder="Шалтгаан (мөнгөний хэрэгцээ гэх мэт)" style={{ width: 220 }} />
+                      </Form.Item>
+                      <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        loading={exceptionSaving}
+                        onClick={addException}
+                      />
+                    </Form>
+                    <Table
+                      rowKey="id"
+                      size="small"
+                      columns={exceptionColumns}
+                      dataSource={calendarData?.exceptions || []}
+                      pagination={false}
+                    />
+                  </Card>
+                )}
 
                 {summary && (
                   <Row gutter={16}>

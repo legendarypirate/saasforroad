@@ -33,6 +33,7 @@ db.educations = require("./education.model.js")(sequelize, Sequelize);
 db.career_changes = require("./career_change.model.js")(sequelize, Sequelize);
 db.contract_terminations = require("./contract_termination.model.js")(sequelize, Sequelize);
 db.user_awards = require("./user_award.model.js")(sequelize, Sequelize);
+db.schedule_exceptions = require("./schedule_exception.model.js")(sequelize, Sequelize);
 db.infos = require("./info.model.js")(sequelize, Sequelize);
 db.Categories = require("./category.model.js")(sequelize, Sequelize);
 db.users = require("./user.model.js")(sequelize, Sequelize);
@@ -145,6 +146,9 @@ db.users.hasMany(db.contract_terminations, { foreignKey: "user_id" });
 
 db.user_awards.belongsTo(db.users, { foreignKey: "user_id", as: "user" });
 db.users.hasMany(db.user_awards, { foreignKey: "user_id" });
+
+db.schedule_exceptions.belongsTo(db.users, { foreignKey: "user_id", as: "user" });
+db.users.hasMany(db.schedule_exceptions, { foreignKey: "user_id" });
 
 db.accidents.belongsTo(db.users, { foreignKey: "user_id" });
 db.users.hasMany(db.accidents, { foreignKey: "user_id" });

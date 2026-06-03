@@ -6,10 +6,52 @@
  * - rotation: cycle_work_days + cycle_rest_days from cycle_start_date (e.g. 22/8, 21/7)
  * - rotation_22_8, field_12h: legacy aliases — treated as rotation
  *
- * extended_cycle: skip rest period (continues working)
+ * extended_cycle: (legacy) always skip rest — prefer schedule_exceptions instead
  */
 
 const LEGACY_ROTATION_TYPES = ['rotation', 'rotation_22_8', 'field_12h'];
+
+function findExceptionForDate(exceptions, dateStr) {
+  if (!exceptions?.length) return null;
+  return exceptions.find(
+    (ex) => dateStr >= ex.start_date && dateStr <= ex.end_date
+  );
+}
+
+function applyScheduleException(baseSchedule, user, dateStr, exceptions) {
+  const ex = findExceptionForDate(exceptions, dateStr);
+  if (!ex) return baseSchedule;
+
+  const expectedHours = getExpectedHours(user);
+
+  if (ex.override_type === 'skip_rest' && baseSchedule.isRestDay) {
+    return {
+      ...baseSchedule,
+      isWorkDay: true,
+      isRestDay: false,
+      dayType: 'work',
+      expectedHours,
+      override: 'skip_rest',
+      overrideLabel: 'Амралт алгассан (нэг удаа)',
+      overrideReason: ex.reason || null,
+    };
+  }
+
+  if (ex.override_type === 'force_rest' && baseSchedule.isWorkDay) {
+    return {
+      ...baseSchedule,
+      isWorkDay: false,
+      isRestDay: true,
+      dayType: 'rest',
+      expectedHours: 0,
+      override: 'force_rest',
+      overrideLabel: 'Нэмэлт амралт',
+      overrideReason: ex.reason || null,
+    };
+  }
+
+  return baseSchedule;
+}
 
 function parseDateOnly(value) {
   if (!value) return null;
@@ -109,15 +151,17 @@ function getRotationInfo(targetDate, cycleStartDate, extendedCycle, workDays, re
   };
 }
 
-function getScheduleForDate(user, dateStr) {
+function getScheduleForDate(user, dateStr, exceptions = []) {
   const scheduleType = user.work_schedule_type || 'office_8h';
   const expectedHours = getExpectedHours(user);
   const scheduleLabel = getScheduleLabel(user);
 
+  let base;
+
   if (scheduleType === 'office_8h') {
     const date = parseDateOnly(dateStr);
     const isWorkDay = date ? isWeekday(date) : false;
-    return {
+    base = {
       scheduleType,
       scheduleLabel,
       date: dateStr,
@@ -126,9 +170,7 @@ function getScheduleForDate(user, dateStr) {
       expectedHours: isWorkDay ? expectedHours : 0,
       dayType: isWorkDay ? 'work' : 'rest',
     };
-  }
-
-  if (isRotationType(scheduleType)) {
+  } else if (isRotationType(scheduleType)) {
     const { workDays, restDays } = getCycleConfig(user);
     const rotation = getRotationInfo(
       dateStr,
@@ -138,7 +180,7 @@ function getScheduleForDate(user, dateStr) {
       restDays
     );
 
-    return {
+    base = {
       scheduleType,
       scheduleLabel,
       date: dateStr,
@@ -153,17 +195,19 @@ function getScheduleForDate(user, dateStr) {
       cycleWorkDays: workDays,
       cycleRestDays: restDays,
     };
+  } else {
+    base = {
+      scheduleType,
+      scheduleLabel,
+      date: dateStr,
+      isWorkDay: false,
+      isRestDay: true,
+      expectedHours: 0,
+      dayType: 'rest',
+    };
   }
 
-  return {
-    scheduleType,
-    scheduleLabel,
-    date: dateStr,
-    isWorkDay: false,
-    isRestDay: true,
-    expectedHours: 0,
-    dayType: 'rest',
-  };
+  return applyScheduleException(base, user, dateStr, exceptions);
 }
 
 function workedHoursFromRecord(record) {
@@ -174,8 +218,8 @@ function workedHoursFromRecord(record) {
   return Math.round(((end - start) / 3600000) * 100) / 100;
 }
 
-function evaluateDay(user, dateStr, attendanceRecord) {
-  const schedule = getScheduleForDate(user, dateStr);
+function evaluateDay(user, dateStr, attendanceRecord, exceptions = []) {
+  const schedule = getScheduleForDate(user, dateStr, exceptions);
   const workedHours = workedHoursFromRecord(attendanceRecord);
   const checkIn = attendanceRecord?.check_in_at || null;
   const checkOut = attendanceRecord?.check_out_at || null;
@@ -208,7 +252,7 @@ function evaluateDay(user, dateStr, attendanceRecord) {
     billableHours,
     overtimeHours,
     status,
-    statusLabel: statusLabel(status),
+    statusLabel: schedule.overrideLabel || statusLabel(status),
   };
 }
 
@@ -225,7 +269,7 @@ function statusLabel(status) {
   return map[status] || status;
 }
 
-function buildCalendarMonth(user, year, month, attendanceByDate) {
+function buildCalendarMonth(user, year, month, attendanceByDate, exceptions = []) {
   const start = new Date(Date.UTC(year, month - 1, 1));
   const end = new Date(Date.UTC(year, month, 0));
   const days = [];
@@ -233,13 +277,13 @@ function buildCalendarMonth(user, year, month, attendanceByDate) {
   for (let d = new Date(start); d <= end; d = addDays(d, 1)) {
     const dateStr = formatDateOnly(d);
     const record = attendanceByDate[dateStr] || null;
-    days.push(evaluateDay(user, dateStr, record));
+    days.push(evaluateDay(user, dateStr, record, exceptions));
   }
 
   return days;
 }
 
-function summarizePeriod(user, fromStr, toStr, attendanceRecords) {
+function summarizePeriod(user, fromStr, toStr, attendanceRecords, exceptions = []) {
   const attendanceByDate = {};
   for (const r of attendanceRecords) {
     attendanceByDate[r.work_date] = r;
@@ -264,7 +308,7 @@ function summarizePeriod(user, fromStr, toStr, attendanceRecords) {
   for (let d = new Date(from); d <= to; d = addDays(d, 1)) {
     const dateStr = formatDateOnly(d);
     const record = attendanceByDate[dateStr] || null;
-    const day = evaluateDay(user, dateStr, record);
+    const day = evaluateDay(user, dateStr, record, exceptions);
     daily.push(day);
 
     if (day.isWorkDay) scheduledWorkDays += 1;

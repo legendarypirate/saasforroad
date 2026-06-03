@@ -1,6 +1,7 @@
 const db = require("../models");
 const Attendance = db.attendances;
 const User = db.users;
+const ScheduleException = db.schedule_exceptions;
 const Op = db.Sequelize.Op;
 const {
   buildCalendarMonth,
@@ -11,6 +12,35 @@ const {
 
 function todayDateString() {
   return new Date().toISOString().slice(0, 10);
+}
+
+async function fetchExceptions(userId, from, to) {
+  return ScheduleException.findAll({
+    where: {
+      user_id: userId,
+      start_date: { [Op.lte]: to },
+      end_date: { [Op.gte]: from },
+    },
+    order: [["start_date", "ASC"]],
+  });
+}
+
+async function fetchExceptionsForUsers(userIds, from, to) {
+  if (!userIds.length) return {};
+  const rows = await ScheduleException.findAll({
+    where: {
+      user_id: userIds,
+      start_date: { [Op.lte]: to },
+      end_date: { [Op.gte]: from },
+    },
+    order: [["start_date", "ASC"]],
+  });
+  const grouped = {};
+  rows.forEach((row) => {
+    if (!grouped[row.user_id]) grouped[row.user_id] = [];
+    grouped[row.user_id].push(row);
+  });
+  return grouped;
 }
 
 exports.checkIn = async (req, res) => {
@@ -211,17 +241,20 @@ exports.calendarReport = async (req, res) => {
     }
 
     const { from, to } = monthRange(year, mon);
-    const records = await Attendance.findAll({
-      where: { user_id, work_date: { [Op.between]: [from, to] } },
-    });
+    const [records, exceptions] = await Promise.all([
+      Attendance.findAll({
+        where: { user_id, work_date: { [Op.between]: [from, to] } },
+      }),
+      fetchExceptions(user_id, from, to),
+    ]);
 
     const byDate = {};
     records.forEach((r) => {
       byDate[r.work_date] = r;
     });
 
-    const days = buildCalendarMonth(user, year, mon, byDate);
-    const summary = summarizePeriod(user, from, to, records);
+    const days = buildCalendarMonth(user, year, mon, byDate, exceptions);
+    const summary = summarizePeriod(user, from, to, records, exceptions);
 
     res.send({
       success: true,
@@ -242,6 +275,7 @@ exports.calendarReport = async (req, res) => {
         to,
         days,
         summary,
+        exceptions,
       },
     });
   } catch (err) {
@@ -290,6 +324,9 @@ exports.payrollSummary = async (req, res) => {
       },
     });
 
+    const userIds = users.map((u) => u.id);
+    const exceptionsByUser = await fetchExceptionsForUsers(userIds, from, to);
+
     const byUser = {};
     records.forEach((r) => {
       if (!byUser[r.user_id]) byUser[r.user_id] = [];
@@ -297,7 +334,13 @@ exports.payrollSummary = async (req, res) => {
     });
 
     const rows = users.map((user) =>
-      summarizePeriod(user, from, to, byUser[user.id] || [])
+      summarizePeriod(
+        user,
+        from,
+        to,
+        byUser[user.id] || [],
+        exceptionsByUser[user.id] || []
+      )
     );
 
     res.send({

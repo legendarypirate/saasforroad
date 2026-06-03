@@ -28,6 +28,8 @@ const USER_PROFILE_COLUMNS = [
   'probation_end_date',
   'permanent_order_number',
   'permanent_date',
+  'work_schedule_type',
+  'cycle_start_date',
 ];
 
 /** @type {import('sequelize-cli').Migration} */
@@ -38,6 +40,18 @@ module.exports = {
         `ALTER TABLE users ADD COLUMN IF NOT EXISTS "${column}" VARCHAR(255);`
       );
     }
+    await queryInterface.sequelize.query(
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS "extended_cycle" BOOLEAN DEFAULT false;`
+    );
+    await queryInterface.sequelize.query(
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS "cycle_work_days" INTEGER DEFAULT 22;`
+    );
+    await queryInterface.sequelize.query(
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS "cycle_rest_days" INTEGER DEFAULT 8;`
+    );
+    await queryInterface.sequelize.query(
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS "daily_work_hours" DECIMAL(4,2) DEFAULT 8;`
+    );
   },
 
   async down(queryInterface) {
