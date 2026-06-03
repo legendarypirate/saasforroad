@@ -26,9 +26,11 @@ app.use("/assets", express.static(path.join(__dirname, "app", "assets")));
 const db = require("./app/models");
 
 const { seedPermissionsAndRoles } = require("./app/utils/seed");
+const { ensureSchema } = require("./app/utils/ensureSchema");
 
 db.sequelize.sync()
   .then(async () => {
+    await ensureSchema(db.sequelize);
     console.log("Synced db.");
     await seedPermissionsAndRoles();
   })

@@ -5,6 +5,9 @@ module.exports = (app) => {
   router.post("/check-in", attendance.checkIn);
   router.post("/check-out", attendance.checkOut);
   router.get("/summary", attendance.summary);
+  router.get("/calendar", attendance.calendarReport);
+  router.get("/payroll-summary", attendance.payrollSummary);
+  router.patch("/schedule/:userId", attendance.updateSchedule);
   router.get("/today/:userId", attendance.getTodayForUser);
   router.get("/", attendance.findAll);
 

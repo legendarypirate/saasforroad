@@ -27,6 +27,7 @@ import {
   TruckOutlined,
   IdcardOutlined,
   ClockCircleOutlined,
+  CalculatorOutlined,
   FlagOutlined,
   MessageOutlined,
 } from '@ant-design/icons';
@@ -195,6 +196,12 @@ const userMenu = (
         key: '/admin/attendance',
         icon: <ClockCircleOutlined />,
         label: 'Ирцийн хяналт',
+        permission: 'attendance:read',
+      },
+      {
+        key: '/admin/attendance-calculation',
+        icon: <CalculatorOutlined />,
+        label: 'Ирц тооцоолол',
         permission: 'attendance:read',
       },
     ],

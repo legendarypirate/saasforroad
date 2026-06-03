@@ -127,6 +127,12 @@ exports.update = async (req, res) => {
     probation_end_date: req.body.probation_end_date !== undefined ? req.body.probation_end_date : undefined,
     permanent_order_number: req.body.permanent_order_number !== undefined ? req.body.permanent_order_number : undefined,
     permanent_date: req.body.permanent_date !== undefined ? req.body.permanent_date : undefined,
+    work_schedule_type: req.body.work_schedule_type !== undefined ? req.body.work_schedule_type : undefined,
+    cycle_start_date: req.body.cycle_start_date !== undefined ? req.body.cycle_start_date : undefined,
+    cycle_work_days: req.body.cycle_work_days !== undefined ? req.body.cycle_work_days : undefined,
+    cycle_rest_days: req.body.cycle_rest_days !== undefined ? req.body.cycle_rest_days : undefined,
+    daily_work_hours: req.body.daily_work_hours !== undefined ? req.body.daily_work_hours : undefined,
+    extended_cycle: req.body.extended_cycle !== undefined ? req.body.extended_cycle : undefined,
   };
 
   Object.keys(updateData).forEach((key) => {

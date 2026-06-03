@@ -114,6 +114,29 @@ module.exports = (sequelize, Sequelize) => {
       permanent_date: {
         type: Sequelize.STRING
       },
+      work_schedule_type: {
+        type: Sequelize.STRING,
+        defaultValue: 'office_8h',
+      },
+      cycle_start_date: {
+        type: Sequelize.STRING,
+      },
+      cycle_work_days: {
+        type: Sequelize.INTEGER,
+        defaultValue: 22,
+      },
+      cycle_rest_days: {
+        type: Sequelize.INTEGER,
+        defaultValue: 8,
+      },
+      daily_work_hours: {
+        type: Sequelize.DECIMAL(4, 2),
+        defaultValue: 8,
+      },
+      extended_cycle: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
+      },
       phone_verified: {
         type: Sequelize.BOOLEAN,
         defaultValue: false, // Default: phone is not verified
