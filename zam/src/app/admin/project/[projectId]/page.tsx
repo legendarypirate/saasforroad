@@ -35,6 +35,8 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import TaskKanban from '@/components/TaskKanban';
+import ProjectPhasesTab, { type ProjectPhase } from '@/components/ProjectPhasesTab';
+import ProjectEquipmentTab from '@/components/ProjectEquipmentTab';
 import StaffAvatarGroup, {
   buildMembersFromProject,
   buildBrigadeMembers,
@@ -73,6 +75,7 @@ interface ProjectDetail {
     position?: string;
     invite?: { inviteStatus?: string; role?: string };
   }>;
+  phases?: ProjectPhase[];
 }
 
 interface UserOption {
@@ -92,15 +95,6 @@ const statusConfig: Record<number, { label: string; color: string }> = {
   2: { label: 'Явагдаж буй', color: 'orange' },
   3: { label: 'Дууссан', color: 'green' },
 };
-
-const ROAD_PHASES = [
-  'Газар шалгалт',
-  'Дөвөн хөөрөлт',
-  'Хөөх ажил',
-  'Асфальт',
-  'Тэмдэглэгээ',
-  'Хүлээлгэн өгөх',
-];
 
 const BRIGADE_ROLES = [
   { value: 'Инженер', label: 'Инженер' },
@@ -445,51 +439,22 @@ export default function ProjectDetailPage() {
               ),
             },
             {
+              key: 'phases',
+              label: 'Үе шатууд',
+              children: (
+                <ProjectPhasesTab
+                  projectId={projectId}
+                  initialPhases={project.phases}
+                  onPhasesChange={fetchProject}
+                />
+              ),
+            },
+            {
               key: 'overview',
               label: 'Тойм',
               children: (
                 <Row gutter={[24, 24]}>
-                  <Col xs={24} md={12}>
-                    <div
-                      style={{
-                        border: '1px solid #e2e8f0',
-                        borderRadius: 12,
-                        padding: 24,
-                        height: '100%',
-                      }}
-                    >
-                      <Title level={5} style={{ marginTop: 0 }}>
-                        Зам барилгын үе шатууд
-                      </Title>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        {ROAD_PHASES.map((phase, idx) => {
-                          const phaseProgress = Math.min(
-                            100,
-                            Math.max(0, ((stats?.completionPercent ?? 0) - idx * (100 / ROAD_PHASES.length)) * (ROAD_PHASES.length / 100) * 100)
-                          );
-                          const isDone = (stats?.completionPercent ?? 0) >= ((idx + 1) / ROAD_PHASES.length) * 100;
-                          const isActive = !isDone && (stats?.completionPercent ?? 0) >= (idx / ROAD_PHASES.length) * 100;
-                          return (
-                            <div key={phase}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                <Text strong={isActive}>{phase}</Text>
-                                <Tag color={isDone ? 'green' : isActive ? 'orange' : 'default'}>
-                                  {isDone ? 'Дууссан' : isActive ? 'Явагдаж буй' : 'Хүлээгдэж буй'}
-                                </Tag>
-                              </div>
-                              <Progress
-                                percent={isDone ? 100 : isActive ? Math.round(phaseProgress) : 0}
-                                showInfo={false}
-                                strokeColor={isDone ? '#52c41a' : isActive ? '#fa8c16' : '#d9d9d9'}
-                                size="small"
-                              />
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </Col>
-                  <Col xs={24} md={12}>
+                  <Col xs={24}>
                     <div
                       style={{
                         border: '1px solid #e2e8f0',
@@ -541,6 +506,11 @@ export default function ProjectDetailPage() {
                   </Col>
                 </Row>
               ),
+            },
+            {
+              key: 'equipment',
+              label: 'Тоног төхөөрөмж',
+              children: <ProjectEquipmentTab projectId={projectId} />,
             },
             {
               key: 'team',

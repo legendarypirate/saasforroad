@@ -126,6 +126,16 @@ exports.findOne = async (req, res) => {
           through: { attributes: ["inviteStatus", "role"] },
           required: false,
         },
+        {
+          model: db.project_phases,
+          as: "phases",
+          required: false,
+          separate: true,
+          order: [
+            ["sort_order", "ASC"],
+            ["start_date", "ASC"],
+          ],
+        },
       ],
     });
     if (!project) {

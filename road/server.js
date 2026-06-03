@@ -26,6 +26,8 @@ function registerRoutes() {
   require("./app/routes/stock.routes")(app);
   require("./app/routes/supplier.routes")(app);
   require("./app/routes/milestone.routes")(app);
+  require("./app/routes/project_phase.routes")(app);
+  require("./app/routes/project_equipment.routes")(app);
   require("./app/routes/age.routes")(app);
   require("./app/routes/doctor.routes")(app);
   require("./app/routes/info.routes")(app);

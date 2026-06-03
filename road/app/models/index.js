@@ -40,6 +40,9 @@ db.users = require("./user.model.js")(sequelize, Sequelize);
 db.words = require("./word.model.js")(sequelize, Sequelize);
 db.tasks = require("./task.model.js")(sequelize, Sequelize);
 db.milestones = require("./milestone.model.js")(sequelize, Sequelize);
+db.project_phases = require("./project_phase.model.js")(sequelize, Sequelize);
+db.project_equipment = require("./project_equipment.model.js")(sequelize, Sequelize);
+db.equipment_oil_changes = require("./equipment_oil_change.model.js")(sequelize, Sequelize);
 db.accidents = require("./accident.model.js")(sequelize, Sequelize);
 db.angilals = require("./angilal.model.js")(sequelize, Sequelize);
 db.materials = require("./material.model.js")(sequelize, Sequelize);
@@ -181,6 +184,21 @@ db.projects.hasMany(db.invites, { foreignKey: "projectId" });
 
 db.tasks.belongsTo(db.projects, { foreignKey: "project_id" });
 db.projects.hasMany(db.tasks, { foreignKey: "project_id" });
+
+db.project_phases.belongsTo(db.projects, { foreignKey: "project_id" });
+db.projects.hasMany(db.project_phases, { foreignKey: "project_id", as: "phases" });
+
+db.project_equipment.belongsTo(db.projects, { foreignKey: "project_id" });
+db.projects.hasMany(db.project_equipment, { foreignKey: "project_id", as: "equipment" });
+
+db.equipment_oil_changes.belongsTo(db.project_equipment, {
+  foreignKey: "equipment_id",
+  onDelete: "CASCADE",
+});
+db.project_equipment.hasMany(db.equipment_oil_changes, {
+  foreignKey: "equipment_id",
+  as: "oilChanges",
+});
 
 db.tasks.belongsTo(db.milestones, { foreignKey: "milestone_id" });
 db.milestones.hasMany(db.tasks, { foreignKey: "milestone_id" });
