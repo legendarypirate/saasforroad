@@ -15,6 +15,9 @@ module.exports = app => {
     // Update an Invite with id
     router.patch("/:id", invite.update);
     
+    // Delete a project member (by userId + projectId)
+    router.delete("/member", invite.removeMember);
+
     // Delete an Invite with id
     router.delete("/:id", invite.delete);
     

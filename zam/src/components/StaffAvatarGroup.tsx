@@ -10,6 +10,8 @@ export interface StaffMember {
   email?: string | null;
   inviteId?: number;
   inviteStatus?: string;
+  userId?: number;
+  projectId?: number;
 }
 
 const AVATAR_COLORS = ['#1890ff', '#52c41a', '#722ed1', '#fa8c16', '#eb2f96', '#13c2c2', '#2f54eb', '#a0d911'];
@@ -97,14 +99,14 @@ export function buildBrigadeMembers(
     username?: string;
     email?: string;
     position?: string;
-    invite?: { id?: number; inviteStatus?: string; role?: string };
+    invite?: { inviteStatus?: string; role?: string };
   }>
 ): StaffMember[] {
   return (users ?? []).map((u) => {
     const invite = u.invite;
     return {
       id: u.id,
-      inviteId: invite?.id,
+      userId: u.id,
       inviteStatus: invite?.inviteStatus,
       name: u.username || u.email || `Хэрэглэгч #${u.id}`,
       email: u.email,

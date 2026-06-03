@@ -71,7 +71,7 @@ interface ProjectDetail {
     username?: string;
     email?: string;
     position?: string;
-    invite?: { id?: number; inviteStatus?: string; role?: string };
+    invite?: { inviteStatus?: string; role?: string };
   }>;
 }
 
@@ -254,9 +254,12 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const handleRemoveMember = async (inviteId: number) => {
+  const handleRemoveMember = async (userId: number) => {
     try {
-      const res = await fetch(`${baseUrl}/api/invite/${inviteId}`, { method: 'DELETE' });
+      const res = await fetch(
+        `${baseUrl}/api/invite/member?userId=${userId}&projectId=${projectId}`,
+        { method: 'DELETE' }
+      );
       const result = await res.json();
       if (result.success) {
         message.success('Бригадаас хасагдлаа');
@@ -742,7 +745,7 @@ function TeamMemberCard({
   onRemove,
 }: {
   member: StaffMember;
-  onRemove?: (inviteId: number) => void;
+  onRemove?: (userId: number) => void;
 }) {
   return (
     <div
@@ -773,12 +776,12 @@ function TeamMemberCard({
           </Text>
         )}
       </div>
-      {member.inviteId && onRemove && (
+      {member.userId && onRemove && (
         <Popconfirm
           title="Бригадаас хасах уу?"
           okText="Тийм"
           cancelText="Үгүй"
-          onConfirm={() => onRemove(member.inviteId!)}
+          onConfirm={() => onRemove(member.userId!)}
         >
           <Button
             type="text"

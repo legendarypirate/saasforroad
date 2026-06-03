@@ -165,6 +165,42 @@ exports.update = async (req, res) => {
   }
 };
 
+// Remove member from project brigade by userId + projectId
+exports.removeMember = async (req, res) => {
+  const userId = req.query.userId;
+  const projectId = req.query.projectId;
+
+  if (!userId || !projectId) {
+    return res.status(400).json({
+      success: false,
+      message: "userId and projectId are required",
+    });
+  }
+
+  try {
+    const num = await Invite.destroy({
+      where: { userId, projectId },
+    });
+
+    if (num === 1) {
+      return res.json({
+        success: true,
+        message: "Member removed from project successfully",
+      });
+    }
+
+    return res.status(404).json({
+      success: false,
+      message: "Project member not found",
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Could not remove project member",
+    });
+  }
+};
+
 // Delete an Invite with the specified id in the request
 exports.delete = (req, res) => {
   const id = req.params.id;
