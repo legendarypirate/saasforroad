@@ -67,9 +67,9 @@ exports.getProjectsWithUsers = async (req, res) => {
         include: [
           {
             model: db.users,
-            attributes: ['id', 'username', 'email'],
+            attributes: ['id', 'username', 'email', 'position'],
             through: {
-              attributes: ['inviteStatus', 'role'], // from invite table
+              attributes: ['inviteStatus', 'role'],
             }
           }
         ]
@@ -89,13 +89,24 @@ exports.getProjectsWithUsers = async (req, res) => {
 
  
   
-// Retrieve all Banners from the database.
+// Retrieve all projects (optionally with team members)
 exports.findAll = async (req, res) => {
   const name = req.query.name;
   var condition = name ? { name: { [Op.like]: `%${name}%` } } : null;
 
   try {
-    const data = await Project.findAll({ where: condition });
+    const data = await Project.findAll({
+      where: condition,
+      include: [
+        {
+          model: db.users,
+          attributes: ["id", "username", "email", "position"],
+          through: { attributes: ["inviteStatus", "role"] },
+          required: false,
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
     res.json({ success: true, data: data });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message || "Some error occurred while retrieving banners." });
@@ -107,7 +118,16 @@ exports.findOne = async (req, res) => {
   const id = req.params.id;
 
   try {
-    const project = await Project.findByPk(id);
+    const project = await Project.findByPk(id, {
+      include: [
+        {
+          model: db.users,
+          attributes: ["id", "username", "email", "position"],
+          through: { attributes: ["inviteStatus", "role"] },
+          required: false,
+        },
+      ],
+    });
     if (!project) {
       return res.status(404).json({
         success: false,

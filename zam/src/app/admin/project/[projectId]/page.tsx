@@ -32,6 +32,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import TaskKanban from '@/components/TaskKanban';
+import StaffAvatarGroup, { buildMembersFromProject, StaffAvatar, type StaffMember } from '@/components/StaffAvatarGroup';
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -57,6 +58,13 @@ interface ProjectDetail {
   staff: string;
   createdAt: string;
   stats: ProjectStats;
+  users?: Array<{
+    id: number;
+    username?: string;
+    email?: string;
+    position?: string;
+    invite?: { inviteStatus?: string; role?: string };
+  }>;
 }
 
 interface Milestone {
@@ -151,6 +159,10 @@ export default function ProjectDetailPage() {
 
   const stats = project?.stats;
   const statusInfo = project ? statusConfig[project.status] ?? statusConfig[1] : statusConfig[1];
+  const members = useMemo(
+    () => (project ? buildMembersFromProject(project) : []),
+    [project]
+  );
 
   const progressColor = useMemo(() => {
     if (!stats) return '#1890ff';
@@ -235,6 +247,12 @@ export default function ProjectDetailPage() {
                     {project.purpose}
                   </Paragraph>
                 )}
+                <div style={{ marginTop: 12 }}>
+                  <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, display: 'block', marginBottom: 8 }}>
+                    Ажиллаж буй хүмүүс ({members.length})
+                  </Text>
+                  <StaffAvatarGroup members={members} maxCount={8} size={40} showEmpty />
+                </div>
               </Space>
             </Col>
 
@@ -417,6 +435,25 @@ export default function ProjectDetailPage() {
               ),
             },
             {
+              key: 'team',
+              label: `Бригад (${members.length})`,
+              children: (
+                <Row gutter={[16, 16]}>
+                  {members.length === 0 ? (
+                    <Col span={24}>
+                      <Text type="secondary">Энэ төсөлд бүртгэгдсэн ажилтан байхгүй байна.</Text>
+                    </Col>
+                  ) : (
+                    members.map((member) => (
+                      <Col xs={24} sm={12} md={8} lg={6} key={member.id}>
+                        <TeamMemberCard member={member} />
+                      </Col>
+                    ))
+                  )}
+                </Row>
+              ),
+            },
+            {
               key: 'info',
               label: 'Мэдээлэл',
               children: (
@@ -516,6 +553,39 @@ export default function ProjectDetailPage() {
           </Form.Item>
         </Form>
       </Drawer>
+    </div>
+  );
+}
+
+function TeamMemberCard({ member }: { member: StaffMember }) {
+  return (
+    <div
+      style={{
+        border: '1px solid #e2e8f0',
+        borderRadius: 12,
+        padding: 20,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 14,
+        height: '100%',
+      }}
+    >
+      <StaffAvatar name={member.name} size={48} />
+      <div style={{ minWidth: 0 }}>
+        <Text strong style={{ display: 'block' }}>
+          {member.name}
+        </Text>
+        {member.role && (
+          <Tag color="blue" style={{ marginTop: 4 }}>
+            {member.role}
+          </Tag>
+        )}
+        {member.email && (
+          <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
+            {member.email}
+          </Text>
+        )}
+      </div>
     </div>
   );
 }

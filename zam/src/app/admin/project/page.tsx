@@ -32,6 +32,7 @@ import {
   EnvironmentOutlined,
   RightOutlined,
 } from '@ant-design/icons';
+import StaffAvatarGroup, { buildMembersFromProject } from '@/components/StaffAvatarGroup';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -47,6 +48,13 @@ interface Project {
   status: number;
   staff: string;
   createdAt: string;
+  users?: Array<{
+    id: number;
+    username?: string;
+    email?: string;
+    position?: string;
+    invite?: { inviteStatus?: string; role?: string };
+  }>;
 }
 
 interface TaskSummary {
@@ -204,6 +212,7 @@ export default function ProjectPage() {
           const stats = project.id ? taskStats[project.id] : undefined;
           const percent = stats && stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
           const progressColor = percent >= 80 ? '#52c41a' : percent >= 40 ? '#faad14' : '#1890ff';
+          const members = buildMembersFromProject(project);
 
           return (
             <Col key={project.id} xs={24} sm={12} lg={8} xl={6}>
@@ -257,9 +266,18 @@ export default function ProjectPage() {
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>
+                        Ажиллаж буй хүмүүс
+                      </Text>
+                      <StaffAvatarGroup members={members} maxCount={4} size={32} showEmpty />
+                    </div>
                     <Text type="danger" strong style={{ fontSize: 13 }}>
                       {Number(project.budget).toLocaleString()}₮
                     </Text>
+                  </div>
+
+                  <div style={{ textAlign: 'right' }}>
                     <Text type="secondary" style={{ fontSize: 12 }}>
                       Дэлгэрэнгүй <RightOutlined />
                     </Text>
