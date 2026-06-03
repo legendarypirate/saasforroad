@@ -74,11 +74,21 @@ async function ensureUserProfileColumns(sequelize, UserModel) {
   }
 }
 
+async function ensurePostGIS(sequelize) {
+  try {
+    await sequelize.query("CREATE EXTENSION IF NOT EXISTS postgis;");
+    console.log("PostGIS extension ready (optional).");
+  } catch (err) {
+    console.warn("PostGIS not available — geo features use TEXT fallback:", err.message);
+  }
+}
+
 async function ensureSchema(sequelize, UserModel) {
   if (!UserModel) {
     throw new Error("User model is required for ensureSchema");
   }
+  await ensurePostGIS(sequelize);
   await ensureUserProfileColumns(sequelize, UserModel);
 }
 
-module.exports = { ensureSchema, ensureUserProfileColumns, resolveTableName, resolveExistingUserTable };
+module.exports = { ensureSchema, ensureUserProfileColumns, ensurePostGIS, resolveTableName, resolveExistingUserTable };

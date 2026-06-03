@@ -68,8 +68,8 @@ function registerRoutes() {
 
 async function start() {
   try {
-    await db.sequelize.sync();
     await ensureSchema(db.sequelize, db.users);
+    await db.sequelize.sync();
     await seedPermissionsAndRoles();
     console.log("Synced db.");
 

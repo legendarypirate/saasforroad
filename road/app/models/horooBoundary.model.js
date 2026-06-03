@@ -5,9 +5,11 @@ module.exports = (sequelize, Sequelize) => {
       allowNull: false
     },
     geom: {
-      type: Sequelize.GEOMETRY("POLYGON", 4326), // маш хүчирхэг spatial талбар
-      allowNull: false
-    }
+      // GeoJSON string; avoids hard dependency on PostGIS for server startup.
+      // Enable PostGIS later if native spatial queries are needed.
+      type: Sequelize.TEXT,
+      allowNull: true,
+    },
   });
 
   return HorooBoundary;
