@@ -1,106 +1,200 @@
 'use client';
 
+import React, { useEffect, useMemo, useState } from 'react';
+import type { EventClickArg, EventInput } from '@fullcalendar/core';
+import { Card, Modal, Spin, Tag, Typography } from 'antd';
+import { CalendarOutlined } from '@ant-design/icons';
+import StyledFullCalendar, {
+  taskPriorityClass,
+  taskPriorityColor,
+} from '@/components/StyledFullCalendar';
 
-import React, { useEffect, useState } from 'react';
-import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
-import { EventClickArg } from '@fullcalendar/core';
-import { Modal } from 'antd';
+const { Title, Text } = Typography;
+const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
-type CalendarEvent = {
-  id: string;
-  title: string;
-  start?: string;
-  end?: string;
-  date?: string;
-  extendedProps?: {
-    status?: string;
-    project?: string;
-    milestone?: string;
-    priority?: string;
-  }
-};
+const PRIORITY_LEGEND = [
+  { label: 'Яаралтай', color: '#ef4444' },
+  { label: 'Өндөр', color: '#f97316' },
+  { label: 'Дунд', color: '#3b82f6' },
+  { label: 'Бага', color: '#22c55e' },
+];
 
 const CalendarPage = () => {
-  const [events, setEvents] = useState<CalendarEvent[]>([]);  // <--- энд type-ыг тодорхойллоо
+  const [events, setEvents] = useState<EventInput[]>([]);
+  const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [selectedEvent, setSelectedEvent] = useState<EventClickArg['event'] | null>(null);
 
   useEffect(() => {
     const fetchTasks = async () => {
+      setLoading(true);
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/task`);
+        const res = await fetch(`${baseUrl}/api/task`);
         const json = await res.json();
 
         if (json.success) {
-          const transformed = json.data.map((task: any) => ({
-            id: String(task.id),
-            title: task.name,
-            start: task.createdAt,
-            end: task.due_date,
-            extendedProps: {
-              status: task.status,
-              project: task.project?.name,
-              milestone: task.milestone,
-              priority: task.priority,
-            }
-          }));
+          const transformed = json.data.map((task: {
+            id: number;
+            name: string;
+            createdAt?: string;
+            due_date?: string;
+            priority?: string;
+            status?: string;
+            project?: { name?: string };
+            milestone?: string;
+          }) => {
+            const colors = taskPriorityColor(task.priority);
+            return {
+              id: String(task.id),
+              title: task.name,
+              start: task.createdAt || task.due_date,
+              end: task.due_date,
+              backgroundColor: colors.bg,
+              borderColor: colors.border,
+              textColor: '#fff',
+              classNames: [taskPriorityClass(task.priority), 'project-phase-event'],
+              extendedProps: {
+                status: task.status,
+                project: task.project?.name,
+                milestone: task.milestone,
+                priority: task.priority,
+              },
+            };
+          });
           setEvents(transformed);
         }
       } catch (error) {
         console.error('Error fetching tasks:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchTasks();
   }, []);
 
-  const handleDateClick = (arg: DateClickArg) => {
-    const newEvent: CalendarEvent = {
-      id: String(events.length + 1),
-      title: 'Шинэ үүрэг',
-      date: arg.dateStr,
-    };
-    setEvents([...events, newEvent]);
-  };
+  const taskCount = events.length;
 
-  const handleEventClick = (clickInfo: EventClickArg) => {
-    setSelectedEvent(clickInfo.event);
-    setModalVisible(true);
-  };
+  const modalContent = useMemo(() => {
+    if (!selectedEvent) return null;
+    const props = selectedEvent.extendedProps as Record<string, string>;
+    const priority = props.priority?.toLowerCase();
+    const priorityColor =
+      priority === 'urgent'
+        ? 'red'
+        : priority === 'high'
+          ? 'orange'
+          : priority === 'medium'
+            ? 'blue'
+            : 'green';
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div>
+          <Text type="secondary">Гарчиг</Text>
+          <div>
+            <Text strong style={{ fontSize: 16 }}>
+              {selectedEvent.title}
+            </Text>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+          <div>
+            <Text type="secondary">Эхлэх</Text>
+            <div>
+              <Text>{selectedEvent.startStr || '—'}</Text>
+            </div>
+          </div>
+          <div>
+            <Text type="secondary">Дуусах</Text>
+            <div>
+              <Text>{selectedEvent.endStr || '—'}</Text>
+            </div>
+          </div>
+        </div>
+        {props.project && (
+          <div>
+            <Text type="secondary">Төсөл</Text>
+            <div>
+              <Tag color="blue">{props.project}</Tag>
+            </div>
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {props.status && <Tag>{props.status}</Tag>}
+          {props.priority && <Tag color={priorityColor}>{props.priority}</Tag>}
+          {props.milestone && props.milestone !== 'No milestone' && (
+            <Tag color="purple">{props.milestone}</Tag>
+          )}
+        </div>
+      </div>
+    );
+  }, [selectedEvent]);
 
   return (
-    <>
-      <FullCalendar
-        plugins={[dayGridPlugin, interactionPlugin]}
-        initialView="dayGridMonth"
-        editable={true}
-        selectable={true}
-        events={events}
-        dateClick={handleDateClick}
-        eventClick={handleEventClick}
-      />
+    <div style={{ padding: 8 }}>
+      <Card
+        bordered={false}
+        style={{
+          marginBottom: 20,
+          background: 'linear-gradient(135deg, #1a365d 0%, #2c5282 50%, #d97706 100%)',
+          borderRadius: 16,
+        }}
+        styles={{ body: { padding: '24px 28px' } }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: 14,
+              background: 'rgba(255,255,255,0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <CalendarOutlined style={{ fontSize: 26, color: '#fff' }} />
+          </div>
+          <div>
+            <Title level={3} style={{ color: '#fff', margin: 0 }}>
+              Даалгаврын календарь
+            </Title>
+            <Text style={{ color: 'rgba(255,255,255,0.85)' }}>
+              {loading ? 'Ачааллаж байна...' : `${taskCount} даалгавар хугацаанд`}
+            </Text>
+          </div>
+        </div>
+      </Card>
+
+      <Spin spinning={loading}>
+        <StyledFullCalendar
+          events={events}
+          legend={PRIORITY_LEGEND}
+          subtitle="Даалгавар дээр дарж дэлгэрэнгүй харна"
+          onEventClick={(info) => {
+            setSelectedEvent(info.event);
+            setModalVisible(true);
+          }}
+        />
+      </Spin>
 
       <Modal
-        title="Үүргийн мэдээлэл"
+        title="Даалгаврын мэдээлэл"
         open={modalVisible}
         onCancel={() => setModalVisible(false)}
         onOk={() => setModalVisible(false)}
+        okText="Хаах"
+        cancelButtonProps={{ style: { display: 'none' } }}
+        width={480}
+        styles={{
+          header: { borderBottom: '1px solid #f0f0f0', paddingBottom: 16 },
+          body: { paddingTop: 20 },
+        }}
       >
-        {selectedEvent && (
-          <>
-            <p><strong>Гарчиг:</strong> {selectedEvent.title}</p>
-            <p><strong>Эхлэх огноо:</strong> {selectedEvent.startStr}</p>
-            <p><strong>Дуусах огноо:</strong> {selectedEvent.endStr}</p>
-            <p><strong>Төслийн нэр:</strong> {selectedEvent.extendedProps.project}</p>
-            <p><strong>Шат:</strong> {selectedEvent.extendedProps.milestone}</p>
-            <p><strong>Төлөв:</strong> {selectedEvent.extendedProps.status}</p>
-            <p><strong>Зэрэглэл:</strong> {selectedEvent.extendedProps.priority}</p>
-          </>
-        )}
+        {modalContent}
       </Modal>
-    </>
+    </div>
   );
 };
 

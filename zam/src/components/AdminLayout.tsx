@@ -25,6 +25,7 @@ import {
   BankOutlined,
   SettingOutlined,
   TruckOutlined,
+  ToolOutlined,
   IdcardOutlined,
   ClockCircleOutlined,
   CalculatorOutlined,
@@ -165,6 +166,7 @@ const userMenu = (
   { key: '/admin/accident', icon: <AlertOutlined />, label: 'Ослын дуудлага' },
   { key: '/admin/calendar', icon: <CalendarOutlined />, label: 'Календар' },
   { key: '/admin/project', icon: <ProjectOutlined />, label: 'Төслүүд' },
+  { key: '/admin/equipment', icon: <ToolOutlined />, label: 'Тоног төхөөрөмж' },
   { key: '/admin/task', icon: <OrderedListOutlined />, label: 'Үүрэг даалгаврууд' },
   {
     key: 'settings',

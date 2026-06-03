@@ -21,9 +21,7 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
-import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import interactionPlugin from '@fullcalendar/interaction';
+import StyledFullCalendar from '@/components/StyledFullCalendar';
 import dayjs, { Dayjs } from 'dayjs';
 
 const { Title, Text } = Typography;
@@ -568,22 +566,20 @@ export default function AttendanceCalculationPage() {
                 )}
 
                 <Card loading={loadingCalendar} title={`${monthStr} — ирцийн календар`}>
-                  <Space style={{ marginBottom: 12 }} wrap>
-                    <Tag color="success">Ногоон — бүрэн</Tag>
-                    <Tag color="error">Улаан — тасалсан</Tag>
-                    <Tag color="warning">Шар — дутуу</Tag>
-                    <Tag color="processing">Цэнхэр — ажиллаж байна</Tag>
-                    <Tag color="default">Саарал — амралт</Tag>
-                    <Tag color="purple">Нил — амралтын өдөр ажилласан</Tag>
-                  </Space>
-                  <FullCalendar
-                    plugins={[dayGridPlugin, interactionPlugin]}
-                    initialView="dayGridMonth"
-                    initialDate={selectedMonth.format('YYYY-MM-DD')}
-                    headerToolbar={{ left: 'title', center: '', right: '' }}
-                    height="auto"
+                  <StyledFullCalendar
                     events={calendarEvents}
-                    locale="mn"
+                    initialDate={selectedMonth.format('YYYY-MM-DD')}
+                    headerToolbar={{ left: '', center: 'title', right: '' }}
+                    dayMaxEvents={false}
+                    legend={[
+                      { label: 'Бүрэн ирц', color: '#52c41a' },
+                      { label: 'Тасалсан', color: '#ff4d4f' },
+                      { label: 'Дутуу', color: '#faad14' },
+                      { label: 'Ажиллаж буй', color: '#1890ff' },
+                      { label: 'Амралт', color: '#d9d9d9' },
+                      { label: 'Амралтын өдөр ажилласан', color: '#722ed1' },
+                    ]}
+                    subtitle="Өдөр бүрийн ирцийн төлөв"
                   />
                 </Card>
 

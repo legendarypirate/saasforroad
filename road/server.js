@@ -27,6 +27,7 @@ function registerRoutes() {
   require("./app/routes/supplier.routes")(app);
   require("./app/routes/milestone.routes")(app);
   require("./app/routes/project_phase.routes")(app);
+  require("./app/routes/equipment.routes")(app);
   require("./app/routes/project_equipment.routes")(app);
   require("./app/routes/age.routes")(app);
   require("./app/routes/doctor.routes")(app);
@@ -72,6 +73,8 @@ async function start() {
   try {
     await ensureSchema(db.sequelize, db.users);
     await db.sequelize.sync();
+    const { migrateLegacyEquipment } = require("./app/utils/migrateEquipment");
+    await migrateLegacyEquipment(db.sequelize, db);
     await seedPermissionsAndRoles();
     console.log("Synced db.");
 

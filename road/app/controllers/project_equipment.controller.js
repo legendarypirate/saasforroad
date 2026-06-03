@@ -1,230 +1,107 @@
-const fs = require("fs");
-const path = require("path");
 const db = require("../models");
-const ProjectEquipment = db.project_equipment;
+const Equipment = db.equipments;
+const ProjectEquipmentLink = db.project_equipment_links;
 const EquipmentOilChange = db.equipment_oil_changes;
-const multer = require("multer");
 
-const equipmentDir = path.join("app", "assets", "equipment");
-if (!fs.existsSync(equipmentDir)) {
-  fs.mkdirSync(equipmentDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, equipmentDir),
-  filename: (_req, file, cb) => {
-    cb(null, `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`);
+const equipmentInclude = [
+  {
+    model: EquipmentOilChange,
+    as: "oilChanges",
+    separate: true,
+    order: [["changed_at", "DESC"]],
   },
-});
+];
 
-const uploadImages = multer({ storage }).fields([
-  { name: "photo_front", maxCount: 1 },
-  { name: "photo_back", maxCount: 1 },
-  { name: "photo_left", maxCount: 1 },
-  { name: "photo_right", maxCount: 1 },
-  { name: "certificate_image", maxCount: 1 },
-]);
-
-function filePath(file) {
-  return file ? `equipment/${file.filename}` : null;
-}
-
-function applyUploadedFiles(body, files) {
-  if (!files) return body;
-  const map = {
-    photo_front: files.photo_front,
-    photo_back: files.photo_back,
-    photo_left: files.photo_left,
-    photo_right: files.photo_right,
-    certificate_image: files.certificate_image,
-  };
-  Object.entries(map).forEach(([key, arr]) => {
-    if (arr && arr[0]) body[key] = filePath(arr[0]);
-  });
-  return body;
-}
-
-exports.findAll = async (req, res) => {
+exports.findByProject = async (req, res) => {
   const project_id = req.query.project_id;
   if (!project_id) {
     return res.status(400).json({ success: false, message: "project_id is required" });
   }
 
   try {
-    const data = await ProjectEquipment.findAll({
+    const links = await ProjectEquipmentLink.findAll({
       where: { project_id },
       include: [
         {
-          model: EquipmentOilChange,
-          as: "oilChanges",
-          separate: true,
-          order: [["changed_at", "DESC"]],
+          model: Equipment,
+          include: equipmentInclude,
         },
       ],
       order: [["createdAt", "DESC"]],
     });
+
+    const data = links.map((link) => {
+      const eq = link.equipment ? link.equipment.toJSON() : null;
+      return eq
+        ? {
+            ...eq,
+            link_id: link.id,
+            project_id: Number(project_id),
+          }
+        : null;
+    }).filter(Boolean);
+
     res.json({ success: true, data });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-exports.findOne = async (req, res) => {
-  try {
-    const item = await ProjectEquipment.findByPk(req.params.id, {
-      include: [{ model: EquipmentOilChange, as: "oilChanges", order: [["changed_at", "DESC"]] }],
+exports.assign = async (req, res) => {
+  const { project_id, equipment_id } = req.body;
+
+  if (!project_id || !equipment_id) {
+    return res.status(400).json({
+      success: false,
+      message: "project_id and equipment_id are required",
     });
-    if (!item) {
-      return res.status(404).json({ success: false, message: "Equipment not found" });
-    }
-    res.json({ success: true, data: item });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-exports.create = (req, res) => {
-  uploadImages(req, res, async (err) => {
-    if (err) {
-      return res.status(500).json({ success: false, message: err.message });
-    }
-
-    const { project_id, name, model, registration_number, motor_hours, notes } = req.body;
-    if (!project_id || !name) {
-      return res.status(400).json({ success: false, message: "project_id and name are required" });
-    }
-
-    try {
-      const payload = applyUploadedFiles(
-        {
-          project_id,
-          name,
-          model: model || null,
-          registration_number: registration_number || null,
-          motor_hours: motor_hours ?? 0,
-          notes: notes || null,
-        },
-        req.files
-      );
-
-      const data = await ProjectEquipment.create(payload);
-      res.json({ success: true, data });
-    } catch (e) {
-      res.status(500).json({ success: false, message: e.message });
-    }
-  });
-};
-
-exports.update = (req, res) => {
-  uploadImages(req, res, async (err) => {
-    if (err) {
-      return res.status(500).json({ success: false, message: err.message });
-    }
-
-    try {
-      const item = await ProjectEquipment.findByPk(req.params.id);
-      if (!item) {
-        return res.status(404).json({ success: false, message: "Equipment not found" });
-      }
-
-      const updates = applyUploadedFiles({}, req.files);
-      const fields = [
-        "name",
-        "model",
-        "registration_number",
-        "motor_hours",
-        "notes",
-        "photo_front",
-        "photo_back",
-        "photo_left",
-        "photo_right",
-        "certificate_image",
-      ];
-      fields.forEach((f) => {
-        if (req.body[f] !== undefined && req.body[f] !== "") {
-          updates[f] = req.body[f];
-        }
-      });
-      if (updates.motor_hours !== undefined) {
-        updates.motor_hours = Number(updates.motor_hours);
-      }
-
-      await item.update(updates);
-      res.json({ success: true, data: item });
-    } catch (e) {
-      res.status(500).json({ success: false, message: e.message });
-    }
-  });
-};
-
-exports.delete = async (req, res) => {
-  try {
-    await EquipmentOilChange.destroy({ where: { equipment_id: req.params.id } });
-    const num = await ProjectEquipment.destroy({ where: { id: req.params.id } });
-    if (num === 1) {
-      return res.json({ success: true, message: "Equipment deleted" });
-    }
-    return res.status(404).json({ success: false, message: "Equipment not found" });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-// Oil change history per equipment
-exports.listOilChanges = async (req, res) => {
-  try {
-    const data = await EquipmentOilChange.findAll({
-      where: { equipment_id: req.params.id },
-      order: [["changed_at", "DESC"]],
-    });
-    res.json({ success: true, data });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-exports.createOilChange = async (req, res) => {
-  const equipment_id = req.params.id;
-  const { changed_at, oil_type, motor_hours_at_change, quantity_liters, notes, changed_by } =
-    req.body;
-
-  if (!changed_at) {
-    return res.status(400).json({ success: false, message: "changed_at is required" });
   }
 
   try {
-    const equipment = await ProjectEquipment.findByPk(equipment_id);
+    const equipment = await Equipment.findByPk(equipment_id);
     if (!equipment) {
       return res.status(404).json({ success: false, message: "Equipment not found" });
     }
 
-    const record = await EquipmentOilChange.create({
-      equipment_id,
-      changed_at,
-      oil_type: oil_type || null,
-      motor_hours_at_change: motor_hours_at_change ?? null,
-      quantity_liters: quantity_liters ?? null,
-      notes: notes || null,
-      changed_by: changed_by || null,
+    const [link, created] = await ProjectEquipmentLink.findOrCreate({
+      where: { project_id, equipment_id },
+      defaults: { project_id, equipment_id },
     });
 
-    if (motor_hours_at_change !== undefined && motor_hours_at_change !== null) {
-      await equipment.update({ motor_hours: motor_hours_at_change });
+    if (!created) {
+      return res.json({
+        success: true,
+        message: "Already assigned to this project",
+        data: link,
+      });
     }
 
-    res.json({ success: true, data: record });
+    res.json({ success: true, message: "Equipment assigned to project", data: link });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-exports.deleteOilChange = async (req, res) => {
+exports.unassign = async (req, res) => {
+  const project_id = req.query.project_id;
+  const equipment_id = req.query.equipment_id;
+
+  if (!project_id || !equipment_id) {
+    return res.status(400).json({
+      success: false,
+      message: "project_id and equipment_id are required",
+    });
+  }
+
   try {
-    const num = await EquipmentOilChange.destroy({ where: { id: req.params.oilId } });
+    const num = await ProjectEquipmentLink.destroy({
+      where: { project_id, equipment_id },
+    });
+
     if (num === 1) {
-      return res.json({ success: true, message: "Oil change record deleted" });
+      return res.json({ success: true, message: "Equipment removed from project" });
     }
-    return res.status(404).json({ success: false, message: "Record not found" });
+    return res.status(404).json({ success: false, message: "Assignment not found" });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

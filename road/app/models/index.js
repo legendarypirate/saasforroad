@@ -41,7 +41,8 @@ db.words = require("./word.model.js")(sequelize, Sequelize);
 db.tasks = require("./task.model.js")(sequelize, Sequelize);
 db.milestones = require("./milestone.model.js")(sequelize, Sequelize);
 db.project_phases = require("./project_phase.model.js")(sequelize, Sequelize);
-db.project_equipment = require("./project_equipment.model.js")(sequelize, Sequelize);
+db.equipments = require("./equipment.model.js")(sequelize, Sequelize);
+db.project_equipment_links = require("./project_equipment_link.model.js")(sequelize, Sequelize);
 db.equipment_oil_changes = require("./equipment_oil_change.model.js")(sequelize, Sequelize);
 db.accidents = require("./accident.model.js")(sequelize, Sequelize);
 db.angilals = require("./angilal.model.js")(sequelize, Sequelize);
@@ -188,14 +189,26 @@ db.projects.hasMany(db.tasks, { foreignKey: "project_id" });
 db.project_phases.belongsTo(db.projects, { foreignKey: "project_id" });
 db.projects.hasMany(db.project_phases, { foreignKey: "project_id", as: "phases" });
 
-db.project_equipment.belongsTo(db.projects, { foreignKey: "project_id" });
-db.projects.hasMany(db.project_equipment, { foreignKey: "project_id", as: "projectEquipment" });
+db.project_equipment_links.belongsTo(db.projects, { foreignKey: "project_id" });
+db.project_equipment_links.belongsTo(db.equipments, { foreignKey: "equipment_id", as: "equipment" });
+db.projects.hasMany(db.project_equipment_links, { foreignKey: "project_id" });
+db.equipments.hasMany(db.project_equipment_links, { foreignKey: "equipment_id" });
 
-db.equipment_oil_changes.belongsTo(db.project_equipment, {
-  foreignKey: "equipment_id",
-  onDelete: "CASCADE",
+db.projects.belongsToMany(db.equipments, {
+  through: db.project_equipment_links,
+  foreignKey: "project_id",
+  otherKey: "equipment_id",
+  as: "assignedEquipment",
 });
-db.project_equipment.hasMany(db.equipment_oil_changes, {
+db.equipments.belongsToMany(db.projects, {
+  through: db.project_equipment_links,
+  foreignKey: "equipment_id",
+  otherKey: "project_id",
+  as: "projects",
+});
+
+db.equipment_oil_changes.belongsTo(db.equipments, { foreignKey: "equipment_id", onDelete: "CASCADE" });
+db.equipments.hasMany(db.equipment_oil_changes, {
   foreignKey: "equipment_id",
   as: "oilChanges",
 });

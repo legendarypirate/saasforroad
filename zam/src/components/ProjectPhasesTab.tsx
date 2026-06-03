@@ -1,9 +1,6 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import interactionPlugin from '@fullcalendar/interaction';
 import type { EventInput } from '@fullcalendar/core';
 import {
   Button,
@@ -24,6 +21,7 @@ import {
 } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
+import StyledFullCalendar from '@/components/StyledFullCalendar';
 
 const { Title, Text } = Typography;
 const baseUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -85,6 +83,11 @@ export default function ProjectPhasesTab({
       setPhases(initialPhases);
     }
   }, [initialPhases]);
+
+  const phaseLegend = useMemo(
+    () => phases.map((p) => ({ label: p.name, color: p.color || '#1890ff' })),
+    [phases]
+  );
 
   const calendarEvents: EventInput[] = useMemo(
     () =>
@@ -184,53 +187,6 @@ export default function ProjectPhasesTab({
 
   return (
     <Spin spinning={loading}>
-      <style>{`
-        .project-phase-event {
-          min-height: 28px !important;
-          font-weight: 600 !important;
-          font-size: 12px !important;
-          border-radius: 6px !important;
-          padding: 4px 8px !important;
-          margin-bottom: 2px !important;
-        }
-        .phases-calendar-wrap .fc-daygrid-event {
-          white-space: normal;
-        }
-        .phase-gantt-row {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin-bottom: 10px;
-        }
-        .phase-gantt-label {
-          width: 140px;
-          flex-shrink: 0;
-          font-size: 13px;
-          font-weight: 600;
-        }
-        .phase-gantt-track {
-          flex: 1;
-          height: 32px;
-          background: #f1f5f9;
-          border-radius: 8px;
-          position: relative;
-          overflow: hidden;
-        }
-        .phase-gantt-bar {
-          position: absolute;
-          top: 4px;
-          height: 24px;
-          border-radius: 6px;
-          display: flex;
-          align-items: center;
-          padding: 0 10px;
-          color: #fff;
-          font-size: 12px;
-          font-weight: 600;
-          min-width: 4%;
-        }
-      `}</style>
-
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>
           <Title level={5} style={{ margin: 0 }}>
@@ -247,38 +203,16 @@ export default function ProjectPhasesTab({
 
       {phases.length > 0 && (
         <>
-          <div
-            className="phases-calendar-wrap"
-            style={{
-              border: '1px solid #e2e8f0',
-              borderRadius: 12,
-              padding: 16,
-              marginBottom: 24,
-              background: '#fff',
+          <StyledFullCalendar
+            events={calendarEvents}
+            title="Календарь"
+            subtitle="Үе шатууд өнгөт шугамаар — дарж засварлана"
+            legend={phaseLegend}
+            onEventClick={(info) => {
+              const phase = info.event.extendedProps as ProjectPhase;
+              if (phase?.id) openEditDrawer(phase);
             }}
-          >
-            <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
-              Календарь — үе шатууд өнгөт шугамаар
-            </Text>
-            <FullCalendar
-              plugins={[dayGridPlugin, interactionPlugin]}
-              initialView="dayGridMonth"
-              height="auto"
-              headerToolbar={{
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,dayGridWeek',
-              }}
-              events={calendarEvents}
-              eventDisplay="block"
-              dayMaxEvents={false}
-              moreLinkClick="popover"
-              eventClick={(info) => {
-                const phase = info.event.extendedProps as ProjectPhase;
-                if (phase?.id) openEditDrawer(phase);
-              }}
-            />
-          </div>
+          />
 
           <GanttTimeline phases={phases} />
         </>
@@ -399,35 +333,29 @@ function GanttTimeline({ phases }: { phases: ProjectPhase[] }) {
   }, [phases]);
 
   return (
-    <div
-      style={{
-        border: '1px solid #e2e8f0',
-        borderRadius: 12,
-        padding: 20,
-        background: '#fafbfc',
-      }}
-    >
-      <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-        Хугацааны шугам — {minDate.format('YYYY-MM-DD')} → {maxDate.format('YYYY-MM-DD')}
-      </Text>
+    <div className="styled-gantt-shell" style={{ marginTop: 24 }}>
+      <div className="gantt-title">
+        Хугацааны шугам · {minDate.format('YYYY-MM-DD')} → {maxDate.format('YYYY-MM-DD')}
+      </div>
       {phases.map((phase) => {
         const startOffset = dayjs(phase.start_date).diff(minDate, 'day');
         const duration = dayjs(phase.end_date).diff(dayjs(phase.start_date), 'day') + 1;
         const leftPct = (startOffset / totalDays) * 100;
         const widthPct = Math.max((duration / totalDays) * 100, 3);
+        const color = phase.color || '#1890ff';
 
         return (
-          <div key={phase.id} className="phase-gantt-row">
-            <div className="phase-gantt-label" title={phase.name}>
+          <div key={phase.id} className="styled-gantt-row">
+            <div className="styled-gantt-label" title={phase.name}>
               {phase.name}
             </div>
-            <div className="phase-gantt-track">
+            <div className="styled-gantt-track">
               <div
-                className="phase-gantt-bar"
+                className="styled-gantt-bar"
                 style={{
                   left: `${leftPct}%`,
                   width: `${widthPct}%`,
-                  background: phase.color || '#1890ff',
+                  background: `linear-gradient(135deg, ${color}, ${color}dd)`,
                 }}
               >
                 {phase.completion_percent}%
