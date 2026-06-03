@@ -63,7 +63,7 @@ const equipmentInclude = [
 
 exports.findAll = async (req, res) => {
   const q = req.query.q;
-  const where = q ? { name: { [db.Sequelize.Op.iLike]: `%${q}%` } } } : {};
+  const where = q ? { name: { [db.Sequelize.Op.iLike]: `%${q}%` } } : {};
 
   try {
     const data = await Equipment.findAll({
