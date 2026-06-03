@@ -4,36 +4,48 @@ const Project = db.projects;
 const User = db.users;
 const Op = db.Sequelize.Op;
 
-// Create and Save a new Invite
+// Create and Save a new Invite (add member to project brigade)
 exports.create = async (req, res) => {
-  // Validate request
-  if (!req.body.userId || !req.body.projectId || !req.body.role) {
-    res.status(400).send({
-      message: "Content can not be empty!"
+  if (!req.body.userId || !req.body.projectId) {
+    return res.status(400).json({
+      success: false,
+      message: "userId and projectId are required",
     });
-    return;
   }
 
-  try {
-    // Create an Invite object
-    const invite = {
-      userId: req.body.userId,
-      projectId: req.body.projectId,
-      role: req.body.role,
-      inviteStatus: 'pending', // Default status is pending
-    };
+  const userId = req.body.userId;
+  const projectId = req.body.projectId;
+  const role = req.body.role || "member";
+  const inviteStatus = req.body.inviteStatus || "accepted";
 
-    // Save Invite in the database
-    const data = await Invite.create(invite);
-    res.send({
+  try {
+    const existing = await Invite.findOne({ where: { userId, projectId } });
+
+    if (existing) {
+      await existing.update({ role, inviteStatus });
+      return res.json({
+        success: true,
+        message: "Project member updated successfully",
+        data: existing,
+      });
+    }
+
+    const data = await Invite.create({
+      userId,
+      projectId,
+      role,
+      inviteStatus,
+    });
+
+    res.json({
       success: true,
-      message: "Invite created successfully!",
-      data: data
+      message: "Project member added successfully",
+      data,
     });
   } catch (err) {
-    res.status(500).send({
+    res.status(500).json({
       success: false,
-      message: err.message || "Some error occurred while creating the Invite."
+      message: err.message || "Some error occurred while creating the Invite.",
     });
   }
 };
@@ -162,17 +174,20 @@ exports.delete = (req, res) => {
   })
     .then(num => {
       if (num == 1) {
-        res.send({
+        res.json({
+          success: true,
           message: "Invite was deleted successfully!"
         });
       } else {
-        res.send({
+        res.status(404).json({
+          success: false,
           message: `Cannot delete Invite with id=${id}. Maybe Invite was not found!`
         });
       }
     })
     .catch(err => {
-      res.status(500).send({
+      res.status(500).json({
+        success: false,
         message: "Could not delete Invite with id=" + id
       });
     });

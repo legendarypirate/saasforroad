@@ -69,7 +69,7 @@ exports.getProjectsWithUsers = async (req, res) => {
             model: db.users,
             attributes: ['id', 'username', 'email', 'position'],
             through: {
-              attributes: ['inviteStatus', 'role'],
+              attributes: ['id', 'inviteStatus', 'role'],
             }
           }
         ]
@@ -101,7 +101,7 @@ exports.findAll = async (req, res) => {
         {
           model: db.users,
           attributes: ["id", "username", "email", "position"],
-          through: { attributes: ["inviteStatus", "role"] },
+          through: { attributes: ["id", "inviteStatus", "role"] },
           required: false,
         },
       ],
@@ -123,7 +123,7 @@ exports.findOne = async (req, res) => {
         {
           model: db.users,
           attributes: ["id", "username", "email", "position"],
-          through: { attributes: ["inviteStatus", "role"] },
+          through: { attributes: ["id", "inviteStatus", "role"] },
           required: false,
         },
       ],

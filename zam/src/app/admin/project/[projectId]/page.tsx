@@ -9,6 +9,7 @@ import {
   Drawer,
   Form,
   Input,
+  Popconfirm,
   Progress,
   Row,
   Select,
@@ -28,11 +29,18 @@ import {
   PlusOutlined,
   TeamOutlined,
   ToolOutlined,
+  UserAddOutlined,
   UserOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import TaskKanban from '@/components/TaskKanban';
-import StaffAvatarGroup, { buildMembersFromProject, StaffAvatar, type StaffMember } from '@/components/StaffAvatarGroup';
+import StaffAvatarGroup, {
+  buildMembersFromProject,
+  buildBrigadeMembers,
+  StaffAvatar,
+  type StaffMember,
+} from '@/components/StaffAvatarGroup';
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -63,8 +71,15 @@ interface ProjectDetail {
     username?: string;
     email?: string;
     position?: string;
-    invite?: { inviteStatus?: string; role?: string };
+    invite?: { id?: number; inviteStatus?: string; role?: string };
   }>;
+}
+
+interface UserOption {
+  id: number;
+  username?: string;
+  email?: string;
+  position?: string;
 }
 
 interface Milestone {
@@ -87,6 +102,14 @@ const ROAD_PHASES = [
   'Хүлээлгэн өгөх',
 ];
 
+const BRIGADE_ROLES = [
+  { value: 'Инженер', label: 'Инженер' },
+  { value: 'Оператор', label: 'Оператор' },
+  { value: 'Ажилчин', label: 'Ажилчин' },
+  { value: 'Аюулгүй байдал', label: 'Аюулгүй байдал' },
+  { value: 'member', label: 'Гишүүн' },
+];
+
 export default function ProjectDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -96,7 +119,12 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [taskDrawerOpen, setTaskDrawerOpen] = useState(false);
+  const [memberDrawerOpen, setMemberDrawerOpen] = useState(false);
+  const [allUsers, setAllUsers] = useState<UserOption[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [addingMember, setAddingMember] = useState(false);
   const [taskForm] = Form.useForm();
+  const [memberForm] = Form.useForm();
   const [refreshKey, setRefreshKey] = useState(0);
 
   const fetchProject = useCallback(async () => {
@@ -163,6 +191,83 @@ export default function ProjectDetailPage() {
     () => (project ? buildMembersFromProject(project) : []),
     [project]
   );
+  const brigadeMembers = useMemo(
+    () => (project ? buildBrigadeMembers(project.users) : []),
+    [project]
+  );
+
+  const existingMemberIds = useMemo(
+    () => new Set(brigadeMembers.map((m) => Number(m.id)).filter((id) => !Number.isNaN(id))),
+    [brigadeMembers]
+  );
+
+  const availableUsers = useMemo(
+    () => allUsers.filter((u) => !existingMemberIds.has(u.id)),
+    [allUsers, existingMemberIds]
+  );
+
+  const openMemberDrawer = async () => {
+    setMemberDrawerOpen(true);
+    memberForm.resetFields();
+    memberForm.setFieldsValue({ role: 'Ажилчин' });
+    setUsersLoading(true);
+    try {
+      const res = await fetch(`${baseUrl}/api/user`);
+      const result = await res.json();
+      if (result.success) {
+        setAllUsers(result.data);
+      }
+    } catch {
+      message.error('Хэрэглэгчийн жагсаалт ачаалахад алдаа гарлаа');
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  const handleAddMember = async () => {
+    try {
+      const values = await memberForm.validateFields();
+      setAddingMember(true);
+      const res = await fetch(`${baseUrl}/api/invite`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: values.userId,
+          projectId: Number(projectId),
+          role: values.role,
+          inviteStatus: 'accepted',
+        }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        message.success('Бригадын гишүүн нэмэгдлээ');
+        setMemberDrawerOpen(false);
+        memberForm.resetFields();
+        fetchProject();
+      } else {
+        message.error(result.message || 'Нэмэхэд алдаа гарлаа');
+      }
+    } catch {
+      message.error('Форм бөглөнө үү');
+    } finally {
+      setAddingMember(false);
+    }
+  };
+
+  const handleRemoveMember = async (inviteId: number) => {
+    try {
+      const res = await fetch(`${baseUrl}/api/invite/${inviteId}`, { method: 'DELETE' });
+      const result = await res.json();
+      if (result.success) {
+        message.success('Бригадаас хасагдлаа');
+        fetchProject();
+      } else {
+        message.error(result.message || 'Хасахад алдаа гарлаа');
+      }
+    } catch {
+      message.error('Хасахад алдаа гарлаа');
+    }
+  };
 
   const progressColor = useMemo(() => {
     if (!stats) return '#1890ff';
@@ -436,21 +541,43 @@ export default function ProjectDetailPage() {
             },
             {
               key: 'team',
-              label: `Бригад (${members.length})`,
+              label: `Бригад (${brigadeMembers.length})`,
               children: (
-                <Row gutter={[16, 16]}>
-                  {members.length === 0 ? (
-                    <Col span={24}>
-                      <Text type="secondary">Энэ төсөлд бүртгэгдсэн ажилтан байхгүй байна.</Text>
-                    </Col>
-                  ) : (
-                    members.map((member) => (
-                      <Col xs={24} sm={12} md={8} lg={6} key={member.id}>
-                        <TeamMemberCard member={member} />
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <Text type="secondary">Төсөл дээр ажиллаж буй бригадын гишүүд</Text>
+                    <Button type="primary" icon={<UserAddOutlined />} onClick={openMemberDrawer}>
+                      Хүн нэмэх
+                    </Button>
+                  </div>
+                  <Row gutter={[16, 16]}>
+                    {brigadeMembers.length === 0 ? (
+                      <Col span={24}>
+                        <div
+                          style={{
+                            border: '1px dashed #d9d9d9',
+                            borderRadius: 12,
+                            padding: 40,
+                            textAlign: 'center',
+                          }}
+                        >
+                          <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
+                            Бригадын гишүүн байхгүй байна
+                          </Text>
+                          <Button type="primary" icon={<UserAddOutlined />} onClick={openMemberDrawer}>
+                            Эхний гишүүн нэмэх
+                          </Button>
+                        </div>
                       </Col>
-                    ))
-                  )}
-                </Row>
+                    ) : (
+                      brigadeMembers.map((member) => (
+                        <Col xs={24} sm={12} md={8} lg={6} key={member.id}>
+                          <TeamMemberCard member={member} onRemove={handleRemoveMember} />
+                        </Col>
+                      ))
+                    )}
+                  </Row>
+                </>
               ),
             },
             {
@@ -553,11 +680,70 @@ export default function ProjectDetailPage() {
           </Form.Item>
         </Form>
       </Drawer>
+
+      <Drawer
+        title="Бригадын гишүүн нэмэх"
+        width={440}
+        open={memberDrawerOpen}
+        onClose={() => setMemberDrawerOpen(false)}
+        footer={
+          <div style={{ textAlign: 'right' }}>
+            <Button onClick={() => setMemberDrawerOpen(false)} style={{ marginRight: 8 }}>
+              Болих
+            </Button>
+            <Button type="primary" onClick={handleAddMember} loading={addingMember}>
+              Нэмэх
+            </Button>
+          </div>
+        }
+      >
+        <Form form={memberForm} layout="vertical" initialValues={{ role: 'Ажилчин' }}>
+          <Form.Item
+            label="Хэрэглэгч"
+            name="userId"
+            rules={[{ required: true, message: 'Хэрэглэгч сонгоно уу' }]}
+          >
+            <Select
+              showSearch
+              placeholder="Хэрэглэгч сонгох"
+              loading={usersLoading}
+              optionFilterProp="label"
+              options={availableUsers.map((u) => ({
+                value: u.id,
+                label: u.username || u.email || `Хэрэглэгч #${u.id}`,
+              }))}
+              optionRender={(option) => {
+                const user = availableUsers.find((u) => u.id === option.value);
+                if (!user) return option.label;
+                const name = user.username || user.email || `Хэрэглэгч #${user.id}`;
+                return (
+                  <Space>
+                    <StaffAvatar name={name} size={28} />
+                    <span>
+                      {name}
+                      {user.position ? ` · ${user.position}` : ''}
+                    </span>
+                  </Space>
+                );
+              }}
+            />
+          </Form.Item>
+          <Form.Item label="Үүрэг" name="role" rules={[{ required: true, message: 'Үүрэг сонгоно уу' }]}>
+            <Select options={BRIGADE_ROLES} />
+          </Form.Item>
+        </Form>
+      </Drawer>
     </div>
   );
 }
 
-function TeamMemberCard({ member }: { member: StaffMember }) {
+function TeamMemberCard({
+  member,
+  onRemove,
+}: {
+  member: StaffMember;
+  onRemove?: (inviteId: number) => void;
+}) {
   return (
     <div
       style={{
@@ -568,10 +754,11 @@ function TeamMemberCard({ member }: { member: StaffMember }) {
         alignItems: 'center',
         gap: 14,
         height: '100%',
+        position: 'relative',
       }}
     >
       <StaffAvatar name={member.name} size={48} />
-      <div style={{ minWidth: 0 }}>
+      <div style={{ minWidth: 0, flex: 1 }}>
         <Text strong style={{ display: 'block' }}>
           {member.name}
         </Text>
@@ -586,6 +773,22 @@ function TeamMemberCard({ member }: { member: StaffMember }) {
           </Text>
         )}
       </div>
+      {member.inviteId && onRemove && (
+        <Popconfirm
+          title="Бригадаас хасах уу?"
+          okText="Тийм"
+          cancelText="Үгүй"
+          onConfirm={() => onRemove(member.inviteId!)}
+        >
+          <Button
+            type="text"
+            danger
+            size="small"
+            icon={<DeleteOutlined />}
+            style={{ position: 'absolute', top: 8, right: 8 }}
+          />
+        </Popconfirm>
+      )}
     </div>
   );
 }

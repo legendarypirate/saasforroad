@@ -8,6 +8,8 @@ export interface StaffMember {
   name: string;
   role?: string | null;
   email?: string | null;
+  inviteId?: number;
+  inviteStatus?: string;
 }
 
 const AVATAR_COLORS = ['#1890ff', '#52c41a', '#722ed1', '#fa8c16', '#eb2f96', '#13c2c2', '#2f54eb', '#a0d911'];
@@ -87,6 +89,28 @@ export function buildMembersFromProject(data: {
   }
 
   return members;
+}
+
+export function buildBrigadeMembers(
+  users?: Array<{
+    id: number;
+    username?: string;
+    email?: string;
+    position?: string;
+    invite?: { id?: number; inviteStatus?: string; role?: string };
+  }>
+): StaffMember[] {
+  return (users ?? []).map((u) => {
+    const invite = u.invite;
+    return {
+      id: u.id,
+      inviteId: invite?.id,
+      inviteStatus: invite?.inviteStatus,
+      name: u.username || u.email || `Хэрэглэгч #${u.id}`,
+      email: u.email,
+      role: invite?.role || u.position,
+    };
+  });
 }
 
 export function StaffAvatar({ name, size = 36 }: { name: string; size?: number }) {
