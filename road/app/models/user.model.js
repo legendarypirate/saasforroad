@@ -33,6 +33,36 @@ module.exports = (sequelize, Sequelize) => {
       gender: {
         type: Sequelize.STRING
       },
+      department_number: {
+        type: Sequelize.STRING
+      },
+      personal_case_number: {
+        type: Sequelize.STRING
+      },
+      project_number: {
+        type: Sequelize.STRING
+      },
+      position: {
+        type: Sequelize.STRING
+      },
+      register_number: {
+        type: Sequelize.STRING
+      },
+      sap_number: {
+        type: Sequelize.STRING
+      },
+      social_insurance_years: {
+        type: Sequelize.STRING
+      },
+      driver_license_class: {
+        type: Sequelize.STRING
+      },
+      driver_license_number: {
+        type: Sequelize.STRING
+      },
+      driver_license_expiry: {
+        type: Sequelize.STRING
+      },
       phone_verified: {
         type: Sequelize.BOOLEAN,
         defaultValue: false, // Default: phone is not verified

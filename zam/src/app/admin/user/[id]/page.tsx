@@ -29,6 +29,17 @@ interface UserDetail {
   phone?: string;
   role?: string;
   roleRecord?: { id: number; name: string };
+  gender?: string;
+  department_number?: string;
+  personal_case_number?: string;
+  project_number?: string;
+  position?: string;
+  register_number?: string;
+  sap_number?: string;
+  social_insurance_years?: string;
+  driver_license_class?: string;
+  driver_license_number?: string;
+  driver_license_expiry?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -78,7 +89,9 @@ export default function UserDetailPage() {
   const [actionSaving, setActionSaving] = useState(false);
   const [emergencySaving, setEmergencySaving] = useState(false);
   const [schoolSaving, setSchoolSaving] = useState(false);
+  const [generalSaving, setGeneralSaving] = useState(false);
 
+  const [generalForm] = Form.useForm();
   const [schoolForm] = Form.useForm();
   const [familyForm] = Form.useForm();
   const [emergencyForm] = Form.useForm();
@@ -104,6 +117,21 @@ export default function UserDetailPage() {
 
       const userData = userJson.data ?? userJson;
       setUser(userData || null);
+      if (userData) {
+        generalForm.setFieldsValue({
+          department_number: userData.department_number,
+          personal_case_number: userData.personal_case_number,
+          project_number: userData.project_number,
+          position: userData.position,
+          gender: userData.gender,
+          register_number: userData.register_number,
+          sap_number: userData.sap_number,
+          social_insurance_years: userData.social_insurance_years,
+          driver_license_class: userData.driver_license_class,
+          driver_license_number: userData.driver_license_number,
+          driver_license_expiry: userData.driver_license_expiry,
+        });
+      }
       if (actionJson.success) setActions(actionJson.data || []);
       if (emergencyJson.success) setEmergencies(emergencyJson.data || []);
       if (schoolJson.success) {
@@ -164,7 +192,27 @@ export default function UserDetailPage() {
     },
   ];
 
-  const fakeSave = () => message.success('Хадгаллаа (дараагийн алхам: DB холболт)');
+  const saveGeneralInfo = async () => {
+    if (!userId) return;
+    const values = await generalForm.validateFields();
+    setGeneralSaving(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || 'Хадгалах үед алдаа');
+      message.success('Үндсэн мэдээлэл хадгалагдлаа');
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      message.error('Үндсэн мэдээлэл хадгалахад алдаа гарлаа');
+    } finally {
+      setGeneralSaving(false);
+    }
+  };
 
   const addSchool = async () => {
     const values = await schoolForm.validateFields();
@@ -343,7 +391,7 @@ export default function UserDetailPage() {
       label: 'Үндсэн мэдээлэл',
       children: (
         <Card loading={loading}>
-          <Descriptions column={2} bordered>
+          <Descriptions column={2} bordered style={{ marginBottom: 24 }}>
             <Descriptions.Item label="ID">{user?.id ?? '—'}</Descriptions.Item>
             <Descriptions.Item label="Нэвтрэх нэр">{user?.username || '—'}</Descriptions.Item>
             <Descriptions.Item label="И-мэйл">{user?.email || '—'}</Descriptions.Item>
@@ -352,6 +400,59 @@ export default function UserDetailPage() {
               {user?.roleRecord?.name || user?.role || '—'}
             </Descriptions.Item>
           </Descriptions>
+          <Form form={generalForm} layout="vertical">
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                gap: 16,
+              }}
+            >
+              <Form.Item name="department_number" label="Хэлтсийн дугаар">
+                <Input />
+              </Form.Item>
+              <Form.Item name="personal_case_number" label="Хувийн хэргийн дугаар">
+                <Input />
+              </Form.Item>
+              <Form.Item name="project_number" label="Төслийн дугаар">
+                <Input />
+              </Form.Item>
+              <Form.Item name="position" label="Албан тушаал">
+                <Input />
+              </Form.Item>
+              <Form.Item name="gender" label="Хүйс">
+                <Select
+                  allowClear
+                  placeholder="Сонгох"
+                  options={[
+                    { value: 'male', label: 'Эр' },
+                    { value: 'female', label: 'Эм' },
+                  ]}
+                />
+              </Form.Item>
+              <Form.Item name="register_number" label="Регистрийн дугаар">
+                <Input />
+              </Form.Item>
+              <Form.Item name="sap_number" label="Sap дугаар">
+                <Input />
+              </Form.Item>
+              <Form.Item name="social_insurance_years" label="Нийгмийн даатгал төлсөн жил">
+                <Input />
+              </Form.Item>
+              <Form.Item name="driver_license_class" label="Жолооны үнэмлэхний ангилал">
+                <Input placeholder="B, C, CE..." />
+              </Form.Item>
+              <Form.Item name="driver_license_number" label="Жолооны үнэмлэхний дугаар">
+                <Input />
+              </Form.Item>
+              <Form.Item name="driver_license_expiry" label="Жолоочны үнэмлэхний хүчинтэй огноо">
+                <Input placeholder="YYYY-MM-DD" />
+              </Form.Item>
+            </div>
+            <Button type="primary" loading={generalSaving} onClick={saveGeneralInfo}>
+              Хадгалах
+            </Button>
+          </Form>
         </Card>
       ),
     },

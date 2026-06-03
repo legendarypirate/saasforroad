@@ -97,9 +97,24 @@ exports.update = async (req, res) => {
   const id = req.params.id;
 
   const updateData = {
-    end_date: req.body.end_date ? req.body.end_date : null,
-    is_active: req.body.is_active !== undefined ? req.body.is_active : null,
+    end_date: req.body.end_date !== undefined ? req.body.end_date : undefined,
+    is_active: req.body.is_active !== undefined ? req.body.is_active : undefined,
+    gender: req.body.gender !== undefined ? req.body.gender : undefined,
+    department_number: req.body.department_number !== undefined ? req.body.department_number : undefined,
+    personal_case_number: req.body.personal_case_number !== undefined ? req.body.personal_case_number : undefined,
+    project_number: req.body.project_number !== undefined ? req.body.project_number : undefined,
+    position: req.body.position !== undefined ? req.body.position : undefined,
+    register_number: req.body.register_number !== undefined ? req.body.register_number : undefined,
+    sap_number: req.body.sap_number !== undefined ? req.body.sap_number : undefined,
+    social_insurance_years: req.body.social_insurance_years !== undefined ? req.body.social_insurance_years : undefined,
+    driver_license_class: req.body.driver_license_class !== undefined ? req.body.driver_license_class : undefined,
+    driver_license_number: req.body.driver_license_number !== undefined ? req.body.driver_license_number : undefined,
+    driver_license_expiry: req.body.driver_license_expiry !== undefined ? req.body.driver_license_expiry : undefined,
   };
+
+  Object.keys(updateData).forEach((key) => {
+    if (updateData[key] === undefined) delete updateData[key];
+  });
 
   try {
     if (req.body.role_id) {
