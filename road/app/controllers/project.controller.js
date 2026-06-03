@@ -102,21 +102,59 @@ exports.findAll = async (req, res) => {
   }
 };
 
-// Find a single Banner with an id
-exports.findOne = (req, res) => {
+// Find a single project with tasks and completion stats
+exports.findOne = async (req, res) => {
   const id = req.params.id;
 
-  Doctor.findByPk(id)
-    .then(data => {
-      if (data) {
-        res.json({ success: true, data: data });
-      } else {
-        res.status(404).json({ success: false, message: `Cannot find Banner with id=${id}.` });
-      }
-    })
-    .catch(err => {
-      res.status(500).json({ success: false, message: "Error retrieving Banner with id=" + id });
+  try {
+    const project = await Project.findByPk(id);
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: `Cannot find project with id=${id}.`,
+      });
+    }
+
+    const tasks = await Task.findAll({
+      where: { project_id: id },
+      include: [
+        {
+          model: db.milestones,
+          attributes: ["id", "name"],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
     });
+
+    const total = tasks.length;
+    const completed = tasks.filter((t) => t.status === 3).length;
+    const inProgress = tasks.filter((t) => t.status === 2).length;
+    const todo = tasks.filter((t) => t.status === 0 || t.status === 1).length;
+    const completionPercent = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+    res.json({
+      success: true,
+      data: {
+        ...project.toJSON(),
+        tasks: tasks.map((t) => ({
+          ...t.toJSON(),
+          milestone: t.milestone ? t.milestone.name : null,
+        })),
+        stats: {
+          total,
+          completed,
+          inProgress,
+          todo,
+          completionPercent,
+        },
+      },
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message || "Error retrieving project with id=" + id,
+    });
+  }
 };
 
 exports.total = async (req, res) => {

@@ -1,9 +1,9 @@
-import TaskKanban from "@/components/TaskKanban"; // Adjust path as needed
+import { redirect } from 'next/navigation';
 
 interface PageProps {
   params: { projectId: string };
 }
 
 export default function Page({ params }: PageProps) {
-  return <TaskKanban projectId={params.projectId} />;
+  redirect(`/admin/project/${params.projectId}`);
 }

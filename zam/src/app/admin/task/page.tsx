@@ -179,7 +179,7 @@ export default function TaskTable() {
         <Space>
           <Button
             icon={<EyeOutlined />}
-            onClick={() => router.push(`/admin/project/${record.project_id}/task`)}
+            onClick={() => router.push(`/admin/project/${record.project_id}`)}
           />
         </Space>
       ),

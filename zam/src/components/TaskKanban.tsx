@@ -18,18 +18,15 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
-  Button,
   Card,
   Col,
   Dropdown,
-  Menu,
   Row,
   Tag,
   Typography,
-  Tooltip,
-  Avatar,
+  Spin,
 } from "antd";
 import { CalendarOutlined, MoreOutlined } from "@ant-design/icons";
 import toast from "react-hot-toast";
@@ -41,7 +38,7 @@ type Status = "todo" | "in-progress" | "done";
 interface Task {
   id: number;
   name: string;
-  location?: string;
+  detail?: string;
   due_date: string;
   priority: string;
   milestone: string;
@@ -65,36 +62,65 @@ const statusKeyToNumber: Record<Status, number> = {
   done: 3,
 };
 
-export default function TaskKanban({ projectId }: { projectId: string }) {
+const columnLabels: Record<Status, string> = {
+  todo: "Хүлээгдэж буй",
+  "in-progress": "Явагдаж буй",
+  done: "Дууссан",
+};
+
+const columnColors: Record<Status, string> = {
+  todo: "#1890ff",
+  "in-progress": "#faad14",
+  done: "#52c41a",
+};
+
+interface TaskKanbanProps {
+  projectId: string;
+  onTasksChange?: () => void;
+}
+
+export default function TaskKanban({ projectId, onTasksChange }: TaskKanbanProps) {
   const [columns, setColumns] = useState<Columns>({
     todo: [],
     "in-progress": [],
     done: [],
   });
   const [activeItem, setActiveItem] = useState<Task | null>(null);
+  const [loading, setLoading] = useState(true);
   const sensors = useSensors(useSensor(PointerSensor));
 
-  useEffect(() => {
-    fetchTasks();
-  }, [projectId]);
-
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
+    setLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/task`);
+      const url = projectId
+        ? `${process.env.NEXT_PUBLIC_API_URL}/api/task?project_id=${projectId}`
+        : `${process.env.NEXT_PUBLIC_API_URL}/api/task`;
+      const response = await fetch(url);
       const result = await response.json();
 
       if (result.success) {
         const grouped: Columns = { todo: [], "in-progress": [], done: [] };
 
-        result.data.forEach((task: any) => {
-          const key = statusLabelToKey[task.status] || "todo";
+        result.data.forEach((task: {
+          id: number;
+          name: string;
+          detail?: string;
+          due_date: string;
+          milestone: string;
+          priority: string;
+          status: string | number;
+        }) => {
+          const statusStr = typeof task.status === "number"
+            ? ({ 1: "ToDo", 2: "In Progress", 3: "Completed" }[task.status] ?? "ToDo")
+            : task.status;
+          const key = statusLabelToKey[statusStr] || "todo";
           grouped[key].push({
             id: task.id,
             name: task.name,
+            detail: task.detail,
             due_date: task.due_date,
             milestone: task.milestone,
             priority: task.priority,
-            location: task.project?.name ?? "No location",
             status: key,
           });
         });
@@ -103,9 +129,15 @@ export default function TaskKanban({ projectId }: { projectId: string }) {
       }
     } catch (error) {
       console.error("Error fetching tasks:", error);
-      toast.error("Failed to load tasks");
+      toast.error("Даалгавар ачаалахад алдаа гарлаа");
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [projectId]);
+
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
@@ -165,9 +197,10 @@ export default function TaskKanban({ projectId }: { projectId: string }) {
         );
         const result = await patchRes.json();
         if (!result.success) throw new Error(result.message);
-        toast.success("Task moved");
-      } catch (error) {
-        toast.error("Failed to update task");
+        toast.success("Даалгавар шилжлээ");
+        onTasksChange?.();
+      } catch {
+        toast.error("Статус шинэчлэхэд алдаа гарлаа");
         fetchTasks();
       }
     }
@@ -179,8 +212,17 @@ export default function TaskKanban({ projectId }: { projectId: string }) {
     ) as Status | undefined;
   };
 
+
+  if (loading) {
+    return (
+      <div style={{ textAlign: "center", padding: 48 }}>
+        <Spin tip="Даалгавар ачааллаж байна..." />
+      </div>
+    );
+  }
+
   return (
-    <div className="p-4">
+    <div className="p-2">
       <Row gutter={16}>
         <DndContext
           sensors={sensors}
@@ -195,25 +237,23 @@ export default function TaskKanban({ projectId }: { projectId: string }) {
           onDragEnd={handleDragEnd}
           onDragCancel={() => setActiveItem(null)}
         >
-          {Object.entries(columns).map(([status, items]) => (
-            <Col key={status} span={8}>
+          {(Object.entries(columns) as [Status, Task[]][]).map(([status, items]) => (
+            <Col key={status} xs={24} md={8}>
               <DroppableColumn id={status}>
-                <div className="bg-gray-50 rounded-md p-3 min-h-[300px]">
+                <div
+                  style={{
+                    background: "#f8fafc",
+                    borderRadius: 12,
+                    padding: 16,
+                    minHeight: 360,
+                    border: "1px solid #e2e8f0",
+                  }}
+                >
                   <div className="flex justify-between items-center mb-3">
-                    <Title
-                      level={4}
-                      style={{
-                        color:
-                          status === "todo"
-                            ? "#1890ff"
-                            : status === "in-progress"
-                            ? "#faad14"
-                            : "#52c41a",
-                      }}
-                    >
-                      {status.replace("-", " ")}
+                    <Title level={5} style={{ color: columnColors[status], margin: 0 }}>
+                      {columnLabels[status]}
                     </Title>
-                    <Text type="secondary">{items.length} tasks</Text>
+                    <Tag>{items.length}</Tag>
                   </div>
                   <SortableContext
                     items={items.map((item) => item.id.toString())}
@@ -257,20 +297,23 @@ function KanbanCard({ item }: { item: Task }) {
   };
 
   const priorityColorMap: Record<string, string> = {
+    low: "green",
+    medium: "gold",
+    high: "orange",
+    urgent: "red",
     Low: "green",
     Medium: "gold",
-    High: "red",
+    High: "orange",
+    Urgent: "red",
   };
 
-  const menu = (
-    <Menu>
-      <Menu.Item key="1">Share to client</Menu.Item>
-      <Menu.Item key="2">Duplicate</Menu.Item>
-      <Menu.Item key="3" danger>
-        Delete
-      </Menu.Item>
-    </Menu>
-  );
+  const priorityLabel: Record<string, string> = {
+    low: "Бага",
+    medium: "Дунд",
+    high: "Өндөр",
+    urgent: "Яаралтай",
+  };
+
 
   return (
     <div
@@ -278,71 +321,48 @@ function KanbanCard({ item }: { item: Task }) {
       style={style}
       {...attributes}
       {...listeners}
-      className="mb-4 cursor-pointer rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 bg-white"
+      className="mb-3 cursor-grab rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 bg-white"
     >
       <Card
         size="small"
         bordered={false}
-        bodyStyle={{ padding: "12px 16px" }}
+        styles={{ body: { padding: "12px 14px" } }}
         actions={[
-          <Dropdown overlay={menu} trigger={["click"]} key="actions">
+          <Dropdown menu={{ items: [{ key: "1", label: "Дэлгэрэнгүй" }, { key: "3", label: "Устгах", danger: true }] }} trigger={["click"]} key="actions">
             <MoreOutlined />
           </Dropdown>,
         ]}
       >
-        <div className="flex justify-between items-center mb-1">
-          <Text strong className="text-lg line-clamp-1">
-            {item.name}
+        <Text strong className="text-base line-clamp-2" style={{ display: "block", marginBottom: 6 }}>
+          {item.name}
+        </Text>
+
+        {item.detail && (
+          <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 8 }}>
+            {item.detail}
           </Text>
-          <Avatar
-            size={28}
-            src="/images/user/user-02.jpg"
-            alt="Assignee"
-            className="border border-gray-200"
-          />
-        </div>
+        )}
 
         <div className="flex flex-wrap items-center gap-2 mb-2">
           <Tag
             color={priorityColorMap[item.priority] || "default"}
-            className="uppercase font-semibold text-xs tracking-wide"
+            className="uppercase font-semibold text-xs"
           >
-            {item.priority}
+            {priorityLabel[item.priority] || item.priority}
           </Tag>
-          {item.milestone && (
-            <Tag color="blue" className="text-xs font-medium">
+          {item.milestone && item.milestone !== "No milestone" && (
+            <Tag color="blue" className="text-xs">
               {item.milestone}
             </Tag>
           )}
         </div>
 
-        <div className="flex items-center text-gray-500 text-sm gap-3">
-          <CalendarOutlined />
-          <span>{new Date(item.due_date).toLocaleDateString()}</span>
-
-          {item.location && (
-            <Tooltip title={item.location}>
-              <div className="flex items-center gap-1 text-gray-400">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17.657 16.657L13 21.314l-4.657-4.657a8 8 0 1111.314 0z"
-                  />
-                  <circle cx={13} cy={11} r={3} stroke="none" fill="currentColor" />
-                </svg>
-                <span className="truncate max-w-[100px]">{item.location}</span>
-              </div>
-            </Tooltip>
-          )}
-        </div>
+        {item.due_date && (
+          <div className="flex items-center text-gray-500 text-sm gap-2">
+            <CalendarOutlined />
+            <span>{new Date(item.due_date).toLocaleDateString("mn-MN")}</span>
+          </div>
+        )}
       </Card>
     </div>
   );

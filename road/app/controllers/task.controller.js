@@ -23,7 +23,8 @@ exports.create = (req, res) => {
     due_date: req.body.due_date,
     milestone_id: req.body.milestone_id,
     project_id: req.body.project_id,
-    status: req.body.status
+    status: req.body.status ?? 1,
+    priority: req.body.priority ?? "medium",
   };
 
   // Save Categories in the database
@@ -81,11 +82,14 @@ exports.updateEventDates = (req, res) => {
 
 exports.findAll = async (req, res) => {
     const name = req.query.name;
-    const condition = name ? { name: { [Op.like]: `%${name}%` } } : undefined;
+    const project_id = req.query.project_id;
+    const condition = {};
+    if (name) condition.name = { [Op.like]: `%${name}%` };
+    if (project_id) condition.project_id = project_id;
   
     try {
       const data = await Task.findAll({
-        where: condition,
+        where: Object.keys(condition).length ? condition : undefined,
         include: [
           {
             model: Project,

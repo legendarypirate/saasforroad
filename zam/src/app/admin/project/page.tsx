@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Card,
   Row,
@@ -9,29 +10,27 @@ import {
   Space,
   Typography,
   Tag,
-  Avatar,
   Tooltip,
-  Descriptions,
-  Divider,
   Dropdown,
   Menu,
   message,
-  Badge,
   Form,
   Input,
   InputNumber,
   Select,
-  Drawer
+  Drawer,
+  Progress,
 } from 'antd';
 import {
   PlusOutlined,
   UserAddOutlined,
   EllipsisOutlined,
-  ShareAltOutlined,
   CopyOutlined,
   EditOutlined,
   DeleteOutlined,
-  InboxOutlined
+  InboxOutlined,
+  EnvironmentOutlined,
+  RightOutlined,
 } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -50,6 +49,11 @@ interface Project {
   createdAt: string;
 }
 
+interface TaskSummary {
+  project_id: number;
+  status: string | number;
+}
+
 const statusTag = (status: number) => {
   switch (status) {
     case 1:
@@ -63,8 +67,22 @@ const statusTag = (status: number) => {
   }
 };
 
+function computeProjectStats(tasks: TaskSummary[]) {
+  const map: Record<number, { total: number; done: number }> = {};
+  tasks.forEach((t) => {
+    const pid = t.project_id;
+    if (!map[pid]) map[pid] = { total: 0, done: 0 };
+    map[pid].total += 1;
+    const isDone = t.status === 3 || t.status === 'Completed';
+    if (isDone) map[pid].done += 1;
+  });
+  return map;
+}
+
 export default function ProjectPage() {
+  const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [taskStats, setTaskStats] = useState<Record<number, { total: number; done: number }>>({});
   const [formDrawerVisible, setFormDrawerVisible] = useState(false);
   const [form] = Form.useForm<Project>();
   const [isEditMode, setIsEditMode] = useState(false);
@@ -73,12 +91,18 @@ export default function ProjectPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/project`);
-        const result = await res.json();
-        if (result.success) {
-          setProjects(result.data);
-        } else {
-          console.error('Failed to fetch projects');
+        const [projRes, taskRes] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/project`),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/task`),
+        ]);
+        const projResult = await projRes.json();
+        const taskResult = await taskRes.json();
+
+        if (projResult.success) {
+          setProjects(projResult.data);
+        }
+        if (taskResult.success) {
+          setTaskStats(computeProjectStats(taskResult.data));
         }
       } catch (err) {
         console.error('Error fetching projects:', err);
@@ -93,7 +117,8 @@ export default function ProjectPage() {
     setFormDrawerVisible(true);
   };
 
-  const openEditDrawer = (project: Project) => {
+  const openEditDrawer = (project: Project, e?: React.MouseEvent) => {
+    e?.stopPropagation();
     setIsEditMode(true);
     setEditingProjectId(project.id ?? null);
     form.setFieldsValue({ ...project });
@@ -109,7 +134,7 @@ export default function ProjectPage() {
       const res = await fetch(apiUrl, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values)
+        body: JSON.stringify(values),
       });
       const result = await res.json();
 
@@ -134,84 +159,123 @@ export default function ProjectPage() {
 
   const menu = (project: Project) => (
     <Menu
-      onClick={({ key }) => {
+      onClick={({ key, domEvent }) => {
+        domEvent.stopPropagation();
         if (key === 'edit') openEditDrawer(project);
-        else if (key === 'invite') {/* invite logic */ }
+        else if (key === 'view') router.push(`/admin/project/${project.id}`);
         else message.info(`"${project.name}" дээр ${key} үйлдэл.`);
       }}
       items={[
+        { key: 'view', label: 'Дэлгэрэнгүй харах', icon: <RightOutlined /> },
         { key: 'invite', label: 'Хэрэглэгч урь', icon: <UserAddOutlined /> },
         { key: 'duplicate', label: 'Хувилах', icon: <CopyOutlined /> },
         { key: 'edit', label: 'Засах', icon: <EditOutlined /> },
         { key: 'archive', label: 'Архивлах', icon: <InboxOutlined /> },
-        { key: 'delete', label: 'Устгах', icon: <DeleteOutlined />, danger: true }
+        { key: 'delete', label: 'Устгах', icon: <DeleteOutlined />, danger: true },
       ]}
     />
   );
 
+  const summary = useMemo(() => {
+    const ongoing = projects.filter((p) => p.status === 2).length;
+    const planned = projects.filter((p) => p.status === 1).length;
+    const done = projects.filter((p) => p.status === 3).length;
+    return { total: projects.length, ongoing, planned, done };
+  }, [projects]);
+
   return (
     <div style={{ padding: '24px' }}>
-      <Space style={{ marginBottom: 24, width: '100%', justifyContent: 'space-between' }}>
-        <Title level={4}>Төслийн жагсаалт</Title>
+      <Space style={{ marginBottom: 24, width: '100%', justifyContent: 'space-between' }} wrap>
+        <div>
+          <Title level={4} style={{ marginBottom: 4 }}>
+            Төслийн жагсаалт
+          </Title>
+          <Text type="secondary">
+            Нийт {summary.total} · Явагдаж буй {summary.ongoing} · Төлөвлөсөн {summary.planned} · Дууссан {summary.done}
+          </Text>
+        </div>
         <Button type="primary" icon={<PlusOutlined />} onClick={openAddDrawer}>
           Шинэ төсөл
         </Button>
       </Space>
 
       <Row gutter={[16, 16]}>
-        {projects.map((project) => (
-          <Col key={project.id} xs={24} sm={12} md={12} lg={6}>
-            <Card
-              title={<Text strong style={{ color: '#1890ff', fontSize: 16 }}>{project.name}</Text>}
-              bordered
-              extra={
-                <Dropdown overlay={menu(project)} trigger={['click']}>
-                  <EllipsisOutlined style={{ fontSize: 20, cursor: 'pointer' }} />
-                </Dropdown>
-              }
-              bodyStyle={{ paddingBottom: 12 }}
-            >
-              <Descriptions column={1} size="small" contentStyle={{ fontWeight: 500 }} labelStyle={{ fontWeight: 600 }}>
-                <Descriptions.Item label="Байршил">{project.location}</Descriptions.Item>
-                <Descriptions.Item label="Зорилго">{project.purpose}</Descriptions.Item>
-                <Descriptions.Item label="Инженер">
-                  <Tag color="purple">{project.engineer}</Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="Тоног төхөөрөмж">{project.equipment}</Descriptions.Item>
-                <Descriptions.Item label="Ажилтан">{project.staff}</Descriptions.Item>
-                <Descriptions.Item label="Төсөв">
-                  <Text type="danger" strong>
-                    {project.budget.toLocaleString()}₮
-                  </Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Төлөв">{statusTag(project.status)}</Descriptions.Item>
-              </Descriptions>
+        {projects.map((project) => {
+          const stats = project.id ? taskStats[project.id] : undefined;
+          const percent = stats && stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
+          const progressColor = percent >= 80 ? '#52c41a' : percent >= 40 ? '#faad14' : '#1890ff';
 
-              <Divider style={{ margin: '8px 0' }} />
+          return (
+            <Col key={project.id} xs={24} sm={12} lg={8} xl={6}>
+              <Card
+                hoverable
+                onClick={() => router.push(`/admin/project/${project.id}`)}
+                title={
+                  <Tooltip title={project.name}>
+                    <Text strong style={{ color: '#1a365d', fontSize: 15 }}>
+                      {project.name}
+                    </Text>
+                  </Tooltip>
+                }
+                bordered
+                extra={
+                  <Dropdown overlay={menu(project)} trigger={['click']}>
+                    <EllipsisOutlined
+                      style={{ fontSize: 20, cursor: 'pointer' }}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </Dropdown>
+                }
+                styles={{ body: { paddingBottom: 12 } }}
+              >
+                <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                  <Space wrap size={4}>
+                    {statusTag(project.status)}
+                    <Tag icon={<EnvironmentOutlined />}>{project.location || '—'}</Tag>
+                  </Space>
 
-              <Space size="middle" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Badge count={12} offset={[10, 0]} size="small" style={{ backgroundColor: '#52c41a' }}>
-                  <Text strong>Даалгавар</Text>
-                </Badge>
-                <div>
-                  <Text strong>Хэрэглэгчид:</Text>
-                  <Avatar.Group maxCount={3} maxStyle={{ color: '#f56a00', backgroundColor: '#fde3cf' }}>
-                    <Avatar>A</Avatar>
-                    <Avatar>B</Avatar>
-                    <Avatar>C</Avatar>
-                  </Avatar.Group>
-                </div>
-              </Space>
-            </Card>
-          </Col>
-        ))}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <Progress
+                      type="circle"
+                      percent={percent}
+                      size={64}
+                      strokeColor={progressColor}
+                      format={(p) => <span style={{ fontSize: 13 }}>{p}%</span>}
+                    />
+                    <div>
+                      <Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
+                        Гүйцэтгэл
+                      </Text>
+                      <Text strong>
+                        {stats?.done ?? 0}/{stats?.total ?? 0} даалгавар
+                      </Text>
+                      <br />
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        {project.engineer || 'Инженер тодорхойгүй'}
+                      </Text>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text type="danger" strong style={{ fontSize: 13 }}>
+                      {Number(project.budget).toLocaleString()}₮
+                    </Text>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      Дэлгэрэнгүй <RightOutlined />
+                    </Text>
+                  </div>
+                </Space>
+              </Card>
+            </Col>
+          );
+        })}
       </Row>
 
       <Drawer
         title={isEditMode ? 'Төслийг засах' : 'Шинэ төсөл нэмэх'}
         width={480}
         onClose={() => setFormDrawerVisible(false)}
-        visible={formDrawerVisible}
+        open={formDrawerVisible}
         footer={
           <div style={{ textAlign: 'right' }}>
             <Button onClick={() => setFormDrawerVisible(false)} style={{ marginRight: 8 }}>
