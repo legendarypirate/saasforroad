@@ -63,6 +63,57 @@ module.exports = (sequelize, Sequelize) => {
       driver_license_expiry: {
         type: Sequelize.STRING
       },
+      affiliation: {
+        type: Sequelize.STRING
+      },
+      residential_address: {
+        type: Sequelize.STRING
+      },
+      id_card_home_address: {
+        type: Sequelize.STRING
+      },
+      bank_account_number: {
+        type: Sequelize.STRING
+      },
+      company_email: {
+        type: Sequelize.STRING
+      },
+      responsible_equipment: {
+        type: Sequelize.STRING
+      },
+      working_conditions: {
+        type: Sequelize.STRING
+      },
+      job_description: {
+        type: Sequelize.STRING
+      },
+      employment_start_date: {
+        type: Sequelize.STRING
+      },
+      employment_order_number: {
+        type: Sequelize.STRING
+      },
+      labor_contract_number: {
+        type: Sequelize.STRING
+      },
+      labor_contract_date: {
+        type: Sequelize.STRING
+      },
+      golden_order: {
+        type: Sequelize.STRING
+      },
+      probation_period: {
+        type: Sequelize.STRING
+      },
+      probation_end_date: {
+        type: Sequelize.STRING
+      },
+      permanent_order_number: {
+        type: Sequelize.STRING
+      },
+      permanent_date: {
+        type: Sequelize.STRING
+      },
       phone_verified: {
         type: Sequelize.BOOLEAN,
         defaultValue: false, // Default: phone is not verified

@@ -18,7 +18,12 @@ import {
   message,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import EmploymentTab, {
+  type CareerChangeRow,
+  type ContractTerminationRow,
+  type UserAwardRow,
+} from './EmploymentTab';
 
 const { Title, Text } = Typography;
 
@@ -40,6 +45,23 @@ interface UserDetail {
   driver_license_class?: string;
   driver_license_number?: string;
   driver_license_expiry?: string;
+  affiliation?: string;
+  residential_address?: string;
+  id_card_home_address?: string;
+  bank_account_number?: string;
+  company_email?: string;
+  responsible_equipment?: string;
+  working_conditions?: string;
+  job_description?: string;
+  employment_start_date?: string;
+  employment_order_number?: string;
+  labor_contract_number?: string;
+  labor_contract_date?: string;
+  golden_order?: string;
+  probation_period?: string;
+  probation_end_date?: string;
+  permanent_order_number?: string;
+  permanent_date?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -86,10 +108,14 @@ export default function UserDetailPage() {
   const [schools, setSchools] = useState<SchoolRow[]>([]);
   const [families, setFamilies] = useState<FamilyRow[]>([]);
   const [emergencies, setEmergencies] = useState<EmergencyRow[]>([]);
+  const [careerChanges, setCareerChanges] = useState<CareerChangeRow[]>([]);
+  const [contractTerminations, setContractTerminations] = useState<ContractTerminationRow[]>([]);
+  const [userAwards, setUserAwards] = useState<UserAwardRow[]>([]);
   const [actionSaving, setActionSaving] = useState(false);
   const [emergencySaving, setEmergencySaving] = useState(false);
   const [schoolSaving, setSchoolSaving] = useState(false);
   const [generalSaving, setGeneralSaving] = useState(false);
+  const [generalEditing, setGeneralEditing] = useState(false);
 
   const [generalForm] = Form.useForm();
   const [schoolForm] = Form.useForm();
@@ -99,39 +125,72 @@ export default function UserDetailPage() {
 
   const userId = useMemo(() => Number(id), [id]);
 
+  const displayValue = (value?: string | number | null) =>
+    value !== undefined && value !== null && String(value).trim() !== '' ? String(value) : '—';
+
+  const genderLabel = (value?: string) => {
+    if (value === 'male') return 'Эр';
+    if (value === 'female') return 'Эм';
+    return displayValue(value);
+  };
+
+  const populateGeneralForm = (data: UserDetail) => {
+    generalForm.setFieldsValue({
+      department_number: data.department_number,
+      personal_case_number: data.personal_case_number,
+      project_number: data.project_number,
+      position: data.position,
+      gender: data.gender,
+      register_number: data.register_number,
+      sap_number: data.sap_number,
+      social_insurance_years: data.social_insurance_years,
+      driver_license_class: data.driver_license_class,
+      driver_license_number: data.driver_license_number,
+      driver_license_expiry: data.driver_license_expiry,
+      affiliation: data.affiliation,
+      residential_address: data.residential_address,
+      id_card_home_address: data.id_card_home_address,
+      bank_account_number: data.bank_account_number,
+      company_email: data.company_email,
+    });
+  };
+
+  const startGeneralEdit = () => {
+    if (user) populateGeneralForm(user);
+    setGeneralEditing(true);
+  };
+
+  const cancelGeneralEdit = () => {
+    if (user) populateGeneralForm(user);
+    setGeneralEditing(false);
+  };
+
   const fetchData = async () => {
     if (!userId) return;
     setLoading(true);
     try {
-      const [userRes, actionRes, emergencyRes, schoolRes] = await Promise.all([
+      const [userRes, actionRes, emergencyRes, schoolRes, careerRes, terminationRes, awardRes] =
+        await Promise.all([
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/${userId}`),
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/action?user_id=${userId}`),
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/emergency_contact?user_id=${userId}`),
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/education?user_id=${userId}`),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/career_change?user_id=${userId}`),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/contract_termination?user_id=${userId}`),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user_award?user_id=${userId}`),
       ]);
 
       const userJson = await userRes.json();
       const actionJson = await actionRes.json();
       const emergencyJson = await emergencyRes.json();
       const schoolJson = await schoolRes.json();
+      const careerJson = await careerRes.json();
+      const terminationJson = await terminationRes.json();
+      const awardJson = await awardRes.json();
 
       const userData = userJson.data ?? userJson;
       setUser(userData || null);
-      if (userData) {
-        generalForm.setFieldsValue({
-          department_number: userData.department_number,
-          personal_case_number: userData.personal_case_number,
-          project_number: userData.project_number,
-          position: userData.position,
-          gender: userData.gender,
-          register_number: userData.register_number,
-          sap_number: userData.sap_number,
-          social_insurance_years: userData.social_insurance_years,
-          driver_license_class: userData.driver_license_class,
-          driver_license_number: userData.driver_license_number,
-          driver_license_expiry: userData.driver_license_expiry,
-        });
-      }
+      if (userData) populateGeneralForm(userData);
       if (actionJson.success) setActions(actionJson.data || []);
       if (emergencyJson.success) setEmergencies(emergencyJson.data || []);
       if (schoolJson.success) {
@@ -145,6 +204,37 @@ export default function UserDetailPage() {
           }))
         );
       }
+      if (careerJson.success) {
+        setCareerChanges(
+          (careerJson.data || []).map((r: any) => ({
+            id: r.id,
+            order_number: r.order_number || '',
+            position: r.position || '',
+            effective_date: r.effective_date || '',
+            contract_end_date: r.contract_end_date || '',
+          }))
+        );
+      }
+      if (terminationJson.success) {
+        setContractTerminations(
+          (terminationJson.data || []).map((r: any) => ({
+            id: r.id,
+            termination_order_number: r.termination_order_number || '',
+            termination_date: r.termination_date || '',
+            reason: r.reason || '',
+          }))
+        );
+      }
+      if (awardJson.success) {
+        setUserAwards(
+          (awardJson.data || []).map((r: any) => ({
+            id: r.id,
+            award_type: r.award_type,
+            award_name: r.award_name || '',
+            award_date: r.award_date || '',
+          }))
+        );
+      }
     } catch (err) {
       console.error(err);
       message.error('Хэрэглэгчийн мэдээлэл ачаалах үед алдаа гарлаа');
@@ -155,6 +245,7 @@ export default function UserDetailPage() {
 
   useEffect(() => {
     document.title = 'Хэрэглэгчийн дэлгэрэнгүй';
+    setGeneralEditing(false);
     fetchData();
   }, [userId]);
 
@@ -205,6 +296,7 @@ export default function UserDetailPage() {
       const json = await res.json();
       if (!json.success) throw new Error(json.message || 'Хадгалах үед алдаа');
       message.success('Үндсэн мэдээлэл хадгалагдлаа');
+      setGeneralEditing(false);
       fetchData();
     } catch (err) {
       console.error(err);
@@ -390,70 +482,172 @@ export default function UserDetailPage() {
       key: 'general',
       label: 'Үндсэн мэдээлэл',
       children: (
-        <Card loading={loading}>
-          <Descriptions column={2} bordered style={{ marginBottom: 24 }}>
-            <Descriptions.Item label="ID">{user?.id ?? '—'}</Descriptions.Item>
-            <Descriptions.Item label="Нэвтрэх нэр">{user?.username || '—'}</Descriptions.Item>
-            <Descriptions.Item label="И-мэйл">{user?.email || '—'}</Descriptions.Item>
-            <Descriptions.Item label="Утас">{user?.phone || '—'}</Descriptions.Item>
-            <Descriptions.Item label="Эрх" span={2}>
-              {user?.roleRecord?.name || user?.role || '—'}
-            </Descriptions.Item>
-          </Descriptions>
-          <Form form={generalForm} layout="vertical">
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                gap: 16,
-              }}
+        <Card
+          loading={loading}
+          title="Үндсэн мэдээлэл"
+          extra={
+            !generalEditing ? (
+              <Button type="text" icon={<EditOutlined />} onClick={startGeneralEdit} title="Засах" />
+            ) : null
+          }
+          styles={{ body: { paddingTop: generalEditing ? 16 : 8 } }}
+        >
+          {!generalEditing ? (
+            <Descriptions
+              column={2}
+              bordered
+              size="middle"
+              labelStyle={{ width: '28%', fontWeight: 600, background: '#fafafa' }}
+              contentStyle={{ fontWeight: 500 }}
             >
-              <Form.Item name="department_number" label="Хэлтсийн дугаар">
-                <Input />
-              </Form.Item>
-              <Form.Item name="personal_case_number" label="Хувийн хэргийн дугаар">
-                <Input />
-              </Form.Item>
-              <Form.Item name="project_number" label="Төслийн дугаар">
-                <Input />
-              </Form.Item>
-              <Form.Item name="position" label="Албан тушаал">
-                <Input />
-              </Form.Item>
-              <Form.Item name="gender" label="Хүйс">
-                <Select
-                  allowClear
-                  placeholder="Сонгох"
-                  options={[
-                    { value: 'male', label: 'Эр' },
-                    { value: 'female', label: 'Эм' },
-                  ]}
-                />
-              </Form.Item>
-              <Form.Item name="register_number" label="Регистрийн дугаар">
-                <Input />
-              </Form.Item>
-              <Form.Item name="sap_number" label="Sap дугаар">
-                <Input />
-              </Form.Item>
-              <Form.Item name="social_insurance_years" label="Нийгмийн даатгал төлсөн жил">
-                <Input />
-              </Form.Item>
-              <Form.Item name="driver_license_class" label="Жолооны үнэмлэхний ангилал">
-                <Input placeholder="B, C, CE..." />
-              </Form.Item>
-              <Form.Item name="driver_license_number" label="Жолооны үнэмлэхний дугаар">
-                <Input />
-              </Form.Item>
-              <Form.Item name="driver_license_expiry" label="Жолоочны үнэмлэхний хүчинтэй огноо">
-                <Input placeholder="YYYY-MM-DD" />
-              </Form.Item>
-            </div>
-            <Button type="primary" loading={generalSaving} onClick={saveGeneralInfo}>
-              Хадгалах
-            </Button>
-          </Form>
+              <Descriptions.Item label="ID">{displayValue(user?.id)}</Descriptions.Item>
+              <Descriptions.Item label="Нэвтрэх нэр">{displayValue(user?.username)}</Descriptions.Item>
+              <Descriptions.Item label="И-мэйл">{displayValue(user?.email)}</Descriptions.Item>
+              <Descriptions.Item label="Утас">{displayValue(user?.phone)}</Descriptions.Item>
+              <Descriptions.Item label="Эрх" span={2}>
+                <Tag color="blue">{displayValue(user?.roleRecord?.name || user?.role)}</Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Хэлтсийн дугаар">
+                {displayValue(user?.department_number)}
+              </Descriptions.Item>
+              <Descriptions.Item label="Хувийн хэргийн дугаар">
+                {displayValue(user?.personal_case_number)}
+              </Descriptions.Item>
+              <Descriptions.Item label="Төслийн дугаар">{displayValue(user?.project_number)}</Descriptions.Item>
+              <Descriptions.Item label="Албан тушаал">{displayValue(user?.position)}</Descriptions.Item>
+              <Descriptions.Item label="Хүйс">{genderLabel(user?.gender)}</Descriptions.Item>
+              <Descriptions.Item label="Регистрийн дугаар">{displayValue(user?.register_number)}</Descriptions.Item>
+              <Descriptions.Item label="Sap дугаар">{displayValue(user?.sap_number)}</Descriptions.Item>
+              <Descriptions.Item label="Нийгмийн даатгал төлсөн жил">
+                {displayValue(user?.social_insurance_years)}
+              </Descriptions.Item>
+              <Descriptions.Item label="Жолооны үнэмлэхний ангилал">
+                {displayValue(user?.driver_license_class)}
+              </Descriptions.Item>
+              <Descriptions.Item label="Жолооны үнэмлэхний дугаар">
+                {displayValue(user?.driver_license_number)}
+              </Descriptions.Item>
+              <Descriptions.Item label="Жолоочны үнэмлэхний хүчинтэй огноо">
+                {displayValue(user?.driver_license_expiry)}
+              </Descriptions.Item>
+              <Descriptions.Item label="Харъяалал">{displayValue(user?.affiliation)}</Descriptions.Item>
+              <Descriptions.Item label="Оршин суугаа хаяг" span={2}>
+                {displayValue(user?.residential_address)}
+              </Descriptions.Item>
+              <Descriptions.Item label="Иргэний үнэмлэх дээрхи гэрийн хаяг" span={2}>
+                {displayValue(user?.id_card_home_address)}
+              </Descriptions.Item>
+              <Descriptions.Item label="Банкны дансны дугаар">
+                {displayValue(user?.bank_account_number)}
+              </Descriptions.Item>
+              <Descriptions.Item label="Компаний цахим хаяг">
+                {displayValue(user?.company_email)}
+              </Descriptions.Item>
+            </Descriptions>
+          ) : (
+            <Form form={generalForm} layout="vertical" requiredMark={false}>
+              <Descriptions
+                column={2}
+                bordered
+                size="middle"
+                style={{ marginBottom: 24 }}
+                labelStyle={{ width: '28%', fontWeight: 600, background: '#fafafa' }}
+              >
+                <Descriptions.Item label="ID">{displayValue(user?.id)}</Descriptions.Item>
+                <Descriptions.Item label="Нэвтрэх нэр">{displayValue(user?.username)}</Descriptions.Item>
+                <Descriptions.Item label="И-мэйл">{displayValue(user?.email)}</Descriptions.Item>
+                <Descriptions.Item label="Утас">{displayValue(user?.phone)}</Descriptions.Item>
+                <Descriptions.Item label="Эрх" span={2}>
+                  <Tag color="blue">{displayValue(user?.roleRecord?.name || user?.role)}</Tag>
+                </Descriptions.Item>
+              </Descriptions>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                  gap: '0 24px',
+                }}
+              >
+                <Form.Item name="department_number" label="Хэлтсийн дугаар">
+                  <Input placeholder="Хэлтсийн дугаар" />
+                </Form.Item>
+                <Form.Item name="personal_case_number" label="Хувийн хэргийн дугаар">
+                  <Input placeholder="Хувийн хэргийн дугаар" />
+                </Form.Item>
+                <Form.Item name="project_number" label="Төслийн дугаар">
+                  <Input placeholder="Төслийн дугаар" />
+                </Form.Item>
+                <Form.Item name="position" label="Албан тушаал">
+                  <Input placeholder="Албан тушаал" />
+                </Form.Item>
+                <Form.Item name="gender" label="Хүйс">
+                  <Select
+                    allowClear
+                    placeholder="Сонгох"
+                    options={[
+                      { value: 'male', label: 'Эр' },
+                      { value: 'female', label: 'Эм' },
+                    ]}
+                  />
+                </Form.Item>
+                <Form.Item name="register_number" label="Регистрийн дугаар">
+                  <Input placeholder="Регистрийн дугаар" />
+                </Form.Item>
+                <Form.Item name="sap_number" label="Sap дугаар">
+                  <Input placeholder="Sap дугаар" />
+                </Form.Item>
+                <Form.Item name="social_insurance_years" label="Нийгмийн даатгал төлсөн жил">
+                  <Input placeholder="Жил" />
+                </Form.Item>
+                <Form.Item name="driver_license_class" label="Жолооны үнэмлэхний ангилал">
+                  <Input placeholder="B, C, CE..." />
+                </Form.Item>
+                <Form.Item name="driver_license_number" label="Жолооны үнэмлэхний дугаар">
+                  <Input placeholder="Үнэмлэхний дугаар" />
+                </Form.Item>
+                <Form.Item name="driver_license_expiry" label="Жолоочны үнэмлэхний хүчинтэй огноо">
+                  <Input placeholder="YYYY-MM-DD" />
+                </Form.Item>
+                <Form.Item name="affiliation" label="Харъяалал">
+                  <Input placeholder="Харъяалал" />
+                </Form.Item>
+                <Form.Item name="residential_address" label="Оршин суугаа хаяг" style={{ gridColumn: '1 / -1' }}>
+                  <Input placeholder="Оршин суугаа хаяг" />
+                </Form.Item>
+                <Form.Item name="id_card_home_address" label="Иргэний үнэмлэх дээрхи гэрийн хаяг" style={{ gridColumn: '1 / -1' }}>
+                  <Input placeholder="Иргэний үнэмлэх дээрхи гэрийн хаяг" />
+                </Form.Item>
+                <Form.Item name="bank_account_number" label="Банкны дансны дугаар">
+                  <Input placeholder="Банкны дансны дугаар" />
+                </Form.Item>
+                <Form.Item name="company_email" label="Компаний цахим хаяг">
+                  <Input placeholder="company@example.com" />
+                </Form.Item>
+              </div>
+              <Space style={{ marginTop: 8 }}>
+                <Button type="primary" loading={generalSaving} onClick={saveGeneralInfo}>
+                  Хадгалах
+                </Button>
+                <Button onClick={cancelGeneralEdit}>Цуцлах</Button>
+              </Space>
+            </Form>
+          )}
         </Card>
+      ),
+    },
+    {
+      key: 'employment',
+      label: 'Ажлын мэдээлэл',
+      children: (
+        <EmploymentTab
+          userId={userId}
+          user={user}
+          careerChanges={careerChanges}
+          contractTerminations={contractTerminations}
+          userAwards={userAwards}
+          loading={loading}
+          onRefresh={fetchData}
+        />
       ),
     },
     {

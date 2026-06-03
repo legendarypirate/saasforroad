@@ -110,6 +110,23 @@ exports.update = async (req, res) => {
     driver_license_class: req.body.driver_license_class !== undefined ? req.body.driver_license_class : undefined,
     driver_license_number: req.body.driver_license_number !== undefined ? req.body.driver_license_number : undefined,
     driver_license_expiry: req.body.driver_license_expiry !== undefined ? req.body.driver_license_expiry : undefined,
+    affiliation: req.body.affiliation !== undefined ? req.body.affiliation : undefined,
+    residential_address: req.body.residential_address !== undefined ? req.body.residential_address : undefined,
+    id_card_home_address: req.body.id_card_home_address !== undefined ? req.body.id_card_home_address : undefined,
+    bank_account_number: req.body.bank_account_number !== undefined ? req.body.bank_account_number : undefined,
+    company_email: req.body.company_email !== undefined ? req.body.company_email : undefined,
+    responsible_equipment: req.body.responsible_equipment !== undefined ? req.body.responsible_equipment : undefined,
+    working_conditions: req.body.working_conditions !== undefined ? req.body.working_conditions : undefined,
+    job_description: req.body.job_description !== undefined ? req.body.job_description : undefined,
+    employment_start_date: req.body.employment_start_date !== undefined ? req.body.employment_start_date : undefined,
+    employment_order_number: req.body.employment_order_number !== undefined ? req.body.employment_order_number : undefined,
+    labor_contract_number: req.body.labor_contract_number !== undefined ? req.body.labor_contract_number : undefined,
+    labor_contract_date: req.body.labor_contract_date !== undefined ? req.body.labor_contract_date : undefined,
+    golden_order: req.body.golden_order !== undefined ? req.body.golden_order : undefined,
+    probation_period: req.body.probation_period !== undefined ? req.body.probation_period : undefined,
+    probation_end_date: req.body.probation_end_date !== undefined ? req.body.probation_end_date : undefined,
+    permanent_order_number: req.body.permanent_order_number !== undefined ? req.body.permanent_order_number : undefined,
+    permanent_date: req.body.permanent_date !== undefined ? req.body.permanent_date : undefined,
   };
 
   Object.keys(updateData).forEach((key) => {

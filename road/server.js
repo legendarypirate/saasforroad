@@ -78,6 +78,9 @@ require("./app/routes/action.routes")(app);
 require("./app/routes/feedback.routes")(app);
 require("./app/routes/emergency_contact.routes")(app);
 require("./app/routes/education.routes")(app);
+require("./app/routes/career_change.routes")(app);
+require("./app/routes/contract_termination.routes")(app);
+require("./app/routes/user_award.routes")(app);
 
 // Word-related routes
 require("./app/routes/word.routes")(app);
