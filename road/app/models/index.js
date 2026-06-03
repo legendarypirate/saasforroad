@@ -189,7 +189,7 @@ db.project_phases.belongsTo(db.projects, { foreignKey: "project_id" });
 db.projects.hasMany(db.project_phases, { foreignKey: "project_id", as: "phases" });
 
 db.project_equipment.belongsTo(db.projects, { foreignKey: "project_id" });
-db.projects.hasMany(db.project_equipment, { foreignKey: "project_id", as: "equipment" });
+db.projects.hasMany(db.project_equipment, { foreignKey: "project_id", as: "projectEquipment" });
 
 db.equipment_oil_changes.belongsTo(db.project_equipment, {
   foreignKey: "equipment_id",
