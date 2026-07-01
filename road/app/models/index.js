@@ -29,6 +29,7 @@ db.attendances = require("./attendance.model.js")(sequelize, Sequelize);
 db.actions = require("./action.model.js")(sequelize, Sequelize);
 db.feedbacks = require("./feedback.model.js")(sequelize, Sequelize);
 db.emergency_contacts = require("./emergency_contact.model.js")(sequelize, Sequelize);
+db.family_members = require("./family_member.model.js")(sequelize, Sequelize);
 db.educations = require("./education.model.js")(sequelize, Sequelize);
 db.career_changes = require("./career_change.model.js")(sequelize, Sequelize);
 db.contract_terminations = require("./contract_termination.model.js")(sequelize, Sequelize);
@@ -138,6 +139,9 @@ db.users.hasMany(db.feedbacks, { foreignKey: "user_id" });
 
 db.emergency_contacts.belongsTo(db.users, { foreignKey: "user_id", as: "user" });
 db.users.hasMany(db.emergency_contacts, { foreignKey: "user_id" });
+
+db.family_members.belongsTo(db.users, { foreignKey: "user_id", as: "user" });
+db.users.hasMany(db.family_members, { foreignKey: "user_id" });
 
 db.educations.belongsTo(db.users, { foreignKey: "user_id", as: "user" });
 db.users.hasMany(db.educations, { foreignKey: "user_id" });

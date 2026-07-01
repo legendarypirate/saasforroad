@@ -84,10 +84,11 @@ interface SchoolRow {
 }
 
 interface FamilyRow {
-  key: string;
-  maritalStatus: string;
-  childrenCount: string;
-  familyNote: string;
+  id: number;
+  fullName: string;
+  phone: string;
+  job: string;
+  relation: string;
 }
 
 interface EmergencyRow {
@@ -114,6 +115,7 @@ export default function UserDetailPage() {
   const [actionSaving, setActionSaving] = useState(false);
   const [emergencySaving, setEmergencySaving] = useState(false);
   const [schoolSaving, setSchoolSaving] = useState(false);
+  const [familySaving, setFamilySaving] = useState(false);
   const [generalSaving, setGeneralSaving] = useState(false);
   const [generalEditing, setGeneralEditing] = useState(false);
 
@@ -169,12 +171,13 @@ export default function UserDetailPage() {
     if (!userId) return;
     setLoading(true);
     try {
-      const [userRes, actionRes, emergencyRes, schoolRes, careerRes, terminationRes, awardRes] =
+      const [userRes, actionRes, emergencyRes, schoolRes, familyRes, careerRes, terminationRes, awardRes] =
         await Promise.all([
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/${userId}`),
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/action?user_id=${userId}`),
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/emergency_contact?user_id=${userId}`),
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/education?user_id=${userId}`),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/family_member?user_id=${userId}`),
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/career_change?user_id=${userId}`),
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/contract_termination?user_id=${userId}`),
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user_award?user_id=${userId}`),
@@ -184,6 +187,7 @@ export default function UserDetailPage() {
       const actionJson = await actionRes.json();
       const emergencyJson = await emergencyRes.json();
       const schoolJson = await schoolRes.json();
+      const familyJson = await familyRes.json();
       const careerJson = await careerRes.json();
       const terminationJson = await terminationRes.json();
       const awardJson = await awardRes.json();
@@ -201,6 +205,17 @@ export default function UserDetailPage() {
             major: s.major || "",
             degree: s.degree || "",
             graduationYear: s.graduation_year || "",
+          }))
+        );
+      }
+      if (familyJson.success) {
+        setFamilies(
+          (familyJson.data || []).map((f: any) => ({
+            id: f.id,
+            fullName: f.full_name || '',
+            phone: f.phone || '',
+            job: f.job || '',
+            relation: f.relation || '',
           }))
         );
       }
@@ -352,12 +367,46 @@ export default function UserDetailPage() {
 
   const addFamily = async () => {
     const values = await familyForm.validateFields();
-    setFamilies((prev) => [...prev, { key: `${Date.now()}`, ...values }]);
-    familyForm.resetFields();
+    if (!userId) return;
+    setFamilySaving(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/family_member`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          full_name: values.fullName,
+          phone: values.phone,
+          job: values.job,
+          relation: values.relation,
+        }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || 'Хадгалах үед алдаа');
+      familyForm.resetFields();
+      message.success('Гэр бүлийн гишүүн нэмэгдлээ');
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      message.error('Гэр бүлийн гишүүн хадгалахад алдаа гарлаа');
+    } finally {
+      setFamilySaving(false);
+    }
   };
 
-  const deleteFamily = (key: string) => {
-    setFamilies((prev) => prev.filter((r) => r.key !== key));
+  const deleteFamily = async (id: number) => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/family_member/${id}`, {
+        method: 'DELETE',
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || 'Устгах үед алдаа');
+      message.success('Гэр бүлийн гишүүн устгагдлаа');
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      message.error('Гэр бүлийн гишүүн устгах үед алдаа гарлаа');
+    }
   };
 
   const addEmergency = async () => {
@@ -451,14 +500,15 @@ export default function UserDetailPage() {
   ];
 
   const familyColumns: ColumnsType<FamilyRow> = [
-    { title: 'Гэрлэлтийн байдал', dataIndex: 'maritalStatus' },
-    { title: 'Хүүхдийн тоо', dataIndex: 'childrenCount' },
-    { title: 'Тэмдэглэл', dataIndex: 'familyNote' },
+    { title: 'Овог нэр', dataIndex: 'fullName' },
+    { title: 'Утас', dataIndex: 'phone', render: (v) => v || '—' },
+    { title: 'Ажил', dataIndex: 'job', render: (v) => v || '—' },
+    { title: 'Хэн болох', dataIndex: 'relation', render: (v) => v || '—' },
     {
       title: 'Үйлдэл',
       key: 'action',
       render: (_, record) => (
-        <Button danger type="text" icon={<DeleteOutlined />} onClick={() => deleteFamily(record.key)} />
+        <Button danger type="text" icon={<DeleteOutlined />} onClick={() => deleteFamily(record.id)} />
       ),
     },
   ];
@@ -680,18 +730,21 @@ export default function UserDetailPage() {
       children: (
         <Card>
           <Form form={familyForm} layout="inline" style={{ marginBottom: 16 }}>
-            <Form.Item name="maritalStatus" rules={[{ required: true, message: 'Гэрлэлтийн байдал' }]}>
-              <Input placeholder="Гэрлэлтийн байдал" />
+            <Form.Item name="fullName" rules={[{ required: true, message: 'Овог нэр' }]}>
+              <Input placeholder="Овог нэр" />
             </Form.Item>
-            <Form.Item name="childrenCount">
-              <Input placeholder="Хүүхдийн тоо" />
+            <Form.Item name="phone">
+              <Input placeholder="Утас" />
             </Form.Item>
-            <Form.Item name="familyNote">
-              <Input placeholder="Тэмдэглэл" style={{ width: 320 }} />
+            <Form.Item name="job">
+              <Input placeholder="Ажил" />
             </Form.Item>
-            <Button type="primary" icon={<PlusOutlined />} onClick={addFamily} />
+            <Form.Item name="relation">
+              <Input placeholder="Хэн болох" />
+            </Form.Item>
+            <Button type="primary" icon={<PlusOutlined />} loading={familySaving} onClick={addFamily} />
           </Form>
-          <Table rowKey="key" columns={familyColumns} dataSource={families} pagination={false} />
+          <Table rowKey="id" columns={familyColumns} dataSource={families} pagination={false} />
         </Card>
       ),
     },
