@@ -50,6 +50,7 @@ export const ADMIN_MODULES: ModuleConfig[] = [
     color: '#722ed1',
     items: [
       { path: '/admin/user', label: 'Хэрэглэгчид', permission: 'user:read' },
+      { path: '/admin/org-structure', label: 'Байгууллагын бүтэц', permission: 'user:read' },
       { path: '/admin/role', label: 'Эрхийн зохицуулалт', permission: 'role:read' },
       { path: '/admin/action', label: 'Арга хэмжээ', permission: 'action:read' },
       { path: '/admin/feedback', label: 'Санал хүсэлт', permission: 'feedback:read' },
