@@ -113,6 +113,23 @@ async function ensureAttendanceGeofenceColumns(sequelize) {
   }
 }
 
+async function ensureOrgNodeColumns(sequelize) {
+  const [rows] = await sequelize.query(`
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'org_nodes'
+  `);
+  if (rows.length === 0) return;
+
+  const columns = [
+    `ALTER TABLE "org_nodes" ADD COLUMN IF NOT EXISTS "org_level" VARCHAR(32) DEFAULT 'junior';`,
+    `ALTER TABLE "org_nodes" ADD COLUMN IF NOT EXISTS "reports_to_id" INTEGER;`,
+  ];
+
+  for (const sql of columns) {
+    await sequelize.query(sql);
+  }
+}
+
 async function ensureSchema(sequelize, UserModel) {
   if (!UserModel) {
     throw new Error("User model is required for ensureSchema");
@@ -120,6 +137,7 @@ async function ensureSchema(sequelize, UserModel) {
   await ensurePostGIS(sequelize);
   await ensureUserProfileColumns(sequelize, UserModel);
   await ensureAttendanceGeofenceColumns(sequelize);
+  await ensureOrgNodeColumns(sequelize);
 }
 
 module.exports = {
@@ -127,6 +145,7 @@ module.exports = {
   ensureUserProfileColumns,
   ensurePostGIS,
   ensureAttendanceGeofenceColumns,
+  ensureOrgNodeColumns,
   resolveTableName,
   resolveExistingUserTable,
 };

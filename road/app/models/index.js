@@ -260,6 +260,8 @@ db.milestones.hasMany(db.tasks, { foreignKey: "milestone_id" });
 db.org_nodes.belongsTo(db.org_nodes, { foreignKey: "parent_id", as: "parent" });
 db.org_nodes.hasMany(db.org_nodes, { foreignKey: "parent_id", as: "children" });
 db.org_nodes.belongsTo(db.users, { foreignKey: "user_id", as: "user" });
+db.org_nodes.belongsTo(db.org_nodes, { foreignKey: "reports_to_id", as: "supervisor" });
+db.org_nodes.hasMany(db.org_nodes, { foreignKey: "reports_to_id", as: "directReports" });
 db.users.hasOne(db.org_nodes, { foreignKey: "user_id", as: "orgNode" });
 
 // Export the db object for easy access throughout the app

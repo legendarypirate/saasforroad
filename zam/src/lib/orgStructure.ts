@@ -28,6 +28,25 @@ export interface OrgTreeResponse {
   unassigned: OrgUser[];
 }
 
+export const DEPTH_COLORS = [
+  '#fa8c16',
+  '#1890ff',
+  '#52c41a',
+  '#722ed1',
+  '#eb2f96',
+  '#13c2c2',
+  '#fa541c',
+  '#2f54eb',
+];
+
+export function depthColor(depth: number) {
+  return DEPTH_COLORS[depth % DEPTH_COLORS.length];
+}
+
+export function depthLabel(depth: number) {
+  return `Түвшин ${depth + 1}`;
+}
+
 export async function fetchOrgTree(): Promise<OrgTreeResponse> {
   const res = await fetch(`${ORG_API}/tree`);
   const json = await res.json();
@@ -46,13 +65,17 @@ export async function createDepartment(name: string, parentId?: number | null) {
   return json.data as OrgNode;
 }
 
-export async function assignUser(userId: number, parentId?: number | null, positionTitle?: string) {
+export async function assignUser(
+  userId: number,
+  parentId: number,
+  positionTitle?: string
+) {
   const res = await fetch(`${ORG_API}/assign`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       user_id: userId,
-      parent_id: parentId ?? null,
+      parent_id: parentId,
       position_title: positionTitle,
     }),
   });
@@ -61,13 +84,17 @@ export async function assignUser(userId: number, parentId?: number | null, posit
   return json.data as OrgNode;
 }
 
-export async function moveNode(nodeId: number, parentId?: number | null, sortOrder?: number) {
+export async function moveNode(
+  nodeId: number,
+  parentId: number | null,
+  sortOrder?: number
+) {
   const res = await fetch(`${ORG_API}/move`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       node_id: nodeId,
-      parent_id: parentId ?? null,
+      parent_id: parentId,
       sort_order: sortOrder,
     }),
   });
@@ -76,7 +103,10 @@ export async function moveNode(nodeId: number, parentId?: number | null, sortOrd
   return json.data as OrgNode;
 }
 
-export async function updateNode(id: number, data: { name?: string; position_title?: string }) {
+export async function updateNode(
+  id: number,
+  data: { name?: string; position_title?: string }
+) {
   const res = await fetch(`${ORG_API}/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -107,12 +137,72 @@ export function nodeId(id: number) {
   return `node-${id}`;
 }
 
-export function parseDragId(id: string) {
+export type DragTarget =
+  | { type: 'pool'; userId: number }
+  | { type: 'node'; nodeId: number };
+
+export function parseDragId(id: string): DragTarget | null {
   if (id.startsWith('pool-')) {
-    return { type: 'pool' as const, userId: Number(id.slice(5)) };
+    return { type: 'pool', userId: Number(id.slice(5)) };
   }
   if (id.startsWith('node-')) {
-    return { type: 'node' as const, nodeId: Number(id.slice(5)) };
+    return { type: 'node', nodeId: Number(id.slice(5)) };
   }
   return null;
+}
+
+export function splitChildren(node: OrgNode) {
+  const children = node.children ?? [];
+  return {
+    users: children.filter((c) => c.node_type === 'user'),
+    departments: children.filter((c) => c.node_type === 'department'),
+  };
+}
+
+export function findNodeInTree(nodes: OrgNode[], id: number): OrgNode | null {
+  for (const n of nodes) {
+    if (n.id === id) return n;
+    if (n.children?.length) {
+      const found = findNodeInTree(n.children, id);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+export function findUserDepthInTree(nodes: OrgNode[], nodeId: number): number {
+  function walkUserBranch(node: OrgNode, depth: number): number | null {
+    if (node.id === nodeId) return depth;
+    for (const child of node.children ?? []) {
+      if (child.node_type === 'user') {
+        const found = walkUserBranch(child, depth + 1);
+        if (found !== null) return found;
+      }
+    }
+    return null;
+  }
+
+  function walk(nodes: OrgNode[]): number | null {
+    for (const n of nodes) {
+      if (n.node_type === 'user') {
+        const found = walkUserBranch(n, 0);
+        if (found !== null) return found;
+      }
+      if (n.node_type === 'department') {
+        for (const child of n.children ?? []) {
+          if (child.node_type === 'user') {
+            const found = walkUserBranch(child, 0);
+            if (found !== null) return found;
+          }
+          if (child.node_type === 'department') {
+            const found = walk([child]);
+            if (found !== null) return found;
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  return walk(nodes) ?? 0;
 }

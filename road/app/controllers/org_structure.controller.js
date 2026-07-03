@@ -16,17 +16,27 @@ const nodeInclude = [
   },
 ];
 
+function sortChildren(nodes) {
+  return [...nodes].sort((a, b) => {
+    if (a.node_type !== b.node_type) {
+      return a.node_type === "department" ? -1 : 1;
+    }
+    return a.sort_order - b.sort_order || a.id - b.id;
+  });
+}
+
 function buildTree(nodes, parentId = null) {
-  return nodes
-    .filter((n) => (n.parent_id ?? null) === parentId)
-    .sort((a, b) => a.sort_order - b.sort_order || a.id - b.id)
-    .map((n) => {
-      const plain = n.toJSON ? n.toJSON() : n;
-      return {
-        ...plain,
-        children: buildTree(nodes, plain.id),
-      };
-    });
+  const children = sortChildren(
+    nodes.filter((n) => (n.parent_id ?? null) === parentId)
+  );
+
+  return children.map((n) => {
+    const plain = n.toJSON ? n.toJSON() : n;
+    return {
+      ...plain,
+      children: buildTree(nodes, plain.id),
+    };
+  });
 }
 
 async function isDescendant(nodeId, potentialParentId, nodes) {
@@ -67,9 +77,67 @@ async function ensureRoot() {
   }
 }
 
+async function migrateLegacyHierarchy() {
+  const legacy = await OrgNode.findAll({
+    where: {
+      node_type: "user",
+      reports_to_id: { [Op.ne]: null },
+    },
+  });
+
+  for (const row of legacy) {
+    const supervisor = await OrgNode.findByPk(row.reports_to_id);
+    if (supervisor && supervisor.node_type === "user") {
+      await row.update({
+        parent_id: supervisor.id,
+        reports_to_id: null,
+      });
+    }
+  }
+}
+
+async function validateParent(node, newParentId) {
+  if (!newParentId) return null;
+
+  const parent = await OrgNode.findByPk(newParentId);
+  if (!parent) {
+    const err = new Error("Эцэг олдсонгүй");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  if (node.node_type === "department" && parent.node_type !== "department") {
+    const err = new Error("Хэлтэс зөвхөн хэлтэсийн доор байрлана");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  if (node.node_type === "user" && parent.node_type !== "department" && parent.node_type !== "user") {
+    const err = new Error("Хүний нөхцөл буруу");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const allNodes = await OrgNode.findAll({ attributes: ["id", "parent_id", "node_type"] });
+  if (node.id === newParentId) {
+    const err = new Error("Өөрөө өөрийн доор байрлуулах боломжгүй");
+    err.statusCode = 400;
+    throw err;
+  }
+  if (node.id && await isDescendant(node.id, newParentId, allNodes)) {
+    const err = new Error("Дэд бүтцийг эцэг болгох боломжгүй");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  return parent;
+}
+
 exports.getTree = async (req, res) => {
   try {
     await ensureRoot();
+    await migrateLegacyHierarchy();
+
     const nodes = await OrgNode.findAll({
       include: nodeInclude,
       order: [
@@ -156,6 +224,9 @@ exports.assignUser = async (req, res) => {
   if (!user_id) {
     return res.status(400).json({ success: false, message: "user_id шаардлагатай" });
   }
+  if (!parent_id) {
+    return res.status(400).json({ success: false, message: "Эцэг сонгоно уу (хэлтэс эсвэл удирдагч)" });
+  }
 
   try {
     const user = await User.findByPk(user_id);
@@ -163,36 +234,39 @@ exports.assignUser = async (req, res) => {
       return res.status(404).json({ success: false, message: "Хэрэглэгч олдсонгүй" });
     }
 
-    if (parent_id) {
-      const parent = await OrgNode.findByPk(parent_id);
-      if (!parent || parent.node_type !== "department") {
-        return res.status(400).json({ success: false, message: "Хэлтэс сонгоно уу" });
-      }
+    const parent = await OrgNode.findByPk(parent_id);
+    if (!parent || (parent.node_type !== "department" && parent.node_type !== "user")) {
+      return res.status(400).json({ success: false, message: "Хэлтэс эсвэл удирдагч сонгоно уу" });
     }
 
     const existing = await OrgNode.findOne({ where: { user_id } });
     if (existing) {
+      await validateParent(existing, parent_id);
       await existing.update({
-        parent_id: parent_id || null,
+        parent_id,
         position_title: position_title ?? existing.position_title ?? user.position,
+        reports_to_id: null,
       });
       const full = await OrgNode.findByPk(existing.id, { include: nodeInclude });
       return res.json({ success: true, data: full });
     }
 
+    const draft = { id: null, node_type: "user" };
+    await validateParent(draft, parent_id);
+
     const node = await OrgNode.create({
       name: user.username,
-      parent_id: parent_id || null,
+      parent_id,
       node_type: "user",
       user_id,
       position_title: position_title || user.position || null,
-      sort_order: await nextSortOrder(parent_id || null),
+      sort_order: await nextSortOrder(parent_id),
     });
 
     const full = await OrgNode.findByPk(node.id, { include: nodeInclude });
     res.json({ success: true, data: full });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(err.statusCode || 500).json({ success: false, message: err.message });
   }
 };
 
@@ -209,33 +283,20 @@ exports.move = async (req, res) => {
     }
 
     const newParentId = parent_id ?? null;
-
     if (newParentId) {
-      const parent = await OrgNode.findByPk(newParentId);
-      if (!parent || parent.node_type !== "department") {
-        return res.status(400).json({ success: false, message: "Зөвхөн хэлтэс дээр байрлуулна" });
-      }
-    }
-
-    if (node.node_type === "department") {
-      const allNodes = await OrgNode.findAll({ attributes: ["id", "parent_id"] });
-      if (node_id === newParentId) {
-        return res.status(400).json({ success: false, message: "Өөрөө өөрийн доор байрлуулах боломжгүй" });
-      }
-      if (await isDescendant(node_id, newParentId, allNodes)) {
-        return res.status(400).json({ success: false, message: "Дэд хэлтсийг эцэг хэлтэс болгох боломжгүй" });
-      }
+      await validateParent(node, newParentId);
     }
 
     await node.update({
       parent_id: newParentId,
       sort_order: sort_order ?? node.sort_order,
+      reports_to_id: null,
     });
 
     const full = await OrgNode.findByPk(node_id, { include: nodeInclude });
     res.json({ success: true, data: full });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(err.statusCode || 500).json({ success: false, message: err.message });
   }
 };
 

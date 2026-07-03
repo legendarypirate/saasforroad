@@ -25,6 +25,14 @@ module.exports = (sequelize, Sequelize) => {
       type: Sequelize.INTEGER,
       defaultValue: 0,
     },
+    org_level: {
+      type: Sequelize.STRING,
+      defaultValue: "junior",
+    },
+    reports_to_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 
   return OrgNode;

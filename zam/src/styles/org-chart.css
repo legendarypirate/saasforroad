@@ -1,0 +1,273 @@
+.org-chart-panel {
+  border: 1px solid #f0f0f0;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.org-zoom-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.org-zoom-viewport {
+  overflow: auto;
+  max-height: 72vh;
+  min-height: 480px;
+  padding: 16px;
+  background: linear-gradient(180deg, #fafafa 0%, #fff 100%);
+}
+
+.org-zoom-content {
+  min-width: max-content;
+  margin: 0 auto;
+  transition: transform 0.12s ease-out;
+  padding-bottom: 40px;
+}
+
+.org-tree-root {
+  padding-top: 0 !important;
+}
+
+.org-chart-wrap {
+  overflow: auto;
+  padding: 24px 16px 40px;
+  background: linear-gradient(180deg, #fafafa 0%, #fff 100%);
+  border-radius: 12px;
+  min-height: 480px;
+}
+
+.org-tree,
+.org-tree ul {
+  padding-top: 24px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin: 0;
+}
+
+.org-tree li {
+  list-style: none;
+  text-align: center;
+  position: relative;
+  padding: 24px 10px 0;
+  flex: 1;
+}
+
+.org-tree > li {
+  padding-top: 0;
+}
+
+.org-tree li::before,
+.org-tree li::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 50%;
+  width: 50%;
+  height: 24px;
+  border-top: 2px solid #bfbfbf;
+}
+
+.org-tree li::after {
+  right: auto;
+  left: 50%;
+  border-left: 2px solid #bfbfbf;
+}
+
+.org-tree li:only-child::after,
+.org-tree li:only-child::before {
+  display: none;
+}
+
+.org-tree li:first-child::before,
+.org-tree li:last-child::after {
+  border: 0 none;
+}
+
+.org-tree ul::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 0;
+  height: 24px;
+  border-left: 2px solid #bfbfbf;
+}
+
+.org-dept-block {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 200px;
+}
+
+.org-dept-header {
+  background: linear-gradient(135deg, #722ed1 0%, #9254de 100%);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(114, 46, 209, 0.25);
+  margin-bottom: 8px;
+  min-width: 160px;
+}
+
+.org-dept-header.is-root {
+  background: linear-gradient(135deg, #1d39c4 0%, #597ef7 100%);
+  font-size: 15px;
+  padding: 12px 24px;
+}
+
+.org-dept-header.is-over {
+  outline: 3px dashed #fff;
+  outline-offset: 2px;
+}
+
+.org-person-card {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  background: #fff;
+  border: 2px solid #f0f0f0;
+  border-radius: 12px;
+  padding: 12px 14px 10px;
+  min-width: 120px;
+  max-width: 150px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  cursor: grab;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+  position: relative;
+}
+
+.org-person-card:hover {
+  border-color: #d3adf7;
+  box-shadow: 0 4px 16px rgba(114, 46, 209, 0.12);
+}
+
+.org-person-card.is-dragging {
+  opacity: 0.45;
+}
+
+.org-person-card.is-over {
+  border-color: #722ed1;
+  background: #f9f0ff;
+}
+
+.org-person-card.level-head,
+.org-person-card.level-senior,
+.org-person-card.level-junior {
+  /* legacy — depth colors applied inline */
+}
+
+.org-level-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-top: 6px;
+  border: 1px solid;
+}
+
+.org-tier-zone {
+  min-height: 28px;
+  border: 1px dashed #e8e8e8;
+  border-radius: 6px;
+  margin: 4px auto 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: #bfbfbf;
+  transition: all 0.2s;
+  max-width: 200px;
+  padding: 2px 8px;
+}
+
+.org-tier-zone.is-over {
+  border-color: #722ed1;
+  background: #f9f0ff;
+  color: #722ed1;
+}
+
+.org-tier-label {
+  font-size: 11px;
+  color: #8c8c8c;
+  font-weight: 600;
+  margin: 8px 0 4px;
+  letter-spacing: 0.03em;
+}
+
+.org-sub-depts {
+  margin-top: 16px;
+}
+
+.org-legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+}
+
+.org-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #595959;
+}
+
+.org-legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.org-legend-dot.head,
+.org-legend-dot.senior,
+.org-legend-dot.junior {
+  /* legacy */
+}
+
+.org-card-actions {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.org-person-card:hover .org-card-actions {
+  opacity: 1;
+}
+
+.org-pool-user {
+  cursor: grab;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  transition: border-color 0.15s;
+}
+
+.org-pool-user:hover {
+  border-color: #d3adf7;
+}
+
+.org-pool-user.is-dragging {
+  opacity: 0.4;
+}
