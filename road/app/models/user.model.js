@@ -144,6 +144,10 @@ module.exports = (sequelize, Sequelize) => {
       profile_image: {
         type: Sequelize.STRING,
       },
+      salary: {
+        type: Sequelize.DECIMAL(12, 2),
+        defaultValue: 0,
+      },
     });
   
     return User;

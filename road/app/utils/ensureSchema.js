@@ -72,6 +72,7 @@ async function ensureUserProfileColumns(sequelize, UserModel) {
 
   const extraColumns = [
     `ALTER TABLE "${tableName}" ADD COLUMN IF NOT EXISTS "profile_image" VARCHAR(512);`,
+    `ALTER TABLE "${tableName}" ADD COLUMN IF NOT EXISTS "salary" DECIMAL(12,2) DEFAULT 0;`,
     `ALTER TABLE "${tableName}" ADD COLUMN IF NOT EXISTS "extended_cycle" BOOLEAN DEFAULT false;`,
     `ALTER TABLE "${tableName}" ADD COLUMN IF NOT EXISTS "cycle_work_days" INTEGER DEFAULT 22;`,
     `ALTER TABLE "${tableName}" ADD COLUMN IF NOT EXISTS "cycle_rest_days" INTEGER DEFAULT 8;`,

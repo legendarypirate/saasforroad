@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Space, Drawer, Form, Input, Select, message, Switch, Tag } from 'antd';
+import { Table, Button, Space, Drawer, Form, Input, InputNumber, Select, message, Switch, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
@@ -18,6 +18,7 @@ interface User {
   username: string;
   email: string;
   phone: string;
+  salary?: number;
   role_id: number;
   role?: string;
   roleRecord?: Role;
@@ -121,6 +122,11 @@ export default function UsersPage() {
   const columns: ColumnsType<User> = [
     { title: 'Нэвтрэх нэр', dataIndex: 'username' },
     { title: 'И-мэйл', dataIndex: 'email' },
+    {
+      title: 'Цалин',
+      dataIndex: 'salary',
+      render: (v) => (v != null ? `${Number(v).toLocaleString('mn-MN')} ₮` : '—'),
+    },
     { title: 'Утас', dataIndex: 'phone' },
     {
       title: 'Эрх',

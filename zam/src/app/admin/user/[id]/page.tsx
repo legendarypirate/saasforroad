@@ -10,6 +10,7 @@ import {
   Button,
   Form,
   Input,
+  InputNumber,
   Table,
   Space,
   Tag,
@@ -56,6 +57,7 @@ interface UserDetail {
   id_card_home_address?: string;
   bank_account_number?: string;
   company_email?: string;
+  salary?: number | string;
   responsible_equipment?: string;
   working_conditions?: string;
   job_description?: string;
@@ -161,6 +163,7 @@ export default function UserDetailPage() {
       id_card_home_address: data.id_card_home_address,
       bank_account_number: data.bank_account_number,
       company_email: data.company_email,
+      salary: data.salary != null ? Number(data.salary) : undefined,
     });
   };
 
@@ -650,6 +653,11 @@ export default function UserDetailPage() {
               </Descriptions.Item>
               <Descriptions.Item label="Төслийн дугаар">{displayValue(user?.project_number)}</Descriptions.Item>
               <Descriptions.Item label="Албан тушаал">{displayValue(user?.position)}</Descriptions.Item>
+              <Descriptions.Item label="Суурь цалин">
+                {user?.salary != null
+                  ? `${Number(user.salary).toLocaleString('mn-MN')} ₮`
+                  : '—'}
+              </Descriptions.Item>
               <Descriptions.Item label="Хүйс">{genderLabel(user?.gender)}</Descriptions.Item>
               <Descriptions.Item label="Регистрийн дугаар">{displayValue(user?.register_number)}</Descriptions.Item>
               <Descriptions.Item label="Sap дугаар">{displayValue(user?.sap_number)}</Descriptions.Item>
@@ -714,6 +722,15 @@ export default function UserDetailPage() {
                 </Form.Item>
                 <Form.Item name="position" label="Албан тушаал">
                   <Input placeholder="Албан тушаал" />
+                </Form.Item>
+                <Form.Item name="salary" label="Суурь цалин (₮)">
+                  <InputNumber
+                    min={0}
+                    step={10000}
+                    style={{ width: '100%' }}
+                    formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                    parser={(v) => Number((v || '').replace(/,/g, ''))}
+                  />
                 </Form.Item>
                 <Form.Item name="gender" label="Хүйс">
                   <Select

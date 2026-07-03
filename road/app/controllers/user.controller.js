@@ -189,6 +189,7 @@ exports.update = async (req, res) => {
     cycle_rest_days: req.body.cycle_rest_days !== undefined ? req.body.cycle_rest_days : undefined,
     daily_work_hours: req.body.daily_work_hours !== undefined ? req.body.daily_work_hours : undefined,
     extended_cycle: req.body.extended_cycle !== undefined ? req.body.extended_cycle : undefined,
+    salary: req.body.salary !== undefined ? req.body.salary : undefined,
   };
 
   Object.keys(updateData).forEach((key) => {

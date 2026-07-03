@@ -57,6 +57,7 @@ export const ADMIN_MODULES: ModuleConfig[] = [
       { path: '/admin/attendance', label: 'Ирцийн хяналт', permission: 'attendance:read' },
       { path: '/admin/office-location', label: 'Оффисын байршил', permission: 'attendance:read' },
       { path: '/admin/attendance-calculation', label: 'Ирц тооцоолол', permission: 'attendance:read' },
+      { path: '/admin/salary-calculation', label: 'Цалин тооцоолол', permission: 'attendance:read' },
     ],
   },
   {

@@ -71,6 +71,7 @@ function registerRoutes() {
   require("./app/routes/equipment_rental.routes")(app);
   require("./app/routes/office_location.routes")(app);
   require("./app/routes/org_structure.routes")(app);
+  require("./app/routes/salary.routes")(app);
 
   app.all("*", (req, res) => {
     res.status(404).json({ message: "Route not found!" });
