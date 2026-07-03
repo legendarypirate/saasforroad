@@ -15,6 +15,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/assets", express.static(path.join(__dirname, "app", "assets")));
 
 const db = require("./app/models");
+const dbConfig = require("./app/config/db.config");
 const { seedPermissionsAndRoles } = require("./app/utils/seed");
 const { ensureSchema } = require("./app/utils/ensureSchema");
 
@@ -75,6 +76,12 @@ function registerRoutes() {
 
 async function start() {
   try {
+    const dbLabel = dbConfig.useUrl
+      ? "postgres (DATABASE_URL)"
+      : `postgres://${dbConfig.USER}@${dbConfig.HOST}/${dbConfig.DB}`;
+    console.log(`Connecting to ${dbLabel}`);
+
+    await db.sequelize.authenticate();
     await db.sequelize.sync();
     await ensureSchema(db.sequelize, db.users);
     const { migrateLegacyEquipment } = require("./app/utils/migrateEquipment");
@@ -90,6 +97,7 @@ async function start() {
     });
   } catch (err) {
     console.error("Failed to start server:", err.message);
+    if (err.stack) console.error(err.stack);
     process.exit(1);
   }
 }

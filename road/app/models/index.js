@@ -1,19 +1,26 @@
 const Sequelize = require("sequelize");
+const pg = require("pg");
 const dbConfig = require("../config/db.config.js");
 
-// Create a new Sequelize instance and configure the connection
-const sequelize = new Sequelize(dbConfig.DB, dbConfig.USER, dbConfig.PASSWORD, {
-  host: dbConfig.HOST,
-  dialect: dbConfig.dialect,
-  operatorsAliases: false,
-
+const sequelizeOptions = {
+  dialect: "postgres",
+  dialectModule: pg,
+  dialectOptions: dbConfig.dialectOptions || {},
+  logging: process.env.DB_LOGGING === "true" ? console.log : false,
   pool: {
     max: dbConfig.pool.max,
     min: dbConfig.pool.min,
     acquire: dbConfig.pool.acquire,
     idle: dbConfig.pool.idle,
   },
-});
+};
+
+const sequelize = dbConfig.useUrl
+  ? new Sequelize(dbConfig.url, sequelizeOptions)
+  : new Sequelize(dbConfig.DB, dbConfig.USER, dbConfig.PASSWORD, {
+      ...sequelizeOptions,
+      host: dbConfig.HOST,
+    });
 
 const db = {};
 
