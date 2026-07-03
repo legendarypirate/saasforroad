@@ -724,13 +724,7 @@ export default function UserDetailPage() {
                   <Input placeholder="Албан тушаал" />
                 </Form.Item>
                 <Form.Item name="salary" label="Суурь цалин (₮)">
-                  <InputNumber
-                    min={0}
-                    step={10000}
-                    style={{ width: '100%' }}
-                    formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                    parser={(v) => Number((v || '').replace(/,/g, ''))}
-                  />
+                  <InputNumber min={0} step={10000} style={{ width: '100%' }} addonAfter="₮" />
                 </Form.Item>
                 <Form.Item name="gender" label="Хүйс">
                   <Select
