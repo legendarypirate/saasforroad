@@ -60,6 +60,10 @@ export default function OfficeLocationPage() {
     }
   }, []);
 
+  useEffect(() => {
+    fetchOffices();
+  }, [fetchOffices]);
+
   const selectOfficeRef = useRef<(office: OfficeLocation) => void>(() => {});
 
   const updateEditMarker = useCallback((lat: number, lng: number, radiusM: number) => {
@@ -142,7 +146,8 @@ export default function OfficeLocationPage() {
   }, []);
 
   const initMap = useCallback(() => {
-    if (!mapRef.current || !window.google) return;
+    if (!mapRef.current || !window.google?.maps || mapInstance.current) return;
+
     mapInstance.current = new window.google.maps.Map(mapRef.current, {
       center: DEFAULT_CENTER,
       zoom: 12,
@@ -159,13 +164,27 @@ export default function OfficeLocationPage() {
     });
 
     setMapsReady(true);
-    fetchOffices();
-  }, [fetchOffices, form, updateEditMarker]);
+  }, [form, updateEditMarker]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.initOfficeMap = initMap;
-    }
+    window.initOfficeMap = initMap;
+    initMap();
+
+    return () => {
+      markersRef.current.forEach((m) => m.setMap(null));
+      markersRef.current = [];
+      if (circleRef.current) {
+        circleRef.current.setMap(null);
+        circleRef.current = null;
+      }
+      if (markerRef.current) {
+        markerRef.current.setMap(null);
+        markerRef.current = null;
+      }
+      mapInstance.current = null;
+      mapFormInitialized.current = false;
+      setMapsReady(false);
+    };
   }, [initMap]);
 
   useEffect(() => {
@@ -252,6 +271,7 @@ export default function OfficeLocationPage() {
       <Script
         src={`https://maps.googleapis.com/maps/api/js?key=${MAPS_KEY}&callback=initOfficeMap`}
         strategy="afterInteractive"
+        onLoad={initMap}
       />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
