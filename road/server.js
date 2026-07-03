@@ -1,6 +1,7 @@
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, ".env") });
 const express = require("express");
 const cors = require("cors");
-const path = require("path");
 
 const app = express();
 
@@ -64,6 +65,8 @@ function registerRoutes() {
   require("./app/routes/category.routes")(app);
   require("./app/routes/privacy.routes")(app);
   require("./app/routes/user.routes")(app);
+  require("./app/routes/homepage.routes")(app);
+  require("./app/routes/tender.routes")(app);
 
   app.all("*", (req, res) => {
     res.status(404).json({ message: "Route not found!" });
@@ -72,8 +75,8 @@ function registerRoutes() {
 
 async function start() {
   try {
-    await ensureSchema(db.sequelize, db.users);
     await db.sequelize.sync();
+    await ensureSchema(db.sequelize, db.users);
     const { migrateLegacyEquipment } = require("./app/utils/migrateEquipment");
     await migrateLegacyEquipment(db.sequelize, db);
     await seedPermissionsAndRoles();

@@ -141,6 +141,9 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.BOOLEAN,
         defaultValue: false, // Default: phone is not verified
       },
+      profile_image: {
+        type: Sequelize.STRING,
+      },
     });
   
     return User;

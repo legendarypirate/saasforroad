@@ -152,7 +152,8 @@ exports.mobile_login = async (req, res) => {
 };
 // Verify the JWT token
 exports.verifyToken = (req, res, next) => {
-  const token = req.headers["authorization"];
+  const raw = req.headers["authorization"] || req.headers["Authorization"] || "";
+  const token = raw.startsWith("Bearer ") ? raw.slice(7) : raw;
 
   if (!token) {
     return res.status(401).json({ message: "Token is missing!" });
@@ -165,6 +166,29 @@ exports.verifyToken = (req, res, next) => {
     req.user = decoded;
     next();
   });
+};
+
+exports.getMe = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    const roleInfo = await resolveUserRole(user);
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        username: user.username,
+        role: roleInfo.role,
+        role_id: roleInfo.role_id,
+        permissions: roleInfo.permissions,
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
 };
 
 

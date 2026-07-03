@@ -1,104 +1,39 @@
 'use client';
 
 import React, { useState, useTransition, useEffect } from 'react';
-import { Layout, Menu, message, Spin, MenuProps, Modal,Dropdown,Avatar, } from 'antd';
+import { Layout, Menu, message, Spin, Modal, Dropdown, Avatar, Button, Typography } from 'antd';
 import {
-  DashboardOutlined,
-  AlertOutlined,
-  CalendarOutlined,
-  OrderedListOutlined,
-  ShoppingCartOutlined,
-  AppstoreOutlined,
   LogoutOutlined,
-  HomeOutlined,
-  TeamOutlined,
-  KeyOutlined,
-  FileTextOutlined,
-  TagsOutlined,
-  ProjectOutlined,
-  BellOutlined,
   UserOutlined,
-  SwapOutlined,
-  DatabaseOutlined,
-  DropboxOutlined,
-  FileDoneOutlined,
-  BankOutlined,
-  SettingOutlined,
-  TruckOutlined,
-  ToolOutlined,
-  IdcardOutlined,
-  ClockCircleOutlined,
-  CalculatorOutlined,
-  FlagOutlined,
-  MessageOutlined,
+  HomeOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons';
 import { usePathname, useRouter } from 'next/navigation';
+import ModuleSubNav from '@/components/admin/ModuleSubNav';
+import { DASHBOARD_PATH } from '@/config/adminNavigation';
 
-const { Header, Sider, Content } = Layout;
+import { getUserRole, getUsername, loadUserPermissions } from '@/lib/auth';
 
-interface MenuItemType {
-  key: string;
-  icon: React.ReactNode;
-  label: React.ReactNode;
-  permission?: string;
-  children?: MenuItemType[];
-}
-
-// Retrieve user permissions from localStorage
-function getUserPermissions(): string[] {
-  try {
-    const userStr = localStorage.getItem('user');
-    if (!userStr) return [];
-    const user = JSON.parse(userStr);
-    return user.permissions || [];
-  } catch (e) {
-    console.error('Failed to parse user from localStorage', e);
-    return [];
-  }
-}
-
-// Check if the user has a specific permission
-function hasPermission(permission: string, userPermissions: string[]): boolean {
-  if (!permission) return true;
-  // No permissions loaded yet (legacy admin) — show all menus
-  if (userPermissions.length === 0) return true;
-  return userPermissions.includes(permission);
-}
-
-const showConfirm = (handleLogout: () => void) => {
-  Modal.confirm({
-    title: 'Та гарахдаа итгэлтэй байна уу?',
-    okText: 'Тийм',
-    cancelText: 'Үгүй',
-    centered: true,
-    width: 500,
-    onOk: handleLogout,
-  });
-};
-
-// Recursively filter menu items by permission
-function filterMenuByPermission(items: MenuItemType[], userPermissions: string[]): MenuItemType[] {
-  return items
-    .map(item => {
-      if (item.children) {
-        const children = filterMenuByPermission(item.children, userPermissions);
-        if (children.length === 0) return null;
-        return { ...item, children };
-      }
-      return hasPermission(item.permission || '', userPermissions) ? item : null;
-    })
-    .filter((item): item is MenuItemType => item !== null);
-}
-
+const { Header, Content } = Layout;
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [loading, setLoading] = useState(false);
   const [isPending, startTransition] = useTransition();
-
   const [userPermissions, setUserPermissions] = useState<string[]>([]);
-  const [openKeys, setOpenKeys] = useState<string[]>([]);
+  const [userRole, setUserRole] = useState(() => getUserRole());
+  const [username, setUsername] = useState('Admin');
+
+  const handleLogout = () => {
+    message.success('Logged out');
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    localStorage.removeItem('permissions');
+    localStorage.removeItem('role');
+    localStorage.removeItem('username');
+    router.push('/');
+  };
 
   const showConfirm = () => {
     Modal.confirm({
@@ -111,135 +46,68 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     });
   };
 
-  
-  const handleLogout = () => {
-    message.success('Logged out');
-    // Clear localStorage or token as needed here
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    router.push('/');
-  };
-
-const userMenu = (
-  <Menu>
-    <Menu.Item key="userinfo" icon={<UserOutlined />} disabled>
-      Таны нэр: Admin
-    </Menu.Item>
-    <Menu.Divider />
-    <Menu.Item
-  key="logout"
-  icon={<LogoutOutlined />}
-  onClick={() => showConfirm()}
-  danger
->
-  Гарах
-</Menu.Item>
-
-  </Menu>
-);
+  const userMenu = (
+    <Menu>
+      <Menu.Item key="userinfo" icon={<UserOutlined />} disabled>
+        Таны нэр: {username}
+      </Menu.Item>
+      <Menu.Divider />
+      <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={showConfirm} danger>
+        Гарах
+      </Menu.Item>
+    </Menu>
+  );
 
   useEffect(() => {
-    setUserPermissions(getUserPermissions());
+    (async () => {
+      setUsername(getUsername());
+      setUserRole(getUserRole());
+      const perms = await loadUserPermissions();
+      setUserPermissions(perms);
+      setUserRole(getUserRole());
+    })();
   }, []);
 
-  useEffect(() => {
-    if (
-      pathname.startsWith('/admin/attendance') ||
-      pathname.startsWith('/admin/action') ||
-      pathname.startsWith('/admin/feedback') ||
-      pathname.startsWith('/admin/user') ||
-      pathname.startsWith('/admin/role')
-    ) {
-      setOpenKeys((prev) => (prev.includes('hr') ? prev : [...prev, 'hr']));
-    }
-  }, [pathname]);
+  const isDashboard = pathname === DASHBOARD_PATH;
 
-  const handleMenuClick: MenuProps['onClick'] = (e) => {
-    if (e.key === '/admin/logout' || e.key === 'hr') return;
+  const goHome = () => {
     setLoading(true);
-    router.push(e.key);
-    setTimeout(() => setLoading(false), 500);
+    startTransition(() => {
+      router.push(DASHBOARD_PATH);
+      setTimeout(() => setLoading(false), 400);
+    });
   };
 
-  const menuItems: MenuItemType[] = [
-    { key: '/admin', icon: <DashboardOutlined />, label: 'Хянах самбар' },
-  { key: '/admin/accident', icon: <AlertOutlined />, label: 'Ослын дуудлага' },
-  { key: '/admin/calendar', icon: <CalendarOutlined />, label: 'Календар' },
-  { key: '/admin/project', icon: <ProjectOutlined />, label: 'Төслүүд' },
-  { key: '/admin/equipment', icon: <ToolOutlined />, label: 'Тоног төхөөрөмж' },
-  { key: '/admin/task', icon: <OrderedListOutlined />, label: 'Үүрэг даалгаврууд' },
-  {
-    key: 'settings',
-    icon: <DropboxOutlined />, // more fitting than SettingOutlined
-    label: 'Бараа материал',
-    children: [
-      { key: '/admin/category', label: 'Ангилал', icon: <AppstoreOutlined /> },
-      { key: '/admin/item', label: 'Бараа материалын жагсаалт', icon: <TagsOutlined /> },
-      { key: '/admin/warehouse', label: 'Агуулах бүртгэх', icon: <BankOutlined /> },
-      { key: '/admin/stock', label: 'Үлдэгдэл', icon: <DatabaseOutlined /> },
-      { key: '/admin/transaction', label: 'Бараа материалын хөдөлгөөн', icon: <SwapOutlined /> },
-    ],
-  },
-  { key: '/admin/supplier', icon: <TeamOutlined />, label: 'Нийлүүлэгч' },
-  { key: '/admin/google', icon: <TeamOutlined />, label: 'Google Map' },
-
-  { key: '/admin/document', icon: <FileDoneOutlined />, label: 'Баримт бичиг' },
-  { key: '/admin/notification', icon: <BellOutlined />, label: 'Мэдэгдэл' },
-  {
-    key: 'hr',
-    icon: <IdcardOutlined />,
-    label: 'HR удирдлага',
-    children: [
-      { key: '/admin/user', icon: <UserOutlined />, label: 'Хэрэглэгч нар', permission: 'user:read' },
-      { key: '/admin/role', icon: <KeyOutlined />, label: 'Эрхийн зохицуулалт', permission: 'role:read' },
-      { key: '/admin/action', icon: <FlagOutlined />, label: 'Арга хэмжээ', permission: 'action:read' },
-      { key: '/admin/feedback', icon: <MessageOutlined />, label: 'Санал хүсэлт', permission: 'feedback:read' },
-      {
-        key: '/admin/attendance',
-        icon: <ClockCircleOutlined />,
-        label: 'Ирцийн хяналт',
-        permission: 'attendance:read',
-      },
-      {
-        key: '/admin/attendance-calculation',
-        icon: <CalculatorOutlined />,
-        label: 'Ирц тооцоолол',
-        permission: 'attendance:read',
-      },
-    ],
-  },
-
-  ];
-
-  // Filter menu by user's permissions
-  const filteredMenuItems = filterMenuByPermission(menuItems, userPermissions);
-
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sider breakpoint="lg" collapsedWidth="0">
-        <div className="logo" style={{ color: 'white', padding: '16px', textAlign: 'center' }}>
-          Замын систем
-        </div>
-        <Menu
-          theme="dark"
-          mode="inline"
-          selectedKeys={[pathname]}
-          openKeys={openKeys}
-          onOpenChange={setOpenKeys}
-          onClick={handleMenuClick}
-          items={filteredMenuItems as MenuProps['items']}
-        />
-      </Sider>
-      <Layout>
+    <Layout style={{ minHeight: '100vh', background: '#f5f7fa' }}>
       <Header
         style={{
           background: '#fff',
           padding: '0 24px',
           display: 'flex',
-          justifyContent: 'flex-end',
+          justifyContent: 'space-between',
           alignItems: 'center',
+          borderBottom: '1px solid #f0f0f0',
+          position: 'sticky',
+          top: 0,
+          zIndex: 100,
         }}
       >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <Typography.Title
+            level={4}
+            style={{ margin: 0, color: '#082c5c', cursor: 'pointer', userSelect: 'none' }}
+            onClick={goHome}
+          >
+            <AppstoreOutlined style={{ marginRight: 8 }} />
+            Замын систем
+          </Typography.Title>
+          {!isDashboard && (
+            <Button type="text" icon={<HomeOutlined />} onClick={goHome}>
+              Модуль сонгох
+            </Button>
+          )}
+        </div>
         <Dropdown overlay={userMenu} trigger={['click']} placement="bottomRight" arrow>
           <Avatar
             size="large"
@@ -248,14 +116,24 @@ const userMenu = (
           />
         </Dropdown>
       </Header>
-        <Content style={{ margin: '24px 16px 0' }}>
-          <Spin spinning={loading || isPending} tip="Ачааллаж байна..." size="large">
-            <div style={{ padding: 24, background: '#fff', minHeight: 360 }}>
-              {children}
-            </div>
-          </Spin>
-        </Content>
-      </Layout>
+
+      {!isDashboard && <ModuleSubNav userPermissions={userPermissions} userRole={userRole} />}
+
+      <Content style={{ padding: '24px', maxWidth: 1400, margin: '0 auto', width: '100%' }}>
+        <Spin spinning={loading || isPending} tip="Ачааллаж байна..." size="large">
+          <div
+            style={{
+              padding: isDashboard ? 32 : 24,
+              background: '#fff',
+              minHeight: 360,
+              borderRadius: 12,
+              boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+            }}
+          >
+            {children}
+          </div>
+        </Spin>
+      </Content>
     </Layout>
   );
 }

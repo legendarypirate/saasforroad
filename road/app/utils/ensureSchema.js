@@ -54,6 +54,14 @@ async function resolveExistingUserTable(sequelize, UserModel) {
 
 async function ensureUserProfileColumns(sequelize, UserModel) {
   const tableName = await resolveExistingUserTable(sequelize, UserModel);
+  const [rows] = await sequelize.query(`
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = '${tableName}'
+  `);
+  if (rows.length === 0) {
+    console.log(`Skipping user profile columns — table "${tableName}" does not exist yet`);
+    return;
+  }
   console.log(`Ensuring user profile columns on table: ${tableName}`);
 
   for (const column of USER_PROFILE_COLUMNS) {
@@ -63,6 +71,7 @@ async function ensureUserProfileColumns(sequelize, UserModel) {
   }
 
   const extraColumns = [
+    `ALTER TABLE "${tableName}" ADD COLUMN IF NOT EXISTS "profile_image" VARCHAR(512);`,
     `ALTER TABLE "${tableName}" ADD COLUMN IF NOT EXISTS "extended_cycle" BOOLEAN DEFAULT false;`,
     `ALTER TABLE "${tableName}" ADD COLUMN IF NOT EXISTS "cycle_work_days" INTEGER DEFAULT 22;`,
     `ALTER TABLE "${tableName}" ADD COLUMN IF NOT EXISTS "cycle_rest_days" INTEGER DEFAULT 8;`,

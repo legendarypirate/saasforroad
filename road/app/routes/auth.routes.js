@@ -18,6 +18,8 @@ module.exports = app => {
       res.status(200).send("Token is valid!");
     });
 
+    router.get("/me", auth.verifyToken, auth.getMe);
+
     router.post("/verifyOtp", auth.verifyOtp);
     router.post("/verifyOtpForgot", auth.verifyOtpForgot);
 

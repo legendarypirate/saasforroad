@@ -1,0 +1,129 @@
+export interface NavItemConfig {
+  path: string;
+  label: string;
+  permission?: string;
+}
+
+export interface ModuleConfig {
+  id: string;
+  label: string;
+  description: string;
+  color: string;
+  items: NavItemConfig[];
+}
+
+export const DASHBOARD_PATH = '/admin';
+
+export const ADMIN_MODULES: ModuleConfig[] = [
+  {
+    id: 'operations',
+    label: 'Төсөл / Ажил',
+    description: 'Төсөл, даалгавар, тоног төхөөрөмж',
+    color: '#1890ff',
+    items: [
+      { path: '/admin/project', label: 'Төслүүд', permission: 'project:read' },
+      { path: '/admin/task', label: 'Үүрэг даалгаврууд', permission: 'task:read' },
+      { path: '/admin/equipment', label: 'Тоног төхөөрөмж' },
+      { path: '/admin/calendar', label: 'Календар' },
+      { path: '/admin/accident', label: 'Ослын дуудлага', permission: 'accident:read' },
+    ],
+  },
+  {
+    id: 'inventory',
+    label: 'Бараа материал',
+    description: 'Агуулах, үлдэгдэл, нийлүүлэгч',
+    color: '#fa8c16',
+    items: [
+      { path: '/admin/category', label: 'Ангилал', permission: 'inventory:read' },
+      { path: '/admin/item', label: 'Бараа материал', permission: 'inventory:read' },
+      { path: '/admin/warehouse', label: 'Агуулах', permission: 'inventory:read' },
+      { path: '/admin/stock', label: 'Үлдэгдэл', permission: 'inventory:read' },
+      { path: '/admin/transaction', label: 'Хөдөлгөөн', permission: 'inventory:read' },
+      { path: '/admin/supplier', label: 'Нийлүүлэгч', permission: 'inventory:read' },
+    ],
+  },
+  {
+    id: 'hr',
+    label: 'HR удирдлага',
+    description: 'Хэрэглэгч, ирц, эрхийн зохицуулалт',
+    color: '#722ed1',
+    items: [
+      { path: '/admin/user', label: 'Хэрэглэгчид', permission: 'user:read' },
+      { path: '/admin/role', label: 'Эрхийн зохицуулалт', permission: 'role:read' },
+      { path: '/admin/action', label: 'Арга хэмжээ', permission: 'action:read' },
+      { path: '/admin/feedback', label: 'Санал хүсэлт', permission: 'feedback:read' },
+      { path: '/admin/attendance', label: 'Ирцийн хяналт', permission: 'attendance:read' },
+      { path: '/admin/attendance-calculation', label: 'Ирц тооцоолол', permission: 'attendance:read' },
+    ],
+  },
+  {
+    id: 'homepage',
+    label: 'Нүүр хуудас',
+    description: 'Лого, холбоо барих, контент',
+    color: '#52c41a',
+    items: [
+      { path: '/admin/homepage', label: 'Контент удирдлага', permission: 'homepage:write' },
+    ],
+  },
+  {
+    id: 'tender',
+    label: 'Тендер материал',
+    description: 'Баримт upload → AI → DOCX',
+    color: '#eb2f96',
+    items: [
+      { path: '/admin/tender', label: 'Тендер багц', permission: 'tender:read' },
+    ],
+  },
+  {
+    id: 'documents',
+    label: 'Баримт / Мэдэгдэл',
+    description: 'Баримт бичиг, мэдэгдэл',
+    color: '#13c2c2',
+    items: [
+      { path: '/admin/document', label: 'Баримт бичиг', permission: 'document:read' },
+      { path: '/admin/notification', label: 'Мэдэгдэл', permission: 'notification:read' },
+    ],
+  },
+];
+
+export function hasPermission(permission: string | undefined, userPermissions: string[]): boolean {
+  if (!permission) return true;
+  if (userPermissions.length === 0) return true;
+  return userPermissions.includes(permission);
+}
+
+export function filterNavItems(
+  items: NavItemConfig[],
+  userPermissions: string[],
+  userRole?: string
+): NavItemConfig[] {
+  if (userRole === 'Админ') return items;
+  return items.filter((item) => hasPermission(item.permission, userPermissions));
+}
+
+export function filterModules(userPermissions: string[], userRole?: string): ModuleConfig[] {
+  if (userRole === 'Админ') {
+    return ADMIN_MODULES;
+  }
+  return ADMIN_MODULES.map((mod) => ({
+    ...mod,
+    items: filterNavItems(mod.items, userPermissions),
+  })).filter((mod) => mod.items.length > 0);
+}
+
+export function getModuleForPath(pathname: string): ModuleConfig | null {
+  if (pathname === DASHBOARD_PATH) return null;
+
+  for (const mod of ADMIN_MODULES) {
+    const matches = mod.items.some(
+      (item) => pathname === item.path || pathname.startsWith(`${item.path}/`)
+    );
+    if (matches) return mod;
+  }
+  return null;
+}
+
+export function getDefaultModulePath(mod: ModuleConfig, userPermissions: string[]): string {
+  const items = filterNavItems(mod.items, userPermissions);
+  return items[0]?.path ?? mod.items[0].path;
+}

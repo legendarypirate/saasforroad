@@ -8,7 +8,7 @@ export default function SupportPage() {
         <title>Support | Vlemjiin zam</title>
         <meta name="description" content="Contact support for Vlemjiin zam mobile app." />
       </Head>
-      <main style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto', fontFamily: 'Arial, sans-serif' }}>
+      <main style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
         <h1>Support</h1>
         <p>If you have any questions or need help with our service, feel free to reach out:</p>
         <ul>

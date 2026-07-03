@@ -11,7 +11,7 @@
   --cal-weekend: #f8fafc;
   --cal-radius: 16px;
   --cal-shadow: 0 4px 24px rgba(26, 54, 93, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
-  font-family: var(--font-nunito, inherit);
+  font-family: var(--font-nunito), 'Nunito', sans-serif;
 }
 
 .styled-calendar-header {
@@ -68,6 +68,7 @@
 }
 
 .styled-calendar-body .fc {
+  font-family: var(--font-nunito), 'Nunito', sans-serif;
   --fc-border-color: var(--cal-border);
   --fc-button-bg-color: var(--cal-primary);
   --fc-button-border-color: var(--cal-primary);

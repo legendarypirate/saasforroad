@@ -19,6 +19,10 @@ const DEFAULT_PERMISSIONS = [
   { module: "notification", action: "read", key: "notification:read" },
   { module: "document", action: "read", key: "document:read" },
   { module: "inventory", action: "read", key: "inventory:read" },
+  { module: "homepage", action: "read", key: "homepage:read" },
+  { module: "homepage", action: "write", key: "homepage:write" },
+  { module: "tender", action: "read", key: "tender:read" },
+  { module: "tender", action: "write", key: "tender:write" },
 ];
 
 const DEFAULT_ROLES = [

@@ -66,6 +66,18 @@ db.warehouses = require("./warehouse.model.js")(sequelize, Sequelize);
 db.stocks = require("./stock.model.js")(sequelize, Sequelize);
 db.transactions = require("./transaction.model.js")(sequelize, Sequelize);
 db.suppliers = require("./supplier.model.js")(sequelize, Sequelize);
+db.homepage_settings = require("./homepage.model.js")(sequelize, Sequelize);
+db.tender_packages = require("./tender_package.model.js")(sequelize, Sequelize);
+db.tender_documents = require("./tender_document.model.js")(sequelize, Sequelize);
+
+db.tender_packages.hasMany(db.tender_documents, {
+  foreignKey: "tender_package_id",
+  as: "documents",
+  onDelete: "CASCADE",
+});
+db.tender_documents.belongsTo(db.tender_packages, {
+  foreignKey: "tender_package_id",
+});
 
 db.district = require("./district.model.js")(sequelize, Sequelize);
 db.horooBoundary = require("./horooBoundary.model.js")(sequelize, Sequelize);
@@ -219,21 +231,6 @@ db.equipments.hasMany(db.equipment_oil_changes, {
 
 db.tasks.belongsTo(db.milestones, { foreignKey: "milestone_id" });
 db.milestones.hasMany(db.tasks, { foreignKey: "milestone_id" });
-
-// Example of how to query with associations
-db.Categories.findAll({
-  include: [
-    {
-      model: db.infos,
-      required: true, // This enforces an INNER JOIN
-    },
-  ],
-  logging: console.log, // Log the SQL query
-}).then((categories) => {
-  console.log(categories); // Categories with associated Info
-}).catch((err) => {
-  console.error("Error fetching categories with associated info:", err);
-});
 
 // Export the db object for easy access throughout the app
 module.exports = db;

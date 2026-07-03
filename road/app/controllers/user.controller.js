@@ -3,7 +3,18 @@ const User = db.users;
 const Role = db.roles;
 const Op = db.Sequelize.Op;
 const bcrypt = require('bcryptjs');
+const multer = require("multer");
+const { uploadImage } = require("../utils/cloudinary");
 const saltRounds = 10;
+
+const profileUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const ok = file.mimetype.startsWith("image/");
+    cb(ok ? null : new Error("Зөвхөн зураг файл хүлээн авна"), ok);
+  },
+}).single("image");
 
 const userInclude = [
   { model: Role, as: "roleRecord", attributes: ["id", "name", "mobile_access"] },
@@ -91,6 +102,51 @@ exports.findOne = (req, res) => {
     .catch(err => {
       res.status(500).send({ message: "Error retrieving User with id=" + id });
     });
+};
+
+exports.uploadProfileImage = (req, res) => {
+  const id = req.params.id;
+
+  profileUpload(req, res, async (err) => {
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({ success: false, message: err.code === "LIMIT_FILE_SIZE" ? "Файл 5MB-аас их байна" : "Файл upload алдаа" });
+    }
+    if (err) {
+      return res.status(400).json({ success: false, message: err.message || "Файл upload алдаа" });
+    }
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "image файл шаардлагатай" });
+    }
+
+    try {
+      const existingUser = await User.findByPk(id);
+      if (!existingUser) {
+        return res.status(404).json({ success: false, message: `User with id=${id} not found.` });
+      }
+
+      const result = await uploadImage(req.file.buffer, req.file.mimetype, {
+        folder: "rd_zam/users",
+        public_id: `user_${id}`,
+        overwrite: true,
+        invalidate: true,
+      });
+
+      await User.update({ profile_image: result.secure_url }, { where: { id } });
+      const updatedUser = await User.findByPk(id, { include: userInclude });
+
+      res.json({
+        success: true,
+        message: "Цээж зураг хадгалагдлаа",
+        data: updatedUser,
+        profile_image: result.secure_url,
+      });
+    } catch (uploadErr) {
+      res.status(500).json({
+        success: false,
+        message: uploadErr.message || "Цээж зураг хадгалахад алдаа гарлаа",
+      });
+    }
+  });
 };
 
 exports.update = async (req, res) => {

@@ -16,9 +16,12 @@ import {
   Select,
   Popconfirm,
   message,
+  Avatar,
+  Upload,
+  Spin,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PlusOutlined, UserOutlined, CameraOutlined } from '@ant-design/icons';
 import EmploymentTab, {
   type CareerChangeRow,
   type ContractTerminationRow,
@@ -34,6 +37,7 @@ interface UserDetail {
   phone?: string;
   role?: string;
   roleRecord?: { id: number; name: string };
+  profile_image?: string;
   gender?: string;
   department_number?: string;
   personal_case_number?: string;
@@ -118,6 +122,7 @@ export default function UserDetailPage() {
   const [familySaving, setFamilySaving] = useState(false);
   const [generalSaving, setGeneralSaving] = useState(false);
   const [generalEditing, setGeneralEditing] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
 
   const [generalForm] = Form.useForm();
   const [schoolForm] = Form.useForm();
@@ -263,6 +268,29 @@ export default function UserDetailPage() {
     setGeneralEditing(false);
     fetchData();
   }, [userId]);
+
+  const uploadProfileImage = async (file: File) => {
+    if (!userId) return;
+    setImageUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/${userId}/profile-image`, {
+        method: 'POST',
+        body: formData,
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || 'Цээж зураг хадгалахад алдаа');
+      message.success('Цээж зураг хадгалагдлаа');
+      if (json.data) setUser(json.data);
+      else fetchData();
+    } catch (err) {
+      console.error(err);
+      message.error(err instanceof Error ? err.message : 'Цээж зураг хадгалахад алдаа гарлаа');
+    } finally {
+      setImageUploading(false);
+    }
+  };
 
   const actionColumns: ColumnsType<ActionRow> = [
     { title: 'Гарчиг', dataIndex: 'title' },
@@ -542,6 +570,61 @@ export default function UserDetailPage() {
           }
           styles={{ body: { paddingTop: generalEditing ? 16 : 8 } }}
         >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 20,
+              marginBottom: 24,
+              paddingBottom: 24,
+              borderBottom: '1px solid #f0f0f0',
+            }}
+          >
+            <Upload
+              showUploadList={false}
+              accept="image/jpeg,image/png,image/webp"
+              beforeUpload={(file) => {
+                uploadProfileImage(file);
+                return false;
+              }}
+              disabled={imageUploading}
+            >
+              <div style={{ position: 'relative', cursor: imageUploading ? 'wait' : 'pointer' }}>
+                <Spin spinning={imageUploading}>
+                  <Avatar
+                    size={120}
+                    src={user?.profile_image}
+                    icon={<UserOutlined />}
+                    style={{ border: '2px solid #f0f0f0' }}
+                  />
+                </Spin>
+                <div
+                  style={{
+                    position: 'absolute',
+                    right: 0,
+                    bottom: 0,
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    background: '#1677ff',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '2px solid #fff',
+                  }}
+                >
+                  <CameraOutlined />
+                </div>
+              </div>
+            </Upload>
+            <div>
+              <Text strong style={{ display: 'block', marginBottom: 4 }}>
+                Цээж зураг
+              </Text>
+              <Text type="secondary">Зураг дээр дарж шинэчилнэ. JPG, PNG, WEBP — хамгийн ихдээ 5MB.</Text>
+            </div>
+          </div>
           {!generalEditing ? (
             <Descriptions
               column={2}
