@@ -68,6 +68,8 @@ function registerRoutes() {
   require("./app/routes/user.routes")(app);
   require("./app/routes/homepage.routes")(app);
   require("./app/routes/tender.routes")(app);
+  require("./app/routes/equipment_rental.routes")(app);
+  require("./app/routes/office_location.routes")(app);
 
   app.all("*", (req, res) => {
     res.status(404).json({ message: "Route not found!" });

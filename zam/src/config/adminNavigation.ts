@@ -18,12 +18,13 @@ export const ADMIN_MODULES: ModuleConfig[] = [
   {
     id: 'operations',
     label: 'Төсөл / Ажил',
-    description: 'Төсөл, даалгавар, тоног төхөөрөмж',
+    description: 'Төсөл, даалгавар, тоног төхөөрөмж, түрээс',
     color: '#1890ff',
     items: [
       { path: '/admin/project', label: 'Төслүүд', permission: 'project:read' },
       { path: '/admin/task', label: 'Үүрэг даалгаврууд', permission: 'task:read' },
       { path: '/admin/equipment', label: 'Тоног төхөөрөмж' },
+      { path: '/admin/equipment-rental', label: 'Тоног төхөөрөмж түрээс' },
       { path: '/admin/calendar', label: 'Календар' },
       { path: '/admin/accident', label: 'Ослын дуудлага', permission: 'accident:read' },
     ],
@@ -53,6 +54,7 @@ export const ADMIN_MODULES: ModuleConfig[] = [
       { path: '/admin/action', label: 'Арга хэмжээ', permission: 'action:read' },
       { path: '/admin/feedback', label: 'Санал хүсэлт', permission: 'feedback:read' },
       { path: '/admin/attendance', label: 'Ирцийн хяналт', permission: 'attendance:read' },
+      { path: '/admin/office-location', label: 'Оффисын байршил', permission: 'attendance:read' },
       { path: '/admin/attendance-calculation', label: 'Ирц тооцоолол', permission: 'attendance:read' },
     ],
   },

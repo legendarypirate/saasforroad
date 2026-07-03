@@ -92,12 +92,41 @@ async function ensurePostGIS(sequelize) {
   }
 }
 
+async function ensureAttendanceGeofenceColumns(sequelize) {
+  const [rows] = await sequelize.query(`
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'attendances'
+  `);
+  if (rows.length === 0) return;
+
+  const columns = [
+    `ALTER TABLE "attendances" ADD COLUMN IF NOT EXISTS "office_location_id" INTEGER;`,
+    `ALTER TABLE "attendances" ADD COLUMN IF NOT EXISTS "distance_meters" INTEGER;`,
+    `ALTER TABLE "attendances" ADD COLUMN IF NOT EXISTS "check_out_latitude" VARCHAR(255);`,
+    `ALTER TABLE "attendances" ADD COLUMN IF NOT EXISTS "check_out_longitude" VARCHAR(255);`,
+    `ALTER TABLE "attendances" ADD COLUMN IF NOT EXISTS "check_out_office_location_id" INTEGER;`,
+    `ALTER TABLE "attendances" ADD COLUMN IF NOT EXISTS "check_out_distance_meters" INTEGER;`,
+  ];
+
+  for (const sql of columns) {
+    await sequelize.query(sql);
+  }
+}
+
 async function ensureSchema(sequelize, UserModel) {
   if (!UserModel) {
     throw new Error("User model is required for ensureSchema");
   }
   await ensurePostGIS(sequelize);
   await ensureUserProfileColumns(sequelize, UserModel);
+  await ensureAttendanceGeofenceColumns(sequelize);
 }
 
-module.exports = { ensureSchema, ensureUserProfileColumns, ensurePostGIS, resolveTableName, resolveExistingUserTable };
+module.exports = {
+  ensureSchema,
+  ensureUserProfileColumns,
+  ensurePostGIS,
+  ensureAttendanceGeofenceColumns,
+  resolveTableName,
+  resolveExistingUserTable,
+};

@@ -76,6 +76,9 @@ db.suppliers = require("./supplier.model.js")(sequelize, Sequelize);
 db.homepage_settings = require("./homepage.model.js")(sequelize, Sequelize);
 db.tender_packages = require("./tender_package.model.js")(sequelize, Sequelize);
 db.tender_documents = require("./tender_document.model.js")(sequelize, Sequelize);
+db.equipment_rentals = require("./equipment_rental.model.js")(sequelize, Sequelize);
+db.equipment_rental_payments = require("./equipment_rental_payment.model.js")(sequelize, Sequelize);
+db.office_locations = require("./office_location.model.js")(sequelize, Sequelize);
 
 db.tender_packages.hasMany(db.tender_documents, {
   foreignKey: "tender_package_id",
@@ -234,6 +237,20 @@ db.equipment_oil_changes.belongsTo(db.equipments, { foreignKey: "equipment_id", 
 db.equipments.hasMany(db.equipment_oil_changes, {
   foreignKey: "equipment_id",
   as: "oilChanges",
+});
+
+db.equipment_rentals.belongsTo(db.equipments, { foreignKey: "equipment_id", as: "equipment" });
+db.equipments.hasMany(db.equipment_rentals, { foreignKey: "equipment_id", as: "rentals" });
+
+db.equipment_rental_payments.belongsTo(db.equipment_rentals, {
+  foreignKey: "rental_id",
+  as: "rental",
+  onDelete: "CASCADE",
+});
+db.equipment_rentals.hasMany(db.equipment_rental_payments, {
+  foreignKey: "rental_id",
+  as: "payments",
+  onDelete: "CASCADE",
 });
 
 db.tasks.belongsTo(db.milestones, { foreignKey: "milestone_id" });

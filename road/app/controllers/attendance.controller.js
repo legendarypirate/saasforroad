@@ -9,9 +9,46 @@ const {
   monthRange,
   getScheduleLabel,
 } = require("../utils/attendanceCalculator");
+const { validateGeofence } = require("../utils/geo");
+
+const OfficeLocation = db.office_locations;
 
 function todayDateString() {
   return new Date().toISOString().slice(0, 10);
+}
+
+async function resolveGeofence(latitude, longitude) {
+  if (latitude === undefined || latitude === null || longitude === undefined || longitude === null) {
+    const err = new Error("Байршлын зөвшөөрөл шаардлагатай. GPS асаана уу.");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const lat = Number(latitude);
+  const lng = Number(longitude);
+  if (Number.isNaN(lat) || Number.isNaN(lng)) {
+    const err = new Error("Байршлын координат буруу байна");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const offices = await OfficeLocation.findAll({ where: { is_active: true } });
+  const result = validateGeofence(lat, lng, offices);
+  if (!result.ok) {
+    const err = new Error(result.message);
+    err.statusCode = 403;
+    err.distanceMeters = result.distanceMeters;
+    err.office = result.office;
+    throw err;
+  }
+
+  return {
+    latitude: String(lat),
+    longitude: String(lng),
+    office_location_id: result.office.id,
+    distance_meters: result.distanceMeters,
+    office_name: result.office.name,
+  };
 }
 
 async function fetchExceptions(userId, from, to) {
@@ -70,13 +107,17 @@ exports.checkIn = async (req, res) => {
     }
 
     const now = new Date();
+    const location = await resolveGeofence(latitude, longitude);
+
     if (record) {
       await record.update({
         check_in_at: now,
         status: "present",
         notes: notes || record.notes,
-        latitude: latitude || record.latitude,
-        longitude: longitude || record.longitude,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        office_location_id: location.office_location_id,
+        distance_meters: location.distance_meters,
       });
     } else {
       record = await Attendance.create({
@@ -85,19 +126,30 @@ exports.checkIn = async (req, res) => {
         check_in_at: now,
         status: "present",
         notes,
-        latitude,
-        longitude,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        office_location_id: location.office_location_id,
+        distance_meters: location.distance_meters,
       });
     }
 
-    res.send({ success: true, message: "Ирц амжилттай бүртгэгдлээ", data: record });
+    res.send({
+      success: true,
+      message: `Ирц амжилттай бүртгэгдлээ (${location.office_name})`,
+      data: record,
+    });
   } catch (err) {
-    res.status(500).send({ success: false, message: err.message });
+    res.status(err.statusCode || 500).send({
+      success: false,
+      message: err.message,
+      distance_meters: err.distanceMeters,
+      office: err.office,
+    });
   }
 };
 
 exports.checkOut = async (req, res) => {
-  const { user_id, notes } = req.body;
+  const { user_id, notes, latitude, longitude } = req.body;
   if (!user_id) {
     return res.status(400).send({ success: false, message: "user_id шаардлагатай" });
   }
@@ -124,14 +176,29 @@ exports.checkOut = async (req, res) => {
       });
     }
 
+    const location = await resolveGeofence(latitude, longitude);
+
     await record.update({
       check_out_at: new Date(),
       notes: notes || record.notes,
+      check_out_latitude: location.latitude,
+      check_out_longitude: location.longitude,
+      check_out_office_location_id: location.office_location_id,
+      check_out_distance_meters: location.distance_meters,
     });
 
-    res.send({ success: true, message: "Явц амжилттай бүртгэгдлээ", data: record });
+    res.send({
+      success: true,
+      message: `Явц амжилттай бүртгэгдлээ (${location.office_name})`,
+      data: record,
+    });
   } catch (err) {
-    res.status(500).send({ success: false, message: err.message });
+    res.status(err.statusCode || 500).send({
+      success: false,
+      message: err.message,
+      distance_meters: err.distanceMeters,
+      office: err.office,
+    });
   }
 };
 

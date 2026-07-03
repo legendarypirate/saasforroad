@@ -23,6 +23,8 @@ const DEFAULT_PERMISSIONS = [
   { module: "homepage", action: "write", key: "homepage:write" },
   { module: "tender", action: "read", key: "tender:read" },
   { module: "tender", action: "write", key: "tender:write" },
+  { module: "equipment", action: "read", key: "equipment:read" },
+  { module: "equipment", action: "write", key: "equipment:write" },
 ];
 
 const DEFAULT_ROLES = [
@@ -53,6 +55,8 @@ const DEFAULT_ROLES = [
       "feedback:read",
       "accident:read",
       "notification:read",
+      "equipment:read",
+      "equipment:write",
     ],
   },
 ];
