@@ -19,9 +19,11 @@ import {
   Avatar,
   Upload,
   Spin,
+  DatePicker,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { DeleteOutlined, EditOutlined, PlusOutlined, UserOutlined, CameraOutlined } from '@ant-design/icons';
+import { DATE_FORMAT, dateFormItemProps, formatDate } from '@/lib/userDates';
 import EmploymentTab, {
   type CareerChangeRow,
   type ContractTerminationRow,
@@ -661,7 +663,7 @@ export default function UserDetailPage() {
                 {displayValue(user?.driver_license_number)}
               </Descriptions.Item>
               <Descriptions.Item label="Жолоочны үнэмлэхний хүчинтэй огноо">
-                {displayValue(user?.driver_license_expiry)}
+                {formatDate(user?.driver_license_expiry)}
               </Descriptions.Item>
               <Descriptions.Item label="Харъяалал">{displayValue(user?.affiliation)}</Descriptions.Item>
               <Descriptions.Item label="Оршин суугаа хаяг" span={2}>
@@ -738,8 +740,12 @@ export default function UserDetailPage() {
                 <Form.Item name="driver_license_number" label="Жолооны үнэмлэхний дугаар">
                   <Input placeholder="Үнэмлэхний дугаар" />
                 </Form.Item>
-                <Form.Item name="driver_license_expiry" label="Жолоочны үнэмлэхний хүчинтэй огноо">
-                  <Input placeholder="YYYY-MM-DD" />
+                <Form.Item
+                  name="driver_license_expiry"
+                  label="Жолоочны үнэмлэхний хүчинтэй огноо"
+                  {...dateFormItemProps()}
+                >
+                  <DatePicker format={DATE_FORMAT} style={{ width: '100%' }} placeholder="Огноо сонгох" />
                 </Form.Item>
                 <Form.Item name="affiliation" label="Харъяалал">
                   <Input placeholder="Харъяалал" />

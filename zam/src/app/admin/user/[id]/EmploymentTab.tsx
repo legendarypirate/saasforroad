@@ -10,9 +10,11 @@ import {
   Table,
   Space,
   message,
+  DatePicker,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { DATE_FORMAT, dateFormItemProps, formatDate } from '@/lib/userDates';
 
 export interface EmploymentUser {
   responsible_equipment?: string;
@@ -64,19 +66,24 @@ interface EmploymentTabProps {
 const displayValue = (value?: string | number | null) =>
   value !== undefined && value !== null && String(value).trim() !== '' ? String(value) : '—';
 
-const EMPLOYMENT_LABELS: { key: keyof EmploymentUser; label: string; fullWidth?: boolean }[] = [
+const EMPLOYMENT_LABELS: {
+  key: keyof EmploymentUser;
+  label: string;
+  fullWidth?: boolean;
+  type?: 'date';
+}[] = [
   { key: 'responsible_equipment', label: 'Хариуцсан техник' },
   { key: 'working_conditions', label: 'Хөдөлмөрийн нөхцөл' },
   { key: 'job_description', label: 'Ажлын байрны тодорхойлолт', fullWidth: true },
-  { key: 'employment_start_date', label: 'Ажилд орсон огноо' },
+  { key: 'employment_start_date', label: 'Ажилд орсон огноо', type: 'date' },
   { key: 'employment_order_number', label: 'Ажилд орсон тушаал дугаар' },
   { key: 'labor_contract_number', label: 'Хөдөлмөрийн гэрээний дугаар' },
-  { key: 'labor_contract_date', label: 'Хөдөлмөрийн гэрээ байгуулсан огноо' },
+  { key: 'labor_contract_date', label: 'Хөдөлмөрийн гэрээ байгуулсан огноо', type: 'date' },
   { key: 'golden_order', label: 'Алтан тушаал' },
   { key: 'probation_period', label: 'Туршилтын хугацаа' },
-  { key: 'probation_end_date', label: 'Туршилтын хугацаа дуусах огноо' },
+  { key: 'probation_end_date', label: 'Туршилтын хугацаа дуусах огноо', type: 'date' },
   { key: 'permanent_order_number', label: 'Жинхэлсэн тушаалын дугаар' },
-  { key: 'permanent_date', label: 'Жинхэлсэн огноо' },
+  { key: 'permanent_date', label: 'Жинхэлсэн огноо', type: 'date' },
 ];
 
 export default function EmploymentTab({
@@ -261,8 +268,8 @@ export default function EmploymentTab({
   const careerColumns: ColumnsType<CareerChangeRow> = [
     { title: 'Тушаалын дугаар', dataIndex: 'order_number', render: (v) => v || '—' },
     { title: 'Албан тушаал', dataIndex: 'position', render: (v) => v || '—' },
-    { title: 'Огноо', dataIndex: 'effective_date', render: (v) => v || '—' },
-    { title: 'Гэрээний дуусах огноо', dataIndex: 'contract_end_date', render: (v) => v || '—' },
+    { title: 'Огноо', dataIndex: 'effective_date', render: (v) => formatDate(v) },
+    { title: 'Гэрээний дуусах огноо', dataIndex: 'contract_end_date', render: (v) => formatDate(v) },
     {
       title: 'Үйлдэл',
       key: 'action',
@@ -282,7 +289,7 @@ export default function EmploymentTab({
     {
       title: 'Хөдөлмөрийн гэрээ дуусгавар болсон огноо',
       dataIndex: 'termination_date',
-      render: (v) => v || '—',
+      render: (v) => formatDate(v),
     },
     { title: 'Шалтгаан', dataIndex: 'reason', render: (v) => v || '—' },
     {
@@ -300,7 +307,7 @@ export default function EmploymentTab({
 
   const awardColumns: ColumnsType<UserAwardRow> = [
     { title: 'Шагналын нэр', dataIndex: 'award_name', render: (v) => v || '—' },
-    { title: 'Шагнал авсан огноо', dataIndex: 'award_date', render: (v) => v || '—' },
+    { title: 'Шагнал авсан огноо', dataIndex: 'award_date', render: (v) => formatDate(v) },
     {
       title: 'Үйлдэл',
       key: 'action',
@@ -329,9 +336,9 @@ export default function EmploymentTab({
       >
         {!editing ? (
           <Descriptions column={2} bordered size="middle" {...descStyle}>
-            {EMPLOYMENT_LABELS.map(({ key, label, fullWidth }) => (
+            {EMPLOYMENT_LABELS.map(({ key, label, fullWidth, type }) => (
               <Descriptions.Item key={key} label={label} span={fullWidth ? 2 : 1}>
-                {displayValue(user?.[key])}
+                {type === 'date' ? formatDate(user?.[key] as string) : displayValue(user?.[key])}
               </Descriptions.Item>
             ))}
           </Descriptions>
@@ -344,14 +351,19 @@ export default function EmploymentTab({
                 gap: '0 24px',
               }}
             >
-              {EMPLOYMENT_LABELS.map(({ key, label, fullWidth }) => (
+              {EMPLOYMENT_LABELS.map(({ key, label, fullWidth, type }) => (
                 <Form.Item
                   key={key}
                   name={key}
                   label={label}
                   style={fullWidth ? { gridColumn: '1 / -1' } : undefined}
+                  {...(type === 'date' ? dateFormItemProps() : {})}
                 >
-                  <Input placeholder={label} />
+                  {type === 'date' ? (
+                    <DatePicker format={DATE_FORMAT} style={{ width: '100%' }} placeholder={label} />
+                  ) : (
+                    <Input placeholder={label} />
+                  )}
                 </Form.Item>
               ))}
             </div>
@@ -373,11 +385,11 @@ export default function EmploymentTab({
           <Form.Item name="position">
             <Input placeholder="Албан тушаал" />
           </Form.Item>
-          <Form.Item name="effective_date">
-            <Input placeholder="Огноо" />
+          <Form.Item name="effective_date" {...dateFormItemProps()}>
+            <DatePicker format={DATE_FORMAT} placeholder="Огноо" />
           </Form.Item>
-          <Form.Item name="contract_end_date">
-            <Input placeholder="Гэрээний дуусах огноо" />
+          <Form.Item name="contract_end_date" {...dateFormItemProps()}>
+            <DatePicker format={DATE_FORMAT} placeholder="Гэрээний дуусах огноо" />
           </Form.Item>
           <Button type="primary" icon={<PlusOutlined />} loading={careerSaving} onClick={addCareerChange} />
         </Form>
@@ -389,8 +401,8 @@ export default function EmploymentTab({
           <Form.Item name="termination_order_number">
             <Input placeholder="Дуусгавар болсон тушаалын дугаар" style={{ width: 260 }} />
           </Form.Item>
-          <Form.Item name="termination_date">
-            <Input placeholder="Дуусгавар болсон огноо" />
+          <Form.Item name="termination_date" {...dateFormItemProps()}>
+            <DatePicker format={DATE_FORMAT} placeholder="Дуусгавар болсон огноо" />
           </Form.Item>
           <Form.Item name="reason">
             <Input placeholder="Шалтгаан" style={{ width: 220 }} />
@@ -405,8 +417,8 @@ export default function EmploymentTab({
           <Form.Item name="award_name">
             <Input placeholder="Шагналын нэр" style={{ width: 320 }} />
           </Form.Item>
-          <Form.Item name="award_date">
-            <Input placeholder="Шагнал авсан огноо" />
+          <Form.Item name="award_date" {...dateFormItemProps()}>
+            <DatePicker format={DATE_FORMAT} placeholder="Шагнал авсан огноо" />
           </Form.Item>
           <Button
             type="primary"
@@ -423,8 +435,8 @@ export default function EmploymentTab({
           <Form.Item name="award_name">
             <Input placeholder="Компанийн шагнал" style={{ width: 320 }} />
           </Form.Item>
-          <Form.Item name="award_date">
-            <Input placeholder="Шагнал авсан огноо" />
+          <Form.Item name="award_date" {...dateFormItemProps()}>
+            <DatePicker format={DATE_FORMAT} placeholder="Шагнал авсан огноо" />
           </Form.Item>
           <Button
             type="primary"
