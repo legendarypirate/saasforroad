@@ -80,6 +80,7 @@ db.equipment_rentals = require("./equipment_rental.model.js")(sequelize, Sequeli
 db.equipment_rental_payments = require("./equipment_rental_payment.model.js")(sequelize, Sequelize);
 db.office_locations = require("./office_location.model.js")(sequelize, Sequelize);
 db.org_nodes = require("./org_node.model.js")(sequelize, Sequelize);
+db.salary_adjustments = require("./salary_adjustment.model.js")(sequelize, Sequelize);
 
 db.tender_packages.hasMany(db.tender_documents, {
   foreignKey: "tender_package_id",
@@ -263,6 +264,9 @@ db.org_nodes.belongsTo(db.users, { foreignKey: "user_id", as: "user" });
 db.org_nodes.belongsTo(db.org_nodes, { foreignKey: "reports_to_id", as: "supervisor" });
 db.org_nodes.hasMany(db.org_nodes, { foreignKey: "reports_to_id", as: "directReports" });
 db.users.hasOne(db.org_nodes, { foreignKey: "user_id", as: "orgNode" });
+
+db.salary_adjustments.belongsTo(db.users, { foreignKey: "user_id", as: "user" });
+db.users.hasMany(db.salary_adjustments, { foreignKey: "user_id", as: "salaryAdjustments" });
 
 // Export the db object for easy access throughout the app
 module.exports = db;
