@@ -147,6 +147,8 @@ export default function UserDetailPage() {
 
   const populateGeneralForm = (data: UserDetail) => {
     generalForm.setFieldsValue({
+      email: data.email,
+      phone: data.phone,
       department_number: data.department_number,
       personal_case_number: data.personal_case_number,
       project_number: data.project_number,
@@ -698,8 +700,6 @@ export default function UserDetailPage() {
               >
                 <Descriptions.Item label="ID">{displayValue(user?.id)}</Descriptions.Item>
                 <Descriptions.Item label="Нэвтрэх нэр">{displayValue(user?.username)}</Descriptions.Item>
-                <Descriptions.Item label="И-мэйл">{displayValue(user?.email)}</Descriptions.Item>
-                <Descriptions.Item label="Утас">{displayValue(user?.phone)}</Descriptions.Item>
                 <Descriptions.Item label="Эрх" span={2}>
                   <Tag color="blue">{displayValue(user?.roleRecord?.name || user?.role)}</Tag>
                 </Descriptions.Item>
@@ -711,6 +711,16 @@ export default function UserDetailPage() {
                   gap: '0 24px',
                 }}
               >
+                <Form.Item
+                  name="email"
+                  label="И-мэйл"
+                  rules={[{ type: 'email', message: 'И-мэйл буруу байна' }]}
+                >
+                  <Input placeholder="user@example.com" />
+                </Form.Item>
+                <Form.Item name="phone" label="Утас">
+                  <Input placeholder="Утасны дугаар" />
+                </Form.Item>
                 <Form.Item name="department_number" label="Хэлтсийн дугаар">
                   <Input placeholder="Хэлтсийн дугаар" />
                 </Form.Item>

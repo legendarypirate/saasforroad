@@ -153,6 +153,8 @@ exports.update = async (req, res) => {
   const id = req.params.id;
 
   const updateData = {
+    email: req.body.email !== undefined ? req.body.email : undefined,
+    phone: req.body.phone !== undefined ? req.body.phone : undefined,
     end_date: req.body.end_date !== undefined ? req.body.end_date : undefined,
     is_active: req.body.is_active !== undefined ? req.body.is_active : undefined,
     gender: req.body.gender !== undefined ? req.body.gender : undefined,
