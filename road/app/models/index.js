@@ -81,6 +81,7 @@ db.equipment_rental_payments = require("./equipment_rental_payment.model.js")(se
 db.office_locations = require("./office_location.model.js")(sequelize, Sequelize);
 db.org_nodes = require("./org_node.model.js")(sequelize, Sequelize);
 db.salary_adjustments = require("./salary_adjustment.model.js")(sequelize, Sequelize);
+db.salary_month_settings = require("./salary_month_setting.model.js")(sequelize, Sequelize);
 
 db.tender_packages.hasMany(db.tender_documents, {
   foreignKey: "tender_package_id",

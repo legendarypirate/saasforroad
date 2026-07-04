@@ -2,12 +2,14 @@ const db = require("../models");
 const User = db.users;
 const Attendance = db.attendances;
 const SalaryAdjustment = db.salary_adjustments;
+const SalaryMonthSetting = db.salary_month_settings;
 const Op = db.Sequelize.Op;
 const { monthRange, summarizePeriod } = require("../utils/attendanceCalculator");
 const {
   calculateSalaryBreakdown,
   buildSalaryEmailHtml,
   buildSalaryEmailText,
+  defaultExpectedHoursForMonth,
   round2,
 } = require("../utils/salaryCalculator");
 const { sendMail, isConfigured } = require("../utils/mailer");
@@ -25,6 +27,27 @@ const userAttrs = [
   "daily_work_hours",
   "extended_cycle",
 ];
+
+const ADJUSTMENT_FIELDS = [
+  "worked_hours",
+  "billable_hours",
+  "overtime_hours",
+  "absent_hours",
+  "ndsh",
+  "hhoat",
+  "deduction",
+  "additional_deduction",
+  "note",
+];
+
+const NULLABLE_NUM_FIELDS = new Set([
+  "worked_hours",
+  "billable_hours",
+  "overtime_hours",
+  "absent_hours",
+  "ndsh",
+  "hhoat",
+]);
 
 async function fetchExceptionsForUsers(userIds, from, to) {
   if (!userIds.length) return {};
@@ -53,12 +76,39 @@ function toAdjustmentMap(rows) {
   const map = {};
   rows.forEach((row) => {
     map[row.user_id] = {
+      worked_hours: row.worked_hours,
+      billable_hours: row.billable_hours,
+      overtime_hours: row.overtime_hours,
+      absent_hours: row.absent_hours,
+      ndsh: row.ndsh,
+      hhoat: row.hhoat,
       deduction: Number(row.deduction) || 0,
       additional_deduction: Number(row.additional_deduction) || 0,
       note: row.note || "",
     };
   });
   return map;
+}
+
+function pickAdjustmentUpdates(source) {
+  const updates = {};
+  for (const field of ADJUSTMENT_FIELDS) {
+    if (source[field] === undefined) continue;
+    if (field === "note") {
+      updates.note = source.note || "";
+    } else if (NULLABLE_NUM_FIELDS.has(field)) {
+      updates[field] = source[field] === null ? null : Number(source[field]) || 0;
+    } else {
+      updates[field] = Number(source[field]) || 0;
+    }
+  }
+  return updates;
+}
+
+async function getMonthExpectedHours(month) {
+  const setting = await SalaryMonthSetting.findOne({ where: { month } });
+  if (setting) return Number(setting.expected_hours) || 0;
+  return defaultExpectedHoursForMonth(month);
 }
 
 async function buildMonthlyRows(month, userIds = null) {
@@ -71,6 +121,7 @@ async function buildMonthlyRows(month, userIds = null) {
 
   const { from, to } = monthRange(year, mon);
   const userWhere = userIds?.length ? { id: userIds } : {};
+  const expectedHours = await getMonthExpectedHours(month);
 
   const users = await User.findAll({
     where: userWhere,
@@ -106,6 +157,10 @@ async function buildMonthlyRows(month, userIds = null) {
 
   let totalWorkedHours = 0;
   let totalBillableHours = 0;
+  let totalOvertimeHours = 0;
+  let totalGrossPay = 0;
+  let totalNdsh = 0;
+  let totalHhoat = 0;
   let totalNetPay = 0;
   let totalDeduction = 0;
   let totalAdditionalDeduction = 0;
@@ -123,11 +178,20 @@ async function buildMonthlyRows(month, userIds = null) {
       additional_deduction: 0,
       note: "",
     };
-    const breakdown = calculateSalaryBreakdown(user, summary, adjustment);
+    const breakdown = calculateSalaryBreakdown(
+      user,
+      summary,
+      adjustment,
+      expectedHours
+    );
     const email = resolveEmail(user);
 
     totalWorkedHours += breakdown.totalWorkedHours;
     totalBillableHours += breakdown.totalBillableHours;
+    totalOvertimeHours += breakdown.totalOvertimeHours;
+    totalGrossPay += breakdown.grossPay;
+    totalNdsh += breakdown.ndsh;
+    totalHhoat += breakdown.hhoat;
     totalNetPay += breakdown.netPay;
     totalDeduction += breakdown.deduction;
     totalAdditionalDeduction += breakdown.additionalDeduction;
@@ -141,17 +205,21 @@ async function buildMonthlyRows(month, userIds = null) {
       scheduledWorkDays: summary.scheduledWorkDays,
       presentDays: summary.presentDays,
       absentDays: summary.absentDays,
+      absentHours: breakdown.absentHours,
       totalWorkedHours: breakdown.totalWorkedHours,
       totalBillableHours: breakdown.totalBillableHours,
       totalOvertimeHours: breakdown.totalOvertimeHours,
       workPay: breakdown.workPay,
       overtimePay: breakdown.overtimePay,
+      grossPay: breakdown.grossPay,
       absentDeduction: breakdown.absentDeduction,
+      ndsh: breakdown.ndsh,
+      hhoat: breakdown.hhoat,
       deduction: breakdown.deduction,
       additional_deduction: breakdown.additionalDeduction,
       note: breakdown.note,
-      grossPay: breakdown.grossPay,
       netPay: breakdown.netPay,
+      hourlyRate: breakdown.hourlyRate,
       hasEmail: Boolean(email),
       breakdown,
       summary,
@@ -162,9 +230,14 @@ async function buildMonthlyRows(month, userIds = null) {
     month,
     from,
     to,
+    expectedHours: round2(expectedHours),
     totals: {
       totalWorkedHours: round2(totalWorkedHours),
       totalBillableHours: round2(totalBillableHours),
+      totalOvertimeHours: round2(totalOvertimeHours),
+      totalGrossPay: round2(totalGrossPay),
+      totalNdsh: round2(totalNdsh),
+      totalHhoat: round2(totalHhoat),
       totalNetPay: round2(totalNetPay),
       totalDeduction: round2(totalDeduction),
       totalAdditionalDeduction: round2(totalAdditionalDeduction),
@@ -172,6 +245,14 @@ async function buildMonthlyRows(month, userIds = null) {
       withEmailCount: rows.filter((r) => r.hasEmail).length,
     },
     rows,
+  };
+}
+
+function publicPayload(data) {
+  return {
+    ...data,
+    rows: data.rows.map(({ breakdown, summary, ...row }) => row),
+    resendConfigured: isConfigured(),
   };
 }
 
@@ -183,21 +264,39 @@ exports.getCalculation = async (req, res) => {
 
   try {
     const data = await buildMonthlyRows(month);
-    res.json({
-      success: true,
-      data: {
-        ...data,
-        rows: data.rows.map(({ breakdown, summary, ...row }) => row),
-        resendConfigured: isConfigured(),
-      },
-    });
+    res.json({ success: true, data: publicPayload(data) });
   } catch (err) {
     res.status(err.statusCode || 500).json({ success: false, message: err.message });
   }
 };
 
+exports.updateMonthSetting = async (req, res) => {
+  const { month, expected_hours } = req.body;
+  if (!month) {
+    return res.status(400).json({ success: false, message: "month шаардлагатай" });
+  }
+
+  try {
+    const hours = Number(expected_hours);
+    if (Number.isNaN(hours) || hours < 0) {
+      return res.status(400).json({ success: false, message: "Ажиллавал зохих цаг буруу" });
+    }
+
+    const [setting] = await SalaryMonthSetting.findOrCreate({
+      where: { month },
+      defaults: { expected_hours: hours },
+    });
+    await setting.update({ expected_hours: hours });
+
+    const data = await buildMonthlyRows(month);
+    res.json({ success: true, data: publicPayload(data) });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 exports.upsertAdjustment = async (req, res) => {
-  const { month, user_id, deduction, additional_deduction, note } = req.body;
+  const { month, user_id } = req.body;
 
   if (!month || !user_id) {
     return res.status(400).json({
@@ -212,23 +311,12 @@ exports.upsertAdjustment = async (req, res) => {
       return res.status(404).json({ success: false, message: "Хэрэглэгч олдсонгүй" });
     }
 
+    const updates = pickAdjustmentUpdates(req.body);
     const [row] = await SalaryAdjustment.findOrCreate({
       where: { user_id, month },
-      defaults: {
-        deduction: Number(deduction) || 0,
-        additional_deduction: Number(additional_deduction) || 0,
-        note: note || "",
-      },
+      defaults: updates,
     });
-
-    await row.update({
-      deduction: deduction !== undefined ? Number(deduction) || 0 : row.deduction,
-      additional_deduction:
-        additional_deduction !== undefined
-          ? Number(additional_deduction) || 0
-          : row.additional_deduction,
-      note: note !== undefined ? note || "" : row.note,
-    });
+    await row.update(updates);
 
     const data = await buildMonthlyRows(month, [user_id]);
     const resultRow = data.rows[0];
@@ -252,33 +340,16 @@ exports.bulkUpsertAdjustments = async (req, res) => {
   try {
     for (const item of rows) {
       if (!item.user_id) continue;
+      const updates = pickAdjustmentUpdates(item);
       const [row] = await SalaryAdjustment.findOrCreate({
         where: { user_id: item.user_id, month },
-        defaults: {
-          deduction: Number(item.deduction) || 0,
-          additional_deduction: Number(item.additional_deduction) || 0,
-          note: item.note || "",
-        },
+        defaults: updates,
       });
-      await row.update({
-        deduction: item.deduction !== undefined ? Number(item.deduction) || 0 : row.deduction,
-        additional_deduction:
-          item.additional_deduction !== undefined
-            ? Number(item.additional_deduction) || 0
-            : row.additional_deduction,
-        note: item.note !== undefined ? item.note || "" : row.note,
-      });
+      await row.update(updates);
     }
 
     const data = await buildMonthlyRows(month);
-    res.json({
-      success: true,
-      data: {
-        ...data,
-        rows: data.rows.map(({ breakdown, summary, ...row }) => row),
-        resendConfigured: isConfigured(),
-      },
-    });
+    res.json({ success: true, data: publicPayload(data) });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

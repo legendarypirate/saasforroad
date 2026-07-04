@@ -131,6 +131,30 @@ async function ensureOrgNodeColumns(sequelize) {
   }
 }
 
+async function ensureSalaryAdjustmentColumns(sequelize) {
+  const [rows] = await sequelize.query(`
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'salary_adjustments'
+  `);
+  if (rows.length === 0) return;
+
+  const columns = [
+    `ALTER TABLE "salary_adjustments" ADD COLUMN IF NOT EXISTS "worked_hours" DECIMAL(8,2);`,
+    `ALTER TABLE "salary_adjustments" ADD COLUMN IF NOT EXISTS "billable_hours" DECIMAL(8,2);`,
+    `ALTER TABLE "salary_adjustments" ADD COLUMN IF NOT EXISTS "overtime_hours" DECIMAL(8,2);`,
+    `ALTER TABLE "salary_adjustments" ADD COLUMN IF NOT EXISTS "absent_hours" DECIMAL(8,2);`,
+    `ALTER TABLE "salary_adjustments" ADD COLUMN IF NOT EXISTS "ndsh" DECIMAL(12,2);`,
+    `ALTER TABLE "salary_adjustments" ADD COLUMN IF NOT EXISTS "hhoat" DECIMAL(12,2);`,
+    `ALTER TABLE "salary_adjustments" ADD COLUMN IF NOT EXISTS "deduction" DECIMAL(12,2) DEFAULT 0;`,
+    `ALTER TABLE "salary_adjustments" ADD COLUMN IF NOT EXISTS "additional_deduction" DECIMAL(12,2) DEFAULT 0;`,
+    `ALTER TABLE "salary_adjustments" ADD COLUMN IF NOT EXISTS "note" VARCHAR(500);`,
+  ];
+
+  for (const sql of columns) {
+    await sequelize.query(sql);
+  }
+}
+
 async function ensureSchema(sequelize, UserModel) {
   if (!UserModel) {
     throw new Error("User model is required for ensureSchema");
@@ -139,6 +163,7 @@ async function ensureSchema(sequelize, UserModel) {
   await ensureUserProfileColumns(sequelize, UserModel);
   await ensureAttendanceGeofenceColumns(sequelize);
   await ensureOrgNodeColumns(sequelize);
+  await ensureSalaryAdjustmentColumns(sequelize);
 }
 
 module.exports = {
@@ -147,6 +172,7 @@ module.exports = {
   ensurePostGIS,
   ensureAttendanceGeofenceColumns,
   ensureOrgNodeColumns,
+  ensureSalaryAdjustmentColumns,
   resolveTableName,
   resolveExistingUserTable,
 };

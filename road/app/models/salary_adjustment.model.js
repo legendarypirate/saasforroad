@@ -10,6 +10,30 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.STRING(7),
         allowNull: false,
       },
+      worked_hours: {
+        type: Sequelize.DECIMAL(8, 2),
+        allowNull: true,
+      },
+      billable_hours: {
+        type: Sequelize.DECIMAL(8, 2),
+        allowNull: true,
+      },
+      overtime_hours: {
+        type: Sequelize.DECIMAL(8, 2),
+        allowNull: true,
+      },
+      absent_hours: {
+        type: Sequelize.DECIMAL(8, 2),
+        allowNull: true,
+      },
+      ndsh: {
+        type: Sequelize.DECIMAL(12, 2),
+        allowNull: true,
+      },
+      hhoat: {
+        type: Sequelize.DECIMAL(12, 2),
+        allowNull: true,
+      },
       deduction: {
         type: Sequelize.DECIMAL(12, 2),
         defaultValue: 0,

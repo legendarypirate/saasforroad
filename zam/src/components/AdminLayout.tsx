@@ -69,9 +69,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, []);
 
   const isDashboard = pathname === DASHBOARD_PATH;
-  const isFullWidth =
-    pathname?.startsWith('/admin/salary-calculation') ||
-    pathname?.startsWith('/admin/attendance-calculation');
 
   const goHome = () => {
     setLoading(true);
@@ -124,8 +121,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       <Content
         style={{
-          padding: isFullWidth ? '16px 20px' : '24px',
-          maxWidth: isFullWidth ? '100%' : 1400,
+          padding: '16px 20px',
+          maxWidth: '100%',
           margin: '0 auto',
           width: '100%',
         }}
@@ -133,7 +130,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <Spin spinning={loading || isPending} tip="Ачааллаж байна..." size="large">
           <div
             style={{
-              padding: isDashboard ? 32 : isFullWidth ? 16 : 24,
+              padding: isDashboard ? 32 : 16,
               background: '#fff',
               minHeight: 360,
               borderRadius: 12,
