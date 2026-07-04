@@ -104,10 +104,10 @@ function calculateSalaryBreakdown(user, summary, adjustment = {}, monthExpectedH
   const totalBillableHours = hours.totalBillableHours;
   const totalOvertimeHours = hours.totalOvertimeHours;
   const absentDays = summary.absentDays || 0;
-  const autoAbsentHours = absentDays * dailyWorkHours;
+  // Default always 0 — accountant enters тасалсан цаг manually
   const absentHours = isSet(adjustment.absent_hours)
     ? Number(adjustment.absent_hours) || 0
-    : autoAbsentHours;
+    : 0;
 
   const hourlyRate = expectedHours > 0 ? baseSalary / expectedHours : 0;
   const workPay = hourlyRate * totalBillableHours;
