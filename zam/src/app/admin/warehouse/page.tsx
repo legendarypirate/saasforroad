@@ -1,240 +1,158 @@
 'use client';
 
-import React, { useState, useMemo,useRef,useEffect } from 'react';
-import { Table, Button, Space, Input, DatePicker, Drawer, Form ,Select,Tag,Modal} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import dayjs from 'dayjs';
-import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
-import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  Button, Drawer, Form, Input, InputNumber, Popconfirm, Space, Switch, Table, Tag, Typography, message,
+} from 'antd';
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { inventoryApi } from '@/lib/inventory';
 
-dayjs.extend(isSameOrAfter);
-dayjs.extend(isSameOrBefore);
-interface Region {
+const { Title, Text } = Typography;
+
+interface Warehouse {
   id: number;
+  code?: string;
   name: string;
+  location?: string;
+  description?: string;
+  capacity?: number;
+  status?: string;
+  is_active?: boolean;
 }
 
-
-
-export default function DeliveryPage() {
-  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+export default function WarehousePage() {
+  const [rows, setRows] = useState<Warehouse[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Warehouse | null>(null);
   const [form] = Form.useForm();
-  const [isDrawerVisible, setIsDrawerVisible] = useState(false);
-  const [regionData, setRegionData] = useState<Region[]>([]);
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
 
-const columns: ColumnsType<Region> = [
-  {
-    title: 'Үүссэн огноо',
-    dataIndex: 'createdAt',
-    render: (text: string) => {
-      return dayjs(text).format('YYYY-MM-DD hh:mm A'); // Format the date here
-    },
-  },
-
-  {
-    title: 'Нэр',
-    dataIndex: 'name',
-    key: 'name',
-    render: (_: any, record: any) => (
-      <Tag color={record.color}>
-        {record.name}
-      </Tag>
-    ),
-  },
-  { title: 'Мэдээлэл', dataIndex: 'description' },
-  { title: 'Байршил', dataIndex: 'location' },
-  {
-    title: 'Үйлдэл',
-    key: 'actions',
-    render: (_: any, record: Region) => (
-      <Space>
-        <Button
-          type="link"
-          icon={<EditOutlined />}
-          onClick={() => alert(`Edit ${record.name}`)}
-        >
-          Edit
-        </Button>
-        <Button
-          type="link"
-          danger
-          icon={<DeleteOutlined />}
-          onClick={() => handleDelete(record.id)}
-        >
-          Delete
-        </Button>
-      </Space>
-    ),
-  },
-];
-
-  const handleDelete = async (id: number) => {
+  const load = useCallback(async () => {
+    setLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/warehouse/${id}`, {
-        method: "DELETE",
-      });
-  
-      if (response.ok) {
-        console.log("Deleted successfully");
-        const refreshed = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/warehouse`);
-        const refreshedResult = await refreshed.json();
-        if (refreshedResult.success) {
-            setRegionData(refreshedResult.data);
-        }
-      } else {
-        console.error("Failed to delete");
-      }
-    } catch (error) {
-      console.error("Error deleting:", error);
+      setRows(await inventoryApi.warehouses.list());
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : 'Алдаа');
+    } finally {
+      setLoading(false);
     }
-  };
+  }, []);
+
   useEffect(() => {
-    document.title = 'Агуулахын бүртгэл';
-    const fetchData = async () => {
-      try {
-     
-  
-        // Always fetch deliveries on page/size change
-        const deliveryRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/warehouse`);
-        const deliveriesResult = await deliveryRes.json();
-  
-        if (deliveriesResult.success) {
-            setRegionData(deliveriesResult.data);
-          
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-  
-    fetchData();
-  }, [pagination.current, pagination.pageSize]);
-  
-  
-  
-  const rowSelection = {
-    selectedRowKeys,
-    onChange: (selectedKeys: React.Key[]) => {
-      setSelectedRowKeys(selectedKeys);
-    },
+    document.title = 'Агуулах';
+    load();
+  }, [load]);
+
+  const openCreate = () => {
+    setEditing(null);
+    form.resetFields();
+    form.setFieldsValue({ is_active: true, status: 'active' });
+    setOpen(true);
   };
 
-  const handleDeliveryButton = () => {
-    setIsDrawerVisible(true);
+  const openEdit = (row: Warehouse) => {
+    setEditing(row);
+    form.setFieldsValue(row);
+    setOpen(true);
   };
 
-  // Handle form submission (for example, you could save data here)
-  const handleOk = async () => {
+  const save = async () => {
+    const values = await form.validateFields();
     try {
-      const values = await form.validateFields();
-  
-      // Construct the request payload
-      const payload = {
-        name: values.name,
-      };
-  
-      // Send the POST request
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/warehouse`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-  
-      const result = await response.json();
-  
-      if (result.success) {
-        // Optionally refresh the delivery list
-        const refreshed = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/warehouse`);
-        const refreshedResult = await refreshed.json();
-        if (refreshedResult.success) {
-            setRegionData(refreshedResult.data);
-        }
-  
-        // Reset form and close drawer
-        form.resetFields();
-        setIsDrawerVisible(false);
+      if (editing) {
+        await inventoryApi.warehouses.update(editing.id, values);
+        message.success('Шинэчлэгдлээ');
       } else {
-        console.error('Failed to create delivery:', result.message);
+        await inventoryApi.warehouses.create(values);
+        message.success('Нэмэгдлээ');
       }
-    } catch (err) {
-      console.error('Validation or request error:', err);
+      setOpen(false);
+      load();
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : 'Алдаа');
     }
   };
 
-
-  const handleCloseDrawer = () => {
-    setIsDrawerVisible(false);
+  const remove = async (id: number) => {
+    try {
+      await inventoryApi.warehouses.remove(id);
+      message.success('Устгагдлаа');
+      load();
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : 'Алдаа');
+    }
   };
 
   return (
-    <div style={{ paddingBottom: '100px' }}> {/* Adding padding to prevent overlap with fixed button */}
-      <h1 style={{ marginBottom: 24 }}>Агуулах</h1>
-
-      <Space style={{ marginBottom: 16 }} wrap>
-       
-         <Button
-          type="primary"
-          style={{ marginLeft: 'auto' }}
-          onClick={handleDeliveryButton}
-        >
-          + Агуулах үүсгэх
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+        <div>
+          <Title level={4} style={{ margin: 0 }}>Агуулах</Title>
+          <Text type="secondary">Төв болон талбайн агуулахууд</Text>
+        </div>
+        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+          Агуулах нэмэх
         </Button>
-      </Space>
+      </div>
 
       <Table
-  rowSelection={rowSelection}
-  columns={columns}
-  dataSource={regionData}
-  rowKey="id"
-  pagination={{
-    position: ['topRight'], // 👈 This moves pagination to top-right
-    current: pagination.current,
-    pageSize: pagination.pageSize,
-    total: pagination.total,
-    showSizeChanger: true,
-    onChange: (page, pageSize) => {
-      setPagination((prev) => ({
-        ...prev,
-        current: page,
-        pageSize: pageSize,
-      }));
-    },
-  }}
-/>
+        rowKey="id"
+        loading={loading}
+        dataSource={rows}
+        columns={[
+          { title: 'Код', dataIndex: 'code', width: 100, render: (v) => v || '—' },
+          { title: 'Нэр', dataIndex: 'name' },
+          { title: 'Байршил', dataIndex: 'location', render: (v) => v || '—' },
+          { title: 'Тайлбар', dataIndex: 'description', ellipsis: true, render: (v) => v || '—' },
+          {
+            title: 'Төлөв',
+            dataIndex: 'is_active',
+            width: 100,
+            render: (v) => (v !== false ? <Tag color="green">Идэвхтэй</Tag> : <Tag>Идэвхгүй</Tag>),
+          },
+          {
+            title: 'Үйлдэл',
+            width: 120,
+            render: (_, r) => (
+              <Space>
+                <Button type="text" icon={<EditOutlined />} onClick={() => openEdit(r)} />
+                <Popconfirm title="Устгах уу?" onConfirm={() => remove(r.id)}>
+                  <Button type="text" danger icon={<DeleteOutlined />} />
+                </Popconfirm>
+              </Space>
+            ),
+          },
+        ]}
+      />
 
-
- <Drawer
-        title="Агуулах үүсгэх"
-        placement="right"
-        visible={isDrawerVisible}
-        onClose={handleCloseDrawer}
-        width="400px"  // Adjust the width as needed
-        height="100%"  // Full height
-        bodyStyle={{ padding: '20px' }}
+      <Drawer
+        title={editing ? 'Агуулах засах' : 'Агуулах нэмэх'}
+        open={open}
+        onClose={() => setOpen(false)}
+        width={440}
+        extra={<Button type="primary" onClick={save}>Хадгалах</Button>}
       >
         <Form form={form} layout="vertical">
-
-          <Form.Item
-            label="Агуулахын нэр"
-            name="name"
-            rules={[{ required: true, message: 'Please input the ware!' }]}
-          >
-            <Input placeholder="Нэр оруулах" />
+          <Form.Item name="code" label="Код">
+            <Input placeholder="WH-01" />
           </Form.Item>
-        
-          <Form.Item>
-            <Button type="primary" onClick={handleOk} block>
-              Үүсгэх
-            </Button>
+          <Form.Item name="name" label="Нэр" rules={[{ required: true }]}>
+            <Input placeholder="Төв агуулах, Талбайн агуулах..." />
+          </Form.Item>
+          <Form.Item name="location" label="Байршил">
+            <Input placeholder="Хаяг / байршил" />
+          </Form.Item>
+          <Form.Item name="description" label="Тайлбар">
+            <Input.TextArea rows={2} />
+          </Form.Item>
+          <Form.Item name="capacity" label="Багтаамж">
+            <InputNumber style={{ width: '100%' }} min={0} />
+          </Form.Item>
+          <Form.Item name="is_active" label="Идэвхтэй" valuePropName="checked">
+            <Switch />
           </Form.Item>
         </Form>
       </Drawer>
-      {/* Fixed Bottom Section */}
-      
     </div>
   );
 }

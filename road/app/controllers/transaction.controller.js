@@ -1,158 +1,183 @@
 const db = require("../models");
 const Transaction = db.transactions;
+const Stock = db.stocks;
 const Material = db.materials;
-const Project = db.projects;
 const Warehouse = db.warehouses;
+const Project = db.projects;
+const Supplier = db.suppliers;
 const Op = db.Sequelize.Op;
 
-// Create and Save a new Transaction
-exports.create = (req, res) => {
-  if (!req.body.item_id || !req.body.warehouse_id || !req.body.type || !req.body.quantity || !req.body.date) {
-    res.status(400).send({ message: "Required fields cannot be empty!" });
-    return;
+const includeAll = [
+  { model: Material, as: "material", attributes: ["id", "name", "code", "unit"] },
+  { model: Warehouse, as: "warehouse", attributes: ["id", "name", "location"] },
+  { model: Project, as: "project", attributes: ["id", "name"], required: false },
+];
+
+async function applyStockDelta(itemId, warehouseId, delta, transaction) {
+  let stock = await Stock.findOne({
+    where: { item_id: itemId, warehouse_id: warehouseId },
+    transaction,
+    lock: transaction.LOCK.UPDATE,
+  });
+
+  if (!stock) {
+    if (delta < 0) {
+      const err = new Error("Агуулахад үлдэгдэл байхгүй");
+      err.statusCode = 400;
+      throw err;
+    }
+    stock = await Stock.create(
+      { item_id: itemId, warehouse_id: warehouseId, quantity: delta },
+      { transaction }
+    );
+    return stock;
   }
 
-  const trans = {
-    item_id: req.body.item_id,
-    warehouse_id: req.body.warehouse_id,
-    type: req.body.type,
-    quantity: req.body.quantity,
-    unit_price: req.body.unit_price,
-    total_price: req.body.total_price,
-    description: req.body.description,
-    project_id: req.body.project_id,
-    date: req.body.date
-  };
+  const nextQty = Number(stock.quantity) + delta;
+  if (nextQty < 0) {
+    const err = new Error(
+      `Үлдэгдэл хүрэлцэхгүй (одоо: ${stock.quantity}, шаардлагатай: ${Math.abs(delta)})`
+    );
+    err.statusCode = 400;
+    throw err;
+  }
 
-  Transaction.create(trans)
-    .then(data => {
-      res.json({ success: true, data });
-    })
-    .catch(err => {
-      res.status(500).json({
-        success: false,
-        message: err.message || "Some error occurred while creating the transaction."
-      });
+  await stock.update({ quantity: nextQty }, { transaction });
+  return stock;
+}
+
+function movementDelta(type, quantity) {
+  const qty = Number(quantity) || 0;
+  return type === "in" ? qty : -qty;
+}
+
+exports.create = async (req, res) => {
+  const {
+    item_id,
+    warehouse_id,
+    type,
+    quantity,
+    unit_price,
+    description,
+    project_id,
+    date,
+    supplier_id,
+  } = req.body;
+
+  if (!item_id || !warehouse_id || !type || !quantity) {
+    return res.status(400).json({
+      success: false,
+      message: "Бараа, агуулах, төрөл, тоо хэмжээ шаардлагатай",
     });
-};
+  }
+  if (!["in", "out"].includes(type)) {
+    return res.status(400).json({ success: false, message: "Төрөл in эсвэл out байна" });
+  }
+  if (Number(quantity) <= 0) {
+    return res.status(400).json({ success: false, message: "Тоо хэмжээ 0-ээс их байх ёстой" });
+  }
 
-// Retrieve all Transactions from the database.
-exports.findAll = async (req, res) => {
-    const type = req.query.type;
-    const condition = type ? { type: { [Op.eq]: type } } : null;
-  
-    try {
-      const data = await Transaction.findAll({
-        where: condition,
-        include: [
-          {
-            model: Material,
-            as: "material",
-            attributes: ["id", "name"]  // adjust attributes as needed
-          },
-          {
-            model: Project,
-            as: "project",
-            attributes: ["id", "name"]
-          },
-          {
-            model: Warehouse,
-            as: "warehouse",
-            attributes: ["id", "name"]
-          }
-        ]
-      });
-  
-      res.send({ success: true, data });
-    } catch (err) {
-      res.status(500).send({
-        success: false,
-        message: err.message || "Some error occurred while retrieving transactions."
-      });
+  const t = await db.sequelize.transaction();
+  try {
+    const material = await Material.findByPk(item_id);
+    const warehouse = await Warehouse.findByPk(warehouse_id);
+    if (!material || !warehouse) {
+      await t.rollback();
+      return res.status(404).json({ success: false, message: "Бараа эсвэл агуулах олдсонгүй" });
     }
-  };
 
-// Find a single Transaction by ID
-exports.findOne = (req, res) => {
-  const id = req.params.id;
+    const qty = Number(quantity);
+    const price = unit_price != null ? Number(unit_price) : null;
+    const total = price != null ? price * qty : null;
 
-  Transaction.findByPk(id)
-    .then(data => {
-      if (data) {
-        res.send({ success: true, data });
-      } else {
-        res.status(404).send({ message: `Cannot find transaction with id=${id}.` });
-      }
-    })
-    .catch(err => {
-      res.status(500).send({ message: "Error retrieving transaction with id=" + id });
-    });
+    const row = await Transaction.create(
+      {
+        item_id,
+        warehouse_id,
+        type,
+        quantity: qty,
+        unit_price: price,
+        total_price: total,
+        description: description || null,
+        project_id: project_id || null,
+        date: date || new Date().toISOString().slice(0, 10),
+        supplier_id: supplier_id || null,
+      },
+      { transaction: t }
+    );
+
+    await applyStockDelta(item_id, warehouse_id, movementDelta(type, qty), t);
+    await t.commit();
+
+    const full = await Transaction.findByPk(row.id, { include: includeAll });
+    res.json({ success: true, data: full });
+  } catch (err) {
+    await t.rollback();
+    res.status(err.statusCode || 500).json({ success: false, message: err.message });
+  }
 };
 
-// Update a Transaction
-exports.update = (req, res) => {
-  const id = req.params.id;
+exports.findAll = async (req, res) => {
+  const { type, warehouse_id, item_id, project_id, from, to } = req.query;
+  const where = {};
+  if (type) where.type = type;
+  if (warehouse_id) where.warehouse_id = warehouse_id;
+  if (item_id) where.item_id = item_id;
+  if (project_id) where.project_id = project_id;
+  if (from && to) where.date = { [Op.between]: [from, to] };
+  else if (from) where.date = { [Op.gte]: from };
+  else if (to) where.date = { [Op.lte]: to };
 
-  const updateData = {
-    item_id: req.body.item_id,
-    warehouse_id: req.body.warehouse_id,
-    type: req.body.type,
-    quantity: req.body.quantity,
-    unit_price: req.body.unit_price,
-    total_price: req.body.total_price,
-    description: req.body.description,
-    project_id: req.body.project_id,
-    date: req.body.date
-  };
-
-  Transaction.update(updateData, { where: { id } })
-    .then(num => {
-      if (num == 1) {
-        return Transaction.findByPk(id);
-      } else {
-        throw new Error(`Cannot update transaction with id=${id}.`);
-      }
-    })
-    .then(updated => {
-      res.json({
-        success: true,
-        message: "Transaction was updated successfully.",
-        data: updated
-      });
-    })
-    .catch(err => {
-      res.status(500).json({
-        success: false,
-        message: "Error updating transaction with id=" + id,
-        error: err.message
-      });
+  try {
+    const data = await Transaction.findAll({
+      where,
+      include: includeAll,
+      order: [
+        ["date", "DESC"],
+        ["id", "DESC"],
+      ],
     });
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
 
-// Delete a Transaction
-exports.delete = (req, res) => {
-  const id = req.params.id;
-
-  Transaction.destroy({ where: { id } })
-    .then(num => {
-      if (num == 1) {
-        res.json({ success: true, message: "Transaction was deleted successfully!" });
-      } else {
-        res.send({ message: `Cannot delete transaction with id=${id}. Maybe it was not found!` });
-      }
-    })
-    .catch(err => {
-      res.status(500).send({ message: "Could not delete transaction with id=" + id });
-    });
+exports.findOne = async (req, res) => {
+  try {
+    const data = await Transaction.findByPk(req.params.id, { include: includeAll });
+    if (!data) return res.status(404).json({ success: false, message: "Олдсонгүй" });
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
 
-// Delete all Transactions
-exports.deleteAll = (req, res) => {
-  Transaction.destroy({ where: {}, truncate: false })
-    .then(nums => {
-      res.send({ message: `${nums} transactions were deleted successfully!` });
-    })
-    .catch(err => {
-      res.status(500).send({ message: err.message || "Some error occurred while removing all transactions." });
-    });
+exports.update = async (req, res) => {
+  return res.status(400).json({
+    success: false,
+    message: "Хөдөлгөөн засах боломжгүй. Устгаад дахин бүртгэнэ үү.",
+  });
+};
+
+exports.delete = async (req, res) => {
+  const t = await db.sequelize.transaction();
+  try {
+    const row = await Transaction.findByPk(req.params.id, { transaction: t });
+    if (!row) {
+      await t.rollback();
+      return res.status(404).json({ success: false, message: "Олдсонгүй" });
+    }
+
+    // Reverse stock effect
+    const reverseDelta = -movementDelta(row.type, row.quantity);
+    await applyStockDelta(row.item_id, row.warehouse_id, reverseDelta, t);
+    await row.destroy({ transaction: t });
+    await t.commit();
+
+    res.json({ success: true, message: "Устгагдлаа, үлдэгдэл буцаагдлаа" });
+  } catch (err) {
+    await t.rollback();
+    res.status(err.statusCode || 500).json({ success: false, message: err.message });
+  }
 };

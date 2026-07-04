@@ -1,200 +1,157 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Input, Drawer, Form,Select } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import dayjs from 'dayjs';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  Button, Drawer, Form, Input, Popconfirm, Select, Space, Table, Typography, message,
+} from 'antd';
+import { DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { inventoryApi } from '@/lib/inventory';
 
-interface Supplier {
-  id: number;
-  name: string;
-  phone: string;
-  email: string;
-  address: string;
-  register: string;
-  createdAt: string;
-}
+const { Title, Text } = Typography;
 
 export default function SupplierPage() {
-  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const [rows, setRows] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [q, setQ] = useState('');
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
   const [form] = Form.useForm();
-  const [isDrawerVisible, setIsDrawerVisible] = useState(false);
-  const [supplierData, setSupplierData] = useState<Supplier[]>([]);
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
 
-  const columns: ColumnsType<Supplier> = [
-    {
-      title: 'Үүссэн огноо',
-      dataIndex: 'createdAt',
-      render: (text: string) => dayjs(text).format('YYYY-MM-DD hh:mm A'),
-    },
-    { title: 'Нэр', dataIndex: 'name' },
-    { title: 'Утас', dataIndex: 'phone' },
-    { title: 'И-мэйл', dataIndex: 'email' },
-    { title: 'Байршил', dataIndex: 'address' },
-    { title: 'Регистр', dataIndex: 'register' },
-    {
-    title: 'Барааны төрөл',
-    dataIndex: 'productTypes',
-    render: (types: string[]) => types?.length ? types.join(', ') : '—',
-  },
-    {
-      title: 'Үйлдэл',
-      key: 'actions',
-      render: (_: any, record: Supplier) => (
-        <Space>
-          <Button type="link" icon={<EditOutlined />} onClick={() => alert(`Edit ${record.name}`)}>Edit</Button>
-          <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)}>Delete</Button>
-        </Space>
-      ),
-    },
-  ];
-
-  const handleDelete = async (id: number) => {
+  const load = useCallback(async () => {
+    setLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/supplier/${id}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        const refreshed = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/supplier`);
-        const refreshedResult = await refreshed.json();
-        if (refreshedResult.success) {
-          setSupplierData(refreshedResult.data);
-        }
-      } else {
-        console.error("Failed to delete supplier");
-      }
-    } catch (error) {
-      console.error("Error deleting:", error);
+      setRows(await inventoryApi.suppliers.list(q ? { q } : undefined));
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : 'Алдаа');
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [q]);
 
   useEffect(() => {
-    document.title = 'Нийлүүлэгчид';
-    const fetchData = async () => {
-      try {
-        const supplierRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/supplier`);
-        const result = await supplierRes.json();
-        if (result.success) {
-          setSupplierData(result.data);
-        }
-      } catch (error) {
-        console.error('Error fetching suppliers:', error);
-      }
-    };
-    fetchData();
-  }, [pagination.current, pagination.pageSize]);
+    document.title = 'Нийлүүлэгч';
+    load();
+  }, [load]);
 
-  const rowSelection = {
-    selectedRowKeys,
-    onChange: (selectedKeys: React.Key[]) => {
-      setSelectedRowKeys(selectedKeys);
-    },
+  const openCreate = () => {
+    setEditing(null);
+    form.resetFields();
+    setOpen(true);
   };
 
-  const handleAddSupplier = () => {
-    setIsDrawerVisible(true);
-  };
-
-  const handleOk = async () => {
-  try {
-    const values = await form.validateFields();
-
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/supplier`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...values,
-        productTypes: values.productTypes || [], // ⬅️ Make sure it's an array
-      }),
+  const openEdit = (row: any) => {
+    setEditing(row);
+    form.setFieldsValue({
+      ...row,
+      productTypes: row.productTypes || [],
     });
+    setOpen(true);
+  };
 
-    const result = await response.json();
-
-    if (result.success) {
-      const refreshed = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/supplier`);
-      const refreshedResult = await refreshed.json();
-      if (refreshedResult.success) {
-        setSupplierData(refreshedResult.data);
+  const save = async () => {
+    const values = await form.validateFields();
+    try {
+      if (editing) {
+        await inventoryApi.suppliers.update(editing.id, values);
+        message.success('Шинэчлэгдлээ');
+      } else {
+        await inventoryApi.suppliers.create(values);
+        message.success('Нэмэгдлээ');
       }
-      form.resetFields();
-      setIsDrawerVisible(false);
-    } else {
-      console.error('Failed to create supplier:', result.message);
+      setOpen(false);
+      load();
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : 'Алдаа');
     }
-  } catch (err) {
-    console.error('Validation or request error:', err);
-  }
-};
+  };
 
-
-  const handleCloseDrawer = () => setIsDrawerVisible(false);
+  const remove = async (id: number) => {
+    try {
+      await inventoryApi.suppliers.remove(id);
+      message.success('Устгагдлаа');
+      load();
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : 'Алдаа');
+    }
+  };
 
   return (
-    <div style={{ paddingBottom: '100px' }}>
-      <h1 style={{ marginBottom: 24 }}>Нийлүүлэгчид</h1>
-
-      <Space style={{ marginBottom: 16 }} wrap>
-        <Button type="primary" style={{ marginLeft: 'auto' }} onClick={handleAddSupplier}>
-          + Нийлүүлэгч үүсгэх
-        </Button>
-      </Space>
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <Title level={4} style={{ margin: 0 }}>Нийлүүлэгч</Title>
+          <Text type="secondary">Материал нийлүүлэгчид</Text>
+        </div>
+        <Space>
+          <Input
+            allowClear
+            prefix={<SearchOutlined />}
+            placeholder="Хайх..."
+            style={{ width: 200 }}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onPressEnter={load}
+          />
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+            Нийлүүлэгч нэмэх
+          </Button>
+        </Space>
+      </div>
 
       <Table
-        rowSelection={rowSelection}
-        columns={columns}
-        dataSource={supplierData}
         rowKey="id"
-        pagination={{
-          position: ['topRight'],
-          current: pagination.current,
-          pageSize: pagination.pageSize,
-          total: pagination.total,
-          showSizeChanger: true,
-          onChange: (page, pageSize) => {
-            setPagination(prev => ({ ...prev, current: page, pageSize }));
+        loading={loading}
+        dataSource={rows}
+        columns={[
+          { title: 'Нэр', dataIndex: 'name' },
+          { title: 'Утас', dataIndex: 'phone', render: (v) => v || '—' },
+          { title: 'И-мэйл', dataIndex: 'email', render: (v) => v || '—' },
+          { title: 'Регистр', dataIndex: 'register', render: (v) => v || '—' },
+          {
+            title: 'Бүтээгдэхүүн',
+            dataIndex: 'productTypes',
+            render: (v) => (Array.isArray(v) ? v.join(', ') : v || '—'),
           },
-        }}
+          {
+            title: 'Үйлдэл',
+            width: 120,
+            render: (_, r) => (
+              <Space>
+                <Button type="text" icon={<EditOutlined />} onClick={() => openEdit(r)} />
+                <Popconfirm title="Устгах уу?" onConfirm={() => remove(r.id)}>
+                  <Button type="text" danger icon={<DeleteOutlined />} />
+                </Popconfirm>
+              </Space>
+            ),
+          },
+        ]}
       />
 
       <Drawer
-        title="Нийлүүлэгч үүсгэх"
-        placement="right"
-        open={isDrawerVisible}
-        onClose={handleCloseDrawer}
-        width="400px"
-        bodyStyle={{ padding: '20px' }}
+        title={editing ? 'Нийлүүлэгч засах' : 'Нийлүүлэгч нэмэх'}
+        open={open}
+        onClose={() => setOpen(false)}
+        width={440}
+        extra={<Button type="primary" onClick={save}>Хадгалах</Button>}
       >
         <Form form={form} layout="vertical">
-          <Form.Item label="Нэр" name="name" rules={[{ required: true }]}>
-            <Input placeholder="Нийлүүлэгчийн нэр" />
+          <Form.Item name="name" label="Нэр" rules={[{ required: true }]}>
+            <Input />
           </Form.Item>
-          <Form.Item label="Утас" name="phone" rules={[{ required: true }]}>
-            <Input placeholder="Утасны дугаар" />
+          <Form.Item name="phone" label="Утас">
+            <Input />
           </Form.Item>
-          <Form.Item label="И-мэйл" name="email">
-            <Input placeholder="И-мэйл хаяг" />
+          <Form.Item name="email" label="И-мэйл">
+            <Input />
           </Form.Item>
-          <Form.Item label="Байршил" name="address">
-            <Input placeholder="Байршил" />
+          <Form.Item name="register" label="Регистр">
+            <Input />
           </Form.Item>
-          <Form.Item label="Регистр" name="register">
-            <Input placeholder="Регистрийн дугаар" />
+          <Form.Item name="address" label="Хаяг">
+            <Input.TextArea rows={2} />
           </Form.Item>
-          <Form.Item label="Нийлүүлдэг барааны төрөл" name="productTypes">
-    <Select
-      mode="tags"
-      placeholder="Жишээ: Асфальт, Элс, Хайрга"
-      style={{ width: '100%' }}
-      tokenSeparators={[',']}
-    />
-  </Form.Item>
-          <Form.Item>
-            <Button type="primary" onClick={handleOk} block>
-              Үүсгэх
-            </Button>
+          <Form.Item name="productTypes" label="Бүтээгдэхүүний төрөл">
+            <Select mode="tags" placeholder="Асфальт, Цемент..." />
           </Form.Item>
         </Form>
       </Drawer>

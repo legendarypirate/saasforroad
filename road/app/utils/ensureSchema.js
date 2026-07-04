@@ -155,6 +155,61 @@ async function ensureSalaryAdjustmentColumns(sequelize) {
   }
 }
 
+async function ensureInventoryColumns(sequelize) {
+  const materialCols = [
+    `ALTER TABLE "materials" ADD COLUMN IF NOT EXISTS "brand" VARCHAR(255);`,
+    `ALTER TABLE "materials" ADD COLUMN IF NOT EXISTS "specification" VARCHAR(255);`,
+    `ALTER TABLE "materials" ADD COLUMN IF NOT EXISTS "barcode" VARCHAR(255);`,
+    `ALTER TABLE "materials" ADD COLUMN IF NOT EXISTS "image_url" VARCHAR(512);`,
+    `ALTER TABLE "materials" ADD COLUMN IF NOT EXISTS "status" VARCHAR(32) DEFAULT 'active';`,
+    `ALTER TABLE "materials" ADD COLUMN IF NOT EXISTS "min_stock" DECIMAL(14,3) DEFAULT 0;`,
+    `ALTER TABLE "materials" ADD COLUMN IF NOT EXISTS "max_stock" DECIMAL(14,3) DEFAULT 0;`,
+    `ALTER TABLE "materials" ADD COLUMN IF NOT EXISTS "default_warehouse_id" INTEGER;`,
+    `ALTER TABLE "materials" ADD COLUMN IF NOT EXISTS "default_supplier_id" INTEGER;`,
+    `ALTER TABLE "materials" ADD COLUMN IF NOT EXISTS "standard_cost" DECIMAL(14,2) DEFAULT 0;`,
+    `ALTER TABLE "materials" ADD COLUMN IF NOT EXISTS "average_cost" DECIMAL(14,2) DEFAULT 0;`,
+    `ALTER TABLE "materials" ADD COLUMN IF NOT EXISTS "last_purchase_price" DECIMAL(14,2) DEFAULT 0;`,
+    `ALTER TABLE "materials" ADD COLUMN IF NOT EXISTS "is_consumable" BOOLEAN DEFAULT true;`,
+    `ALTER TABLE "materials" ADD COLUMN IF NOT EXISTS "is_asset" BOOLEAN DEFAULT false;`,
+    `ALTER TABLE "materials" ADD COLUMN IF NOT EXISTS "is_active" BOOLEAN DEFAULT true;`,
+    `ALTER TABLE "materials" ADD COLUMN IF NOT EXISTS "deleted_at" TIMESTAMP WITH TIME ZONE;`,
+  ];
+  const warehouseCols = [
+    `ALTER TABLE "warehouses" ADD COLUMN IF NOT EXISTS "code" VARCHAR(255);`,
+    `ALTER TABLE "warehouses" ADD COLUMN IF NOT EXISTS "manager_id" INTEGER;`,
+    `ALTER TABLE "warehouses" ADD COLUMN IF NOT EXISTS "capacity" DECIMAL(14,2);`,
+    `ALTER TABLE "warehouses" ADD COLUMN IF NOT EXISTS "status" VARCHAR(32) DEFAULT 'active';`,
+    `ALTER TABLE "warehouses" ADD COLUMN IF NOT EXISTS "is_active" BOOLEAN DEFAULT true;`,
+    `ALTER TABLE "warehouses" ADD COLUMN IF NOT EXISTS "deleted_at" TIMESTAMP WITH TIME ZONE;`,
+  ];
+  const stockCols = [
+    `ALTER TABLE "stocks" ADD COLUMN IF NOT EXISTS "reserved_quantity" DECIMAL(14,3) DEFAULT 0;`,
+    `ALTER TABLE "stocks" ADD COLUMN IF NOT EXISTS "on_order_quantity" DECIMAL(14,3) DEFAULT 0;`,
+    `ALTER TABLE "stocks" ADD COLUMN IF NOT EXISTS "average_cost" DECIMAL(14,2) DEFAULT 0;`,
+    `ALTER TABLE "stocks" ADD COLUMN IF NOT EXISTS "last_updated" TIMESTAMP WITH TIME ZONE;`,
+    `ALTER TABLE "stocks" ALTER COLUMN "quantity" TYPE DECIMAL(14,3) USING quantity::decimal;`,
+  ];
+
+  for (const group of [materialCols, warehouseCols, stockCols]) {
+    for (const sql of group) {
+      try {
+        await sequelize.query(sql);
+      } catch (err) {
+        console.warn("Inventory schema:", err.message);
+      }
+    }
+  }
+
+  try {
+    await sequelize.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS stocks_item_warehouse_uidx
+      ON "stocks" ("item_id", "warehouse_id");
+    `);
+  } catch (err) {
+    console.warn("Stock unique index:", err.message);
+  }
+}
+
 async function ensureSchema(sequelize, UserModel) {
   if (!UserModel) {
     throw new Error("User model is required for ensureSchema");
@@ -164,6 +219,7 @@ async function ensureSchema(sequelize, UserModel) {
   await ensureAttendanceGeofenceColumns(sequelize);
   await ensureOrgNodeColumns(sequelize);
   await ensureSalaryAdjustmentColumns(sequelize);
+  await ensureInventoryColumns(sequelize);
 }
 
 module.exports = {
@@ -173,6 +229,7 @@ module.exports = {
   ensureAttendanceGeofenceColumns,
   ensureOrgNodeColumns,
   ensureSalaryAdjustmentColumns,
+  ensureInventoryColumns,
   resolveTableName,
   resolveExistingUserTable,
 };

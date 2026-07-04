@@ -1,194 +1,101 @@
 const db = require("../models");
 const Warehouse = db.warehouses;
-const Op = db.Sequelize.Op;
+const User = db.users;
 
-// Create and Save a new Categories
-exports.create = (req, res) => {
-  // Validate request
-  if (!req.body.name) {
-    res.status(400).send({
-      message: "Content can not be empty!"
-    });
-    return;
+const includeManager = [
+  { model: User, as: "manager", attributes: ["id", "username", "phone"], required: false },
+];
+
+// Association may not exist yet — register lazily
+if (!Warehouse.associations.manager) {
+  Warehouse.belongsTo(User, { foreignKey: "manager_id", as: "manager" });
+}
+
+exports.create = async (req, res) => {
+  const { name } = req.body;
+  if (!name?.trim()) {
+    return res.status(400).json({ success: false, message: "Агуулахын нэр шаардлагатай" });
   }
-
-  // Create a Categories
-  const cat = {
-    name: req.body.name,
-    description: req.body.description,
-    location: req.body.location
-
-  };
-
-  // Save Categories in the database
-  Warehouse.create(cat)
-  .then(data => {
-    res.json({ success: true, data: data });
-  })
-  .catch(err => {
-    res.status(500).json({ success: false, message: err.message || "Some error occurred while creating the Banner." });
-  });
+  try {
+    const data = await Warehouse.create({
+      code: req.body.code || null,
+      name: name.trim(),
+      location: req.body.location || null,
+      description: req.body.description || null,
+      manager_id: req.body.manager_id || null,
+      capacity: req.body.capacity || null,
+      status: req.body.status || "active",
+      is_active: req.body.is_active !== false,
+    });
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
 
-// Retrieve all Categories from the database.
 exports.findAll = async (req, res) => {
-  const name = req.query.name;
-  var condition = name ? { name: { [Op.like]: `%${name}%` } } : null;
-
   try {
-      console.log("ss");    
-    const data = await Warehouse.findAll({ where: condition });
-    console.log(data);
-
-    res.send({
-      success: true,
-      data: data
+    const data = await Warehouse.findAll({
+      where: { deleted_at: null },
+      include: includeManager,
+      order: [["name", "ASC"]],
     });
+    res.json({ success: true, data });
   } catch (err) {
-    res.status(500).send({
-      success: false,
-      message: err.message || "Some error occurred while retrieving Categories."
-    });
+    // fallback without manager include if association fails
+    try {
+      const data = await Warehouse.findAll({
+        where: { deleted_at: null },
+        order: [["name", "ASC"]],
+      });
+      res.json({ success: true, data });
+    } catch (e2) {
+      res.status(500).json({ success: false, message: e2.message });
+    }
   }
 };
 
-exports.mobile_cat = async (req, res) => {
-  const name = req.query.name;
-  var condition = name 
-    ? { 
-        name: { [Op.like]: `%${name}%` },
-        is_shown: '1' 
-      } 
-    : { is_shown: '1' };
-
+exports.findOne = async (req, res) => {
   try {
-    console.log("ss");
-    const data = await category.findAll({ where: condition });
-    console.log(data);
-
-    res.send({
-      success: true,
-      data: data
-    });
+    const data = await Warehouse.findByPk(req.params.id);
+    if (!data || data.deleted_at) {
+      return res.status(404).json({ success: false, message: "Олдсонгүй" });
+    }
+    res.json({ success: true, data });
   } catch (err) {
-    res.status(500).send({
-      success: false,
-      message: err.message || "Some error occurred while retrieving Categories."
-    });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
-
-
-// Find a single Categories with an id
-exports.findOne = (req, res) => {
-  const id = req.params.id;
-
-  category.findByPk(id)
-    .then(data => {
-      if (data) {
-        res.send(data);
-      } else {
-        res.status(404).send({
-          message: `Cannot find category with id=${id}.`
-        });
-      }
-    })
-    .catch(err => {
-      res.status(500).send({
-        message: "Error retrieving category with id=" + id
-      });
-    });
+exports.update = async (req, res) => {
+  try {
+    const row = await Warehouse.findByPk(req.params.id);
+    if (!row || row.deleted_at) {
+      return res.status(404).json({ success: false, message: "Олдсонгүй" });
+    }
+    const fields = [
+      "code", "name", "location", "description", "manager_id",
+      "capacity", "status", "is_active",
+    ];
+    const updates = {};
+    for (const f of fields) {
+      if (req.body[f] !== undefined) updates[f] = req.body[f];
+    }
+    if (updates.name) updates.name = String(updates.name).trim();
+    await row.update(updates);
+    res.json({ success: true, data: row });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
 
-// Update a Categories by the id in the request
-exports.update = (req, res) => {
-  const id = req.params.id;
-  console.log(req.body);
-  const updateData = {
-    name: req.body.name || null,
-    is_shown: req.body.is_shown !== undefined ? String(req.body.is_shown) : null // Ensure is_shown is a string ("0" or "1")
-  };
-
-  category.update(updateData, {
-    where: { id: id }
-  })
-    .then(num => {
-      if (num == 1) {
-        return category.findByPk(id); // Fetch the updated entry
-      } else {
-        throw new Error(`Cannot update category with id=${id}. Maybe category was not found or req.body is empty!`);
-      }
-    })
-    .then(updatedEntry => {
-      res.json({
-        success: true,
-        message: "Category was updated successfully.",
-        data: updatedEntry
-      });
-    })
-    .catch(err => {
-      res.status(500).json({
-        success: false,
-        message: "Error updating category with id=" + id,
-        error: err.message
-      });
-    });
-};
-
-
-
-// Delete a category with the specified id in the request
-exports.delete = (req, res) => {
-  const id = req.params.id;
-
-  category.destroy({
-    where: { id: id }
-  })
-    .then(num => {
-      if (num == 1) {
-        res.json({ success: true, message: "Category was deleted successfully!" });
-
-      } else {
-        res.send({
-          message: `Cannot delete Categories with id=${id}. Maybe category was not found!`
-        });
-      }
-    })
-    .catch(err => {
-      res.status(500).send({
-        message: "Could not delete category with id=" + id
-      });
-    });
-};
-
-// Delete all Tutorials from the database.
-exports.deleteAll = (req, res) => {
-  category.destroy({
-    where: {},
-    truncate: false
-  })
-    .then(nums => {
-      res.send({ message: `${nums} category were deleted successfully!` });
-    })
-    .catch(err => {
-      res.status(500).send({
-        message:
-          err.message || "Some error occurred while removing all category."
-      });
-    });
-};
-
-// find all published Categories
-exports.findAllPublished = (req, res) => {
-  category.findAll({ where: { published: true } })
-    .then(data => {
-      res.send(data);
-    })
-    .catch(err => {
-      res.status(500).send({
-        message:
-          err.message || "Some error occurred while retrieving category."
-      });
-    });
+exports.delete = async (req, res) => {
+  try {
+    const row = await Warehouse.findByPk(req.params.id);
+    if (!row) return res.status(404).json({ success: false, message: "Олдсонгүй" });
+    await row.update({ deleted_at: new Date(), is_active: false, status: "inactive" });
+    res.json({ success: true, message: "Устгагдлаа" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 };

@@ -24,6 +24,7 @@ function registerRoutes() {
     res.json({ message: "Welcome to the application." });
   });
   require("./app/routes/transaction.routes")(app);
+  require("./app/routes/inventory.routes")(app);
   require("./app/routes/invite.routes")(app);
   require("./app/routes/stock.routes")(app);
   require("./app/routes/supplier.routes")(app);

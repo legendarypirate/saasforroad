@@ -1,19 +1,14 @@
 module.exports = (sequelize, Sequelize) => {
-    const Warehouse = sequelize.define("warehouse", {
-      name: {
-        type: Sequelize.STRING
-      },
-      location: {
-        type: Sequelize.STRING,
-        defaultValue: 0
-      },
-      description: {
-        type: Sequelize.STRING,
-        defaultValue: 0
-      },
-     
-    });
-  
-    return Warehouse;
-  };
-  
+  const Warehouse = sequelize.define("warehouse", {
+    code: { type: Sequelize.STRING },
+    name: { type: Sequelize.STRING, allowNull: false },
+    location: { type: Sequelize.STRING },
+    description: { type: Sequelize.TEXT },
+    manager_id: { type: Sequelize.INTEGER },
+    capacity: { type: Sequelize.DECIMAL(14, 2) },
+    status: { type: Sequelize.STRING, defaultValue: "active" },
+    is_active: { type: Sequelize.BOOLEAN, defaultValue: true },
+    deleted_at: { type: Sequelize.DATE },
+  });
+  return Warehouse;
+};

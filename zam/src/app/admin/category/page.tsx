@@ -1,236 +1,141 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Input, DatePicker, Drawer, Form} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  Button, Drawer, Form, Input, Popconfirm, Select, Space, Table, Typography, message,
+} from 'antd';
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { inventoryApi } from '@/lib/inventory';
 
-import dayjs from 'dayjs';
-import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
-import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+const { Title, Text } = Typography;
 
-dayjs.extend(isSameOrAfter);
-dayjs.extend(isSameOrBefore);
 interface Category {
   id: number;
   name: string;
-  createdAt?: string;
+  parent_id?: number | null;
 }
 
-
-
-export default function DeliveryPage() {
-  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+export default function CategoryPage() {
+  const [rows, setRows] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Category | null>(null);
   const [form] = Form.useForm();
-  const [isDrawerVisible, setIsDrawerVisible] = useState(false);
-  const [regionData, setRegionData] = useState<Category[]>([]);
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
 
-const columns: ColumnsType<Category> = [
-  {
-    title: 'Үүссэн огноо',
-    dataIndex: 'createdAt',
-    render: (text: string) => {
-      return dayjs(text).format('YYYY-MM-DD hh:mm A'); // Format the date here
-    },
-  },
-
-  { title: 'Ангилал', dataIndex: 'name' },
- {
-    title: 'Үйлдэл',
-    key: 'actions',
-    render: (_: any, record: Category) => (
-      <Space>
-        <Button
-          type="link"
-          icon={<EditOutlined />}
-          onClick={() => alert(`Edit ${record.name}`)}
-        >
-          Edit
-        </Button>
-        <Button
-          type="link"
-          danger
-          icon={<DeleteOutlined />}
-          onClick={() => handleDelete(record.id)}
-        >
-          Delete
-        </Button>
-      </Space>
-    ),
-  },
-];
-
-  const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/api/angilal`;
-
-  const handleDelete = async (id: number) => {
+  const load = useCallback(async () => {
+    setLoading(true);
     try {
-      const response = await fetch(`${API_BASE}/${id}`, {
-        method: "DELETE",
-      });
-  
-      if (response.ok) {
-        console.log("Deleted successfully");
-        const refreshed = await fetch(API_BASE);
-        const refreshedResult = await refreshed.json();
-        if (refreshedResult.success) {
-            setRegionData(refreshedResult.data || []);
-            setPagination((prev) => ({ ...prev, total: (refreshedResult.data || []).length }));
-        }
-      } else {
-        console.error("Failed to delete");
-      }
-    } catch (error) {
-      console.error("Error deleting:", error);
+      setRows(await inventoryApi.categories.list());
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : 'Алдаа');
+    } finally {
+      setLoading(false);
     }
-  };
+  }, []);
+
   useEffect(() => {
     document.title = 'Ангилал';
-    const fetchData = async () => {
-      try {
-     
-  
-        // Always fetch deliveries on page/size change
-        const deliveryRes = await fetch(API_BASE);
-        const deliveriesResult = await deliveryRes.json();
-  
-        if (deliveriesResult.success) {
-            setRegionData(deliveriesResult.data || []);
-            setPagination((prev) => ({ ...prev, total: (deliveriesResult.data || []).length }));
-          
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-  
-    fetchData();
-  }, [pagination.current, pagination.pageSize]);
-  
-  
-  
-  const rowSelection = {
-    selectedRowKeys,
-    onChange: (selectedKeys: React.Key[]) => {
-      setSelectedRowKeys(selectedKeys);
-    },
+    load();
+  }, [load]);
+
+  const openCreate = () => {
+    setEditing(null);
+    form.resetFields();
+    setOpen(true);
   };
 
-  const handleDeliveryButton = () => {
-    setIsDrawerVisible(true);
+  const openEdit = (row: Category) => {
+    setEditing(row);
+    form.setFieldsValue(row);
+    setOpen(true);
   };
 
-  // Handle form submission (for example, you could save data here)
-  const handleOk = async () => {
+  const save = async () => {
+    const values = await form.validateFields();
     try {
-      const values = await form.validateFields();
-  
-      // Construct the request payload
-      const payload = {
-        name: values.name,
-      };
-  
-      // Send the POST request
-      const response = await fetch(API_BASE, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-  
-      const result = await response.json();
-  
-      if (result.success) {
-        // Optionally refresh the delivery list
-        const refreshed = await fetch(API_BASE);
-        const refreshedResult = await refreshed.json();
-        if (refreshedResult.success) {
-            setRegionData(refreshedResult.data || []);
-            setPagination((prev) => ({ ...prev, total: (refreshedResult.data || []).length }));
-        }
-  
-        // Reset form and close drawer
-        form.resetFields();
-        setIsDrawerVisible(false);
+      if (editing) {
+        await inventoryApi.categories.update(editing.id, values);
+        message.success('Шинэчлэгдлээ');
       } else {
-        console.error('Failed to create delivery:', result.message);
+        await inventoryApi.categories.create(values);
+        message.success('Нэмэгдлээ');
       }
-    } catch (err) {
-      console.error('Validation or request error:', err);
+      setOpen(false);
+      load();
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : 'Алдаа');
     }
   };
 
-
-  const handleCloseDrawer = () => {
-    setIsDrawerVisible(false);
+  const remove = async (id: number) => {
+    try {
+      await inventoryApi.categories.remove(id);
+      message.success('Устгагдлаа');
+      load();
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : 'Алдаа');
+    }
   };
 
-  return (
-    <div style={{ paddingBottom: '100px' }}> {/* Adding padding to prevent overlap with fixed button */}
-      <h1 style={{ marginBottom: 24 }}>Ангилал</h1>
+  const parentName = (id?: number | null) =>
+    rows.find((r) => r.id === id)?.name || '—';
 
-      <Space style={{ marginBottom: 16 }} wrap>
-       
-         <Button
-          type="primary"
-          style={{ marginLeft: 'auto' }}
-          onClick={handleDeliveryButton}
-        >
-          + Ангилал үүсгэх
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+        <div>
+          <Title level={4} style={{ margin: 0 }}>Ангилал</Title>
+          <Text type="secondary">Барааны ангилал (олон түвшинтэй)</Text>
+        </div>
+        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+          Ангилал нэмэх
         </Button>
-      </Space>
+      </div>
 
       <Table
-  rowSelection={rowSelection}
-  columns={columns}
-  dataSource={regionData}
-  rowKey="id"
-  pagination={{
-    position: ['topRight'], // 👈 This moves pagination to top-right
-    current: pagination.current,
-    pageSize: pagination.pageSize,
-    total: pagination.total,
-    showSizeChanger: true,
-    onChange: (page, pageSize) => {
-      setPagination((prev) => ({
-        ...prev,
-        current: page,
-        pageSize: pageSize,
-      }));
-    },
-  }}
-/>
+        rowKey="id"
+        loading={loading}
+        dataSource={rows}
+        columns={[
+          { title: 'Нэр', dataIndex: 'name' },
+          { title: 'Эцэг ангилал', dataIndex: 'parent_id', render: (v) => parentName(v) },
+          {
+            title: 'Үйлдэл',
+            width: 120,
+            render: (_, r) => (
+              <Space>
+                <Button type="text" icon={<EditOutlined />} onClick={() => openEdit(r)} />
+                <Popconfirm title="Устгах уу?" onConfirm={() => remove(r.id)}>
+                  <Button type="text" danger icon={<DeleteOutlined />} />
+                </Popconfirm>
+              </Space>
+            ),
+          },
+        ]}
+      />
 
-
- <Drawer
-        title="Ангилал үүсгэх"
-        placement="right"
-        open={isDrawerVisible}
-        onClose={handleCloseDrawer}
-        width="400px"  // Adjust the width as needed
-        height="100%"  // Full height
-        bodyStyle={{ padding: '20px' }}
+      <Drawer
+        title={editing ? 'Ангилал засах' : 'Ангилал нэмэх'}
+        open={open}
+        onClose={() => setOpen(false)}
+        width={420}
+        extra={<Button type="primary" onClick={save}>Хадгалах</Button>}
       >
         <Form form={form} layout="vertical">
-
-          <Form.Item
-            label="Ангилал"
-            name="name"
-            rules={[{ required: true, message: 'Please input the address!' }]}
-          >
-            <Input placeholder="Ангилал оруулах" />
+          <Form.Item name="name" label="Нэр" rules={[{ required: true }]}>
+            <Input placeholder="Жишээ: Асфальт, Цемент, Түлш" />
           </Form.Item>
-        
-          <Form.Item>
-            <Button type="primary" onClick={handleOk} block>
-              Үүсгэх
-            </Button>
+          <Form.Item name="parent_id" label="Эцэг ангилал">
+            <Select
+              allowClear
+              placeholder="Үндсэн ангилал"
+              options={rows
+                .filter((r) => r.id !== editing?.id)
+                .map((r) => ({ value: r.id, label: r.name }))}
+            />
           </Form.Item>
         </Form>
       </Drawer>
-      {/* Fixed Bottom Section */}
-      
     </div>
   );
 }

@@ -1,26 +1,13 @@
-module.exports = app => {
-    const supplier = require("../controllers/supplier.controller.js");
-  
-    var router = require("express").Router();
-  
-    // Create a new Tutorial
-    router.post("/", supplier.create);
-  
-    // Retrieve all Tutorials
-    router.get("/", supplier.findAll);
+module.exports = (app) => {
+  const supplier = require("../controllers/supplier.controller.js");
+  const router = require("express").Router();
 
-    // Retrieve a single Tutorial with id
-    router.get("/:id", supplier.findOne);
-  
-    // Update a Tutorial with id
-    router.patch("/:id", supplier.update);
-  
-    // Delete a Tutorial with id
-    router.delete("/:id", supplier.delete);
-  
-    // Delete all Tutorials
-    router.delete("/", supplier.deleteAll);
-  
-    app.use('/api/supplier', router);
-  };
-  
+  router.post("/", supplier.create);
+  router.get("/", supplier.findAll);
+  router.get("/:id", supplier.findOne);
+  router.patch("/:id", supplier.update);
+  router.put("/:id", supplier.update);
+  router.delete("/:id", supplier.delete);
+
+  app.use("/api/supplier", router);
+};

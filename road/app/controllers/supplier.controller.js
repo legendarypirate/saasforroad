@@ -2,150 +2,79 @@ const db = require("../models");
 const Supplier = db.suppliers;
 const Op = db.Sequelize.Op;
 
-// Create and Save a new Supplier
-exports.create = (req, res) => {
+exports.create = async (req, res) => {
   const { name, phone, email, address, register, productTypes } = req.body;
-
-  // Validate required fields
-  if (!name || !phone) {
-    return res.status(400).send({
-      success: false,
-      message: "Name and phone number are required!",
-    });
+  if (!name?.trim()) {
+    return res.status(400).json({ success: false, message: "Нийлүүлэгчийн нэр шаардлагатай" });
   }
-
-  // Ensure productTypes is an array (or empty if not provided)
-  const safeProductTypes = Array.isArray(productTypes) ? productTypes : [];
-  console.log(safeProductTypes);
-  // Create supplier object
-  const supplier = {
-    name,
-    phone,
-    email,
-    address,
-    register,
-    productTypes: safeProductTypes,
-  };
-
-  // Save to DB
-  Supplier.create(supplier)
-    .then(data => {
-      res.json({ success: true, data });
-    })
-    .catch(err => {
-      console.error("Error creating supplier:", err);
-      res.status(500).json({
-        success: false,
-        message: err.message || "Some error occurred while creating the supplier.",
-      });
-    });
-};
-
-
-// Retrieve all Suppliers from the database.
-exports.findAll = async (req, res) => {
-  const name = req.query.name;
-  const condition = name ? { name: { [Op.like]: `%${name}%` } } : null;
-
   try {
-    const data = await Supplier.findAll({ where: condition });
-    res.send({ success: true, data });
-  } catch (err) {
-    res.status(500).send({
-      success: false,
-      message: err.message || "Some error occurred while retrieving suppliers."
+    const data = await Supplier.create({
+      name: name.trim(),
+      phone: phone || null,
+      email: email || null,
+      address: address || null,
+      register: register || null,
+      productTypes: productTypes || [],
     });
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// Find a single Supplier with an id
-exports.findOne = (req, res) => {
-  const id = req.params.id;
-
-  Supplier.findByPk(id)
-    .then(data => {
-      if (data) {
-        res.send({ success: true, data });
-      } else {
-        res.status(404).send({
-          success: false,
-          message: `Cannot find supplier with id=${id}.`
-        });
-      }
-    })
-    .catch(err => {
-      res.status(500).send({
-        success: false,
-        message: "Error retrieving supplier with id=" + id
-      });
-    });
+exports.findAll = async (req, res) => {
+  const { q } = req.query;
+  const where = {};
+  if (q) {
+    where[Op.or] = [
+      { name: { [Op.iLike]: `%${q}%` } },
+      { phone: { [Op.iLike]: `%${q}%` } },
+      { register: { [Op.iLike]: `%${q}%` } },
+    ];
+  }
+  try {
+    const data = await Supplier.findAll({ where, order: [["name", "ASC"]] });
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
 
-// Update a Supplier by the id in the request
-exports.update = (req, res) => {
-  const id = req.params.id;
-  const { name, phone, email, address, register } = req.body;
-
-  const updateData = { name, phone, email, address, register };
-
-  Supplier.update(updateData, {
-    where: { id }
-  })
-    .then(num => {
-      if (num == 1) {
-        return Supplier.findByPk(id); // Fetch updated supplier
-      } else {
-        throw new Error(`Cannot update supplier with id=${id}. Maybe not found or body is empty.`);
-      }
-    })
-    .then(updated => {
-      res.json({
-        success: true,
-        message: "Supplier was updated successfully.",
-        data: updated
-      });
-    })
-    .catch(err => {
-      res.status(500).json({
-        success: false,
-        message: err.message || "Error updating supplier."
-      });
-    });
+exports.findOne = async (req, res) => {
+  try {
+    const data = await Supplier.findByPk(req.params.id);
+    if (!data) return res.status(404).json({ success: false, message: "Олдсонгүй" });
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
 
-// Delete a Supplier with the specified id in the request
-exports.delete = (req, res) => {
-  const id = req.params.id;
-
-  Supplier.destroy({ where: { id } })
-    .then(num => {
-      if (num == 1) {
-        res.json({ success: true, message: "Supplier was deleted successfully!" });
-      } else {
-        res.status(404).send({
-          success: false,
-          message: `Cannot delete supplier with id=${id}. Maybe not found.`
-        });
-      }
-    })
-    .catch(err => {
-      res.status(500).send({
-        success: false,
-        message: "Could not delete supplier with id=" + id
-      });
+exports.update = async (req, res) => {
+  try {
+    const row = await Supplier.findByPk(req.params.id);
+    if (!row) return res.status(404).json({ success: false, message: "Олдсонгүй" });
+    await row.update({
+      name: req.body.name !== undefined ? req.body.name.trim() : row.name,
+      phone: req.body.phone !== undefined ? req.body.phone : row.phone,
+      email: req.body.email !== undefined ? req.body.email : row.email,
+      address: req.body.address !== undefined ? req.body.address : row.address,
+      register: req.body.register !== undefined ? req.body.register : row.register,
+      productTypes:
+        req.body.productTypes !== undefined ? req.body.productTypes : row.productTypes,
     });
+    res.json({ success: true, data: row });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
 
-// Delete all Suppliers from the database.
-exports.deleteAll = (req, res) => {
-  Supplier.destroy({ where: {}, truncate: false })
-    .then(nums => {
-      res.send({ success: true, message: `${nums} suppliers were deleted successfully!` });
-    })
-    .catch(err => {
-      res.status(500).send({
-        success: false,
-        message: err.message || "Some error occurred while removing all suppliers."
-      });
-    });
+exports.delete = async (req, res) => {
+  try {
+    const num = await Supplier.destroy({ where: { id: req.params.id } });
+    if (!num) return res.status(404).json({ success: false, message: "Олдсонгүй" });
+    res.json({ success: true, message: "Устгагдлаа" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 };

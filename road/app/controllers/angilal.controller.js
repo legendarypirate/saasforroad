@@ -1,191 +1,61 @@
 const db = require("../models");
 const Angilal = db.angilals;
-const Op = db.Sequelize.Op;
 
-// Create and Save a new Categories
-exports.create = (req, res) => {
-  // Validate request
-  if (!req.body.name) {
-    res.status(400).send({
-      message: "Content can not be empty!"
-    });
-    return;
+exports.create = async (req, res) => {
+  const { name, parent_id } = req.body;
+  if (!name?.trim()) {
+    return res.status(400).json({ success: false, message: "Ангиллын нэр шаардлагатай" });
   }
-
-  // Create a Categories
-  const cat = {
-    name: req.body.name,
-    parent_id: req.body.parent_id
-  };
-
-  // Save Categories in the database
-  Angilal.create(cat)
-  .then(data => {
-    res.json({ success: true, data: data });
-  })
-  .catch(err => {
-    res.status(500).json({ success: false, message: err.message || "Some error occurred while creating the Banner." });
-  });
+  try {
+    const data = await Angilal.create({
+      name: name.trim(),
+      parent_id: parent_id || null,
+    });
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
 
-// Retrieve all Categories from the database.
 exports.findAll = async (req, res) => {
-  const name = req.query.name;
-  var condition = name ? { name: { [Op.like]: `%${name}%` } } : null;
-
   try {
-      console.log("ss");    
-    const data = await Angilal.findAll({ where: condition });
-    console.log(data);
-
-    res.send({
-      success: true,
-      data: data
-    });
+    const data = await Angilal.findAll({ order: [["name", "ASC"]] });
+    res.json({ success: true, data });
   } catch (err) {
-    res.status(500).send({
-      success: false,
-      message: err.message || "Some error occurred while retrieving Categories."
-    });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
-exports.mobile_cat = async (req, res) => {
-  const name = req.query.name;
-  var condition = name 
-    ? { 
-        name: { [Op.like]: `%${name}%` },
-        is_shown: '1' 
-      } 
-    : { is_shown: '1' };
-
+exports.findOne = async (req, res) => {
   try {
-    console.log("ss");
-    const data = await Angilal.findAll({ where: condition });
-    console.log(data);
-
-    res.send({
-      success: true,
-      data: data
-    });
+    const data = await Angilal.findByPk(req.params.id);
+    if (!data) return res.status(404).json({ success: false, message: "Олдсонгүй" });
+    res.json({ success: true, data });
   } catch (err) {
-    res.status(500).send({
-      success: false,
-      message: err.message || "Some error occurred while retrieving Categories."
-    });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
-
-
-// Find a single Categories with an id
-exports.findOne = (req, res) => {
-  const id = req.params.id;
-
-  Angilal.findByPk(id)
-    .then(data => {
-      if (data) {
-        res.send(data);
-      } else {
-        res.status(404).send({
-          message: `Cannot find category with id=${id}.`
-        });
-      }
-    })
-    .catch(err => {
-      res.status(500).send({
-        message: "Error retrieving category with id=" + id
-      });
+exports.update = async (req, res) => {
+  try {
+    const row = await Angilal.findByPk(req.params.id);
+    if (!row) return res.status(404).json({ success: false, message: "Олдсонгүй" });
+    await row.update({
+      name: req.body.name !== undefined ? req.body.name.trim() : row.name,
+      parent_id: req.body.parent_id !== undefined ? req.body.parent_id || null : row.parent_id,
     });
+    res.json({ success: true, data: row });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
 
-// Update a Categories by the id in the request
-exports.update = (req, res) => {
-  const id = req.params.id;
-  const updateData = {
-    name: req.body.name || null,
-    is_shown: req.body.is_shown !== undefined ? String(req.body.is_shown) : null // Ensure is_shown is a string ("0" or "1")
-  };
-
-  Angilal.update(updateData, {
-    where: { id: id }
-  })
-    .then(num => {
-      if (num == 1) {
-        return Angilal.findByPk(id); // Fetch the updated entry
-      } else {
-        throw new Error(`Cannot update category with id=${id}. Maybe category was not found or req.body is empty!`);
-      }
-    })
-    .then(updatedEntry => {
-      res.json({
-        success: true,
-        message: "Category was updated successfully.",
-        data: updatedEntry
-      });
-    })
-    .catch(err => {
-      res.status(500).json({
-        success: false,
-        message: "Error updating category with id=" + id,
-        error: err.message
-      });
-    });
-};
-
-
-
-// Delete a category with the specified id in the request
-exports.delete = (req, res) => {
-  const id = req.params.id;
-
-  Angilal.destroy({
-    where: { id: id }
-  })
-    .then(num => {
-      if (num == 1) {
-        res.json({ success: true, message: "Category was deleted successfully!" });
-
-      } else {
-        res.send({
-          message: `Cannot delete Categories with id=${id}. Maybe category was not found!`
-        });
-      }
-    })
-    .catch(err => {
-      res.status(500).send({
-        message: "Could not delete category with id=" + id
-      });
-    });
-};
-
-// Delete all Tutorials from the database.
-exports.deleteAll = (req, res) => {
-    Angilal.destroy({
-    where: {},
-    truncate: false
-  })
-    .then(nums => {
-      res.send({ message: `${nums} category were deleted successfully!` });
-    })
-    .catch(err => {
-      res.status(500).send({
-        message:
-          err.message || "Some error occurred while removing all category."
-      });
-    });
-};
-
-// find all published Categories
-exports.findAllPublished = (req, res) => {
-  Angilal.findAll({ where: { is_shown: '1' } })
-    .then(data => {
-      res.send({ success: true, data });
-    })
-    .catch(err => {
-      res.status(500).send({
-        message:
-          err.message || "Some error occurred while retrieving category."
-      });
-    });
+exports.delete = async (req, res) => {
+  try {
+    const num = await Angilal.destroy({ where: { id: req.params.id } });
+    if (!num) return res.status(404).json({ success: false, message: "Олдсонгүй" });
+    res.json({ success: true, message: "Устгагдлаа" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 };

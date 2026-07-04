@@ -1,165 +1,168 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Input, Drawer, Form, Select } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import dayjs from 'dayjs';
-import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
-import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  Button, Card, Col, Row, Select, Space, Statistic, Switch, Table, Tag, Typography, message,
+} from 'antd';
+import { ReloadOutlined, WarningOutlined } from '@ant-design/icons';
+import { formatMoney, formatQty, inventoryApi } from '@/lib/inventory';
 
-dayjs.extend(isSameOrAfter);
-dayjs.extend(isSameOrBefore);
-
-interface StockItem {
-  id: number;
-  item_id: number;
-  warehouse_id: number;
-  quantity: number;
-  createdAt: string;
-  updatedAt: string;
-  material: {
-    id: number;
-    name: string;
-  };
-  warehouse: {
-    id: number;
-    name: string;
-  };
-}
+const { Title, Text } = Typography;
 
 export default function StockPage() {
-  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-  const [form] = Form.useForm();
-  const [isDrawerVisible, setIsDrawerVisible] = useState(false);
-  const [stockData, setStockData] = useState<StockItem[]>([]);
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
+  const [rows, setRows] = useState<any[]>([]);
+  const [totals, setTotals] = useState<any>({});
+  const [dashboard, setDashboard] = useState<any>({});
+  const [warehouses, setWarehouses] = useState<any[]>([]);
+  const [warehouseId, setWarehouseId] = useState<number | undefined>();
+  const [lowOnly, setLowOnly] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const columns: ColumnsType<StockItem> = [
-    {
-      title: 'Огноо',
-      dataIndex: 'createdAt',
-      render: (text: string) => dayjs(text).format('YYYY-MM-DD HH:mm'),
-    },
-    {
-      title: 'Материал',
-      dataIndex: ['material', 'name'],
-    },
-    {
-      title: 'Агуулах',
-      dataIndex: ['warehouse', 'name'],
-    },
-    {
-      title: 'Тоо хэмжээ',
-      dataIndex: 'quantity',
-    },
-    {
-      title: 'Үйлдэл',
-      key: 'actions',
-      render: (_: any, record: StockItem) => (
-        <Space>
-          <Button type="link" icon={<EditOutlined />} onClick={() => alert(`Edit ${record.id}`)}>Edit</Button>
-          <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)}>Delete</Button>
-        </Space>
-      ),
-    },
-  ];
-
-  const handleDelete = async (id: number) => {
+  const load = useCallback(async () => {
+    setLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/stock/${id}`, {
-        method: 'DELETE',
-      });
-      if (response.ok) {
-        fetchData();
-      } else {
-        console.error('Failed to delete');
-      }
-    } catch (error) {
-      console.error('Error deleting:', error);
+      const params: Record<string, string> = {};
+      if (warehouseId) params.warehouse_id = String(warehouseId);
+      if (lowOnly) params.low_stock = '1';
+      const [stockRes, dash, wh] = await Promise.all([
+        inventoryApi.stocks.list(params),
+        inventoryApi.dashboard(),
+        inventoryApi.warehouses.list(),
+      ]);
+      setRows(stockRes.data || []);
+      setTotals(stockRes.totals || {});
+      setDashboard(dash);
+      setWarehouses(wh);
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : 'Алдаа');
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const fetchData = async () => {
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/stock`);
-      const result = await res.json();
-      if (result.success) {
-        setStockData(result.data);
-        setPagination((prev) => ({ ...prev, total: result.data.length }));
-      }
-    } catch (error) {
-      console.error('Error fetching stock data:', error);
-    }
-  };
+  }, [warehouseId, lowOnly]);
 
   useEffect(() => {
-      document.title='Үлдэгдэл';
-    fetchData();
-  }, [pagination.current, pagination.pageSize]);
-
-  const rowSelection = {
-    selectedRowKeys,
-    onChange: (selectedKeys: React.Key[]) => setSelectedRowKeys(selectedKeys),
-  };
+    document.title = 'Үлдэгдэл';
+    load();
+  }, [load]);
 
   return (
     <div>
-      <h1 style={{ marginBottom: 24 }}>Үлдэгдэл бүртгэл</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <Title level={4} style={{ margin: 0 }}>Үлдэгдэл</Title>
+          <Text type="secondary">
+            Үлдэгдэл зөвхөн баримтаар өөрчлөгдөнө (орлого/зарлага/шилжүүлэг/тохируулга)
+          </Text>
+        </div>
+        <Space wrap>
+          <Select
+            allowClear
+            placeholder="Агуулах"
+            style={{ width: 200 }}
+            value={warehouseId}
+            onChange={setWarehouseId}
+            options={warehouses.map((w: any) => ({ value: w.id, label: w.name }))}
+          />
+          <Space>
+            <Text>Дутуу үлдэгдэл</Text>
+            <Switch checked={lowOnly} onChange={setLowOnly} />
+          </Space>
+          <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
+            Шинэчлэх
+          </Button>
+        </Space>
+      </div>
 
-      <Space style={{ marginBottom: 16, width: '100%' }}>
-        <Button type="primary" style={{ marginLeft: 'auto' }} onClick={() => setIsDrawerVisible(true)}>
-          + Бүртгэх
-        </Button>
-      </Space>
+      <Row gutter={12} style={{ marginBottom: 16 }}>
+        <Col xs={12} md={6}>
+          <Card size="small">
+            <Statistic title="Нийт үнэлгээ" value={dashboard.inventoryValue || totals.totalValue || 0} suffix="₮" />
+          </Card>
+        </Col>
+        <Col xs={12} md={6}>
+          <Card size="small">
+            <Statistic title="SKU" value={totals.skuCount || 0} />
+          </Card>
+        </Col>
+        <Col xs={12} md={6}>
+          <Card size="small">
+            <Statistic
+              title="Дутуу үлдэгдэл"
+              value={totals.lowStockCount || dashboard.lowStock || 0}
+              valueStyle={{ color: '#fa8c16' }}
+              prefix={<WarningOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} md={6}>
+          <Card size="small">
+            <Statistic
+              title="Дууссан"
+              value={totals.outOfStockCount || dashboard.outOfStock || 0}
+              valueStyle={{ color: '#cf1322' }}
+            />
+          </Card>
+        </Col>
+      </Row>
 
       <Table
-        rowSelection={rowSelection}
-        columns={columns}
-        dataSource={stockData}
         rowKey="id"
-        pagination={{
-          position: ['topRight'],
-          current: pagination.current,
-          pageSize: pagination.pageSize,
-          total: pagination.total,
-          showSizeChanger: true,
-          onChange: (page, pageSize) => setPagination({ ...pagination, current: page, pageSize }),
-        }}
+        loading={loading}
+        dataSource={rows}
+        scroll={{ x: 1000 }}
+        columns={[
+          { title: 'Код', dataIndex: ['material', 'code'], width: 100 },
+          { title: 'Бараа', dataIndex: ['material', 'name'] },
+          { title: 'Агуулах', dataIndex: ['warehouse', 'name'], width: 140 },
+          { title: 'Нэгж', dataIndex: ['material', 'unit'], width: 70 },
+          {
+            title: 'Үлдэгдэл',
+            dataIndex: 'quantity',
+            width: 100,
+            align: 'right',
+            render: (v) => formatQty(v),
+          },
+          {
+            title: 'Боломжтой',
+            dataIndex: 'available_quantity',
+            width: 100,
+            align: 'right',
+            render: (v) => formatQty(v),
+          },
+          {
+            title: 'Захиалга',
+            dataIndex: ['material', 'reorder_level'],
+            width: 90,
+            align: 'right',
+          },
+          {
+            title: 'Дундаж үнэ',
+            dataIndex: 'average_cost',
+            width: 110,
+            align: 'right',
+            render: (v, r) => formatMoney(v || r.material?.average_cost),
+          },
+          {
+            title: 'Үнэлгээ',
+            dataIndex: 'stock_value',
+            width: 120,
+            align: 'right',
+            render: (v) => formatMoney(v),
+          },
+          {
+            title: 'Төлөв',
+            width: 110,
+            render: (_, r) =>
+              r.is_out ? (
+                <Tag color="red">Дууссан</Tag>
+              ) : r.is_low ? (
+                <Tag color="orange">Дутуу</Tag>
+              ) : (
+                <Tag color="green">Хэвийн</Tag>
+              ),
+          },
+        ]}
       />
-
-      <Drawer
-        title="Шинэ үлдэгдэл бүртгэх"
-        placement="right"
-        visible={isDrawerVisible}
-        onClose={() => setIsDrawerVisible(false)}
-        width="400px"
-        bodyStyle={{ padding: '20px' }}
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item label="Материал ID" name="item_id" rules={[{ required: true }]}> <Input /> </Form.Item>
-          <Form.Item label="Агуулах ID" name="warehouse_id" rules={[{ required: true }]}> <Input /> </Form.Item>
-          <Form.Item label="Тоо хэмжээ" name="quantity" rules={[{ required: true }]}> <Input /> </Form.Item>
-          <Form.Item>
-            <Button type="primary" onClick={async () => {
-              const values = await form.validateFields();
-              const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/stock`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(values),
-              });
-              const result = await res.json();
-              if (result.success) {
-                form.resetFields();
-                setIsDrawerVisible(false);
-                fetchData();
-              }
-            }} block>
-              Үүсгэх
-            </Button>
-          </Form.Item>
-        </Form>
-      </Drawer>
     </div>
   );
 }

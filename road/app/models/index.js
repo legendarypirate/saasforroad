@@ -82,6 +82,10 @@ db.office_locations = require("./office_location.model.js")(sequelize, Sequelize
 db.org_nodes = require("./org_node.model.js")(sequelize, Sequelize);
 db.salary_adjustments = require("./salary_adjustment.model.js")(sequelize, Sequelize);
 db.salary_month_settings = require("./salary_month_setting.model.js")(sequelize, Sequelize);
+db.inv_stock_movements = require("./inv_stock_movement.model.js")(sequelize, Sequelize);
+db.inv_documents = require("./inv_document.model.js")(sequelize, Sequelize);
+db.inv_document_lines = require("./inv_document_line.model.js")(sequelize, Sequelize);
+db.inv_material_suppliers = require("./inv_material_supplier.model.js")(sequelize, Sequelize);
 
 db.tender_packages.hasMany(db.tender_documents, {
   foreignKey: "tender_package_id",
@@ -117,6 +121,20 @@ db.materials.hasMany(db.transactions, { foreignKey: "item_id" });
 db.projects.hasMany(db.transactions, { foreignKey: "project_id" });
 db.warehouses.hasMany(db.transactions, { foreignKey: "warehouse_id" });
 
+db.materials.belongsTo(db.angilals, {
+  foreignKey: "category_id",
+  as: "category",
+});
+db.angilals.hasMany(db.materials, { foreignKey: "category_id" });
+db.materials.belongsTo(db.warehouses, {
+  foreignKey: "default_warehouse_id",
+  as: "defaultWarehouse",
+});
+db.materials.belongsTo(db.suppliers, {
+  foreignKey: "default_supplier_id",
+  as: "defaultSupplier",
+});
+
 db.stocks.belongsTo(db.materials, {
   foreignKey: "item_id",
   as: "material"
@@ -126,6 +144,68 @@ db.stocks.belongsTo(db.materials, {
 db.stocks.belongsTo(db.warehouses, {
   foreignKey: "warehouse_id",
   as: "warehouse"
+});
+
+db.inv_documents.hasMany(db.inv_document_lines, {
+  foreignKey: "document_id",
+  as: "lines",
+  onDelete: "CASCADE",
+});
+db.inv_document_lines.belongsTo(db.inv_documents, {
+  foreignKey: "document_id",
+  as: "document",
+});
+db.inv_document_lines.belongsTo(db.materials, {
+  foreignKey: "material_id",
+  as: "material",
+});
+db.inv_documents.belongsTo(db.warehouses, {
+  foreignKey: "warehouse_id",
+  as: "warehouse",
+});
+db.inv_documents.belongsTo(db.warehouses, {
+  foreignKey: "to_warehouse_id",
+  as: "toWarehouse",
+});
+db.inv_documents.belongsTo(db.projects, {
+  foreignKey: "project_id",
+  as: "project",
+});
+db.inv_documents.belongsTo(db.suppliers, {
+  foreignKey: "supplier_id",
+  as: "supplier",
+});
+db.inv_stock_movements.belongsTo(db.materials, {
+  foreignKey: "material_id",
+  as: "material",
+});
+db.inv_stock_movements.belongsTo(db.warehouses, {
+  foreignKey: "warehouse_id",
+  as: "warehouse",
+});
+db.inv_stock_movements.belongsTo(db.warehouses, {
+  foreignKey: "to_warehouse_id",
+  as: "toWarehouse",
+});
+db.inv_stock_movements.belongsTo(db.projects, {
+  foreignKey: "project_id",
+  as: "project",
+});
+db.inv_stock_movements.belongsTo(db.inv_documents, {
+  foreignKey: "document_id",
+  as: "document",
+});
+db.inv_material_suppliers.belongsTo(db.materials, {
+  foreignKey: "material_id",
+  as: "material",
+});
+db.inv_material_suppliers.belongsTo(db.suppliers, {
+  foreignKey: "supplier_id",
+  as: "supplier",
+});
+db.materials.hasMany(db.inv_material_suppliers, {
+  foreignKey: "material_id",
+  as: "suppliers",
 });
 
 // index.js эсвэл db.js дотор

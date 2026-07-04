@@ -1,237 +1,240 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Input, DatePicker, Drawer, Form} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  Button, Drawer, Form, Input, InputNumber, Popconfirm, Select, Space, Switch,
+  Table, Tag, Typography, message,
+} from 'antd';
+import { DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { UNITS, formatMoney, inventoryApi } from '@/lib/inventory';
 
-import dayjs from 'dayjs';
-import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
-import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+const { Title, Text } = Typography;
 
-dayjs.extend(isSameOrAfter);
-dayjs.extend(isSameOrBefore);
-interface Material {
-  id: number;
-  name: string;
-  code: string;
-  unit: string;
-
-
-}
-
-
-
-export default function DeliveryPage() {
-  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+export default function MaterialPage() {
+  const [rows, setRows] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [warehouses, setWarehouses] = useState<any[]>([]);
+  const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [q, setQ] = useState('');
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
   const [form] = Form.useForm();
-  const [isDrawerVisible, setIsDrawerVisible] = useState(false);
-  const [regionData, setRegionData] = useState<Material[]>([]);
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
 
-const columns: ColumnsType<Material> = [
-  {
-    title: 'Үүссэн огноо',
-    dataIndex: 'createdAt',
-    render: (text: string) => {
-      return dayjs(text).format('YYYY-MM-DD hh:mm A'); // Format the date here
-    },
-  },
-
-  { title: 'Ангилал', dataIndex: 'name' },
-  { title: 'Код', dataIndex: 'code' },
-  { title: 'Нэгж', dataIndex: 'unit' },
-
- {
-    title: 'Үйлдэл',
-    key: 'actions',
-    render: (_: any, record: Material) => (
-      <Space>
-        <Button
-          type="link"
-          icon={<EditOutlined />}
-          onClick={() => alert(`Edit ${record.name}`)}
-        >
-          Edit
-        </Button>
-        <Button
-          type="link"
-          danger
-          icon={<DeleteOutlined />}
-          onClick={() => handleDelete(record.id)}
-        >
-          Delete
-        </Button>
-      </Space>
-    ),
-  },
-];
-
-  const handleDelete = async (id: number) => {
+  const load = useCallback(async () => {
+    setLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/material/${id}`, {
-        method: "DELETE",
-      });
-  
-      if (response.ok) {
-        console.log("Deleted successfully");
-        const refreshed = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/material`);
-        const refreshedResult = await refreshed.json();
-        if (refreshedResult.success) {
-            setRegionData(refreshedResult.data);
-        }
-      } else {
-        console.error("Failed to delete");
-      }
-    } catch (error) {
-      console.error("Error deleting:", error);
+      const [materials, cats, wh, sup] = await Promise.all([
+        inventoryApi.materials.list(q ? { q } : undefined),
+        inventoryApi.categories.list(),
+        inventoryApi.warehouses.list(),
+        inventoryApi.suppliers.list(),
+      ]);
+      setRows(materials);
+      setCategories(cats);
+      setWarehouses(wh);
+      setSuppliers(sup);
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : 'Алдаа');
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [q]);
+
   useEffect(() => {
     document.title = 'Бараа материал';
-    const fetchData = async () => {
-      try {
-     
-  
-        // Always fetch deliveries on page/size change
-        const deliveryRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/material`);
-        const deliveriesResult = await deliveryRes.json();
-  
-        if (deliveriesResult.success) {
-            setRegionData(deliveriesResult.data);
-          
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-  
-    fetchData();
-  }, [pagination.current, pagination.pageSize]);
-  
-  
-  
-  const rowSelection = {
-    selectedRowKeys,
-    onChange: (selectedKeys: React.Key[]) => {
-      setSelectedRowKeys(selectedKeys);
-    },
+    load();
+  }, [load]);
+
+  const openCreate = () => {
+    setEditing(null);
+    form.resetFields();
+    form.setFieldsValue({
+      unit: 'ширхэг',
+      is_active: true,
+      is_consumable: true,
+      reorder_level: 0,
+      standard_cost: 0,
+    });
+    setOpen(true);
   };
 
-  const handleDeliveryButton = () => {
-    setIsDrawerVisible(true);
+  const openEdit = (row: any) => {
+    setEditing(row);
+    form.setFieldsValue(row);
+    setOpen(true);
   };
 
-  // Handle form submission (for example, you could save data here)
-  const handleOk = async () => {
+  const save = async () => {
+    const values = await form.validateFields();
     try {
-      const values = await form.validateFields();
-  
-      // Construct the request payload
-      const payload = {
-        name: values.name,
-      };
-  
-      // Send the POST request
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/material`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-  
-      const result = await response.json();
-  
-      if (result.success) {
-        // Optionally refresh the delivery list
-        const refreshed = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/material`);
-        const refreshedResult = await refreshed.json();
-        if (refreshedResult.success) {
-            setRegionData(refreshedResult.data);
-        }
-  
-        // Reset form and close drawer
-        form.resetFields();
-        setIsDrawerVisible(false);
+      if (editing) {
+        await inventoryApi.materials.update(editing.id, values);
+        message.success('Шинэчлэгдлээ');
       } else {
-        console.error('Failed to create delivery:', result.message);
+        await inventoryApi.materials.create(values);
+        message.success('Нэмэгдлээ');
       }
-    } catch (err) {
-      console.error('Validation or request error:', err);
+      setOpen(false);
+      load();
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : 'Алдаа');
     }
   };
 
-
-  const handleCloseDrawer = () => {
-    setIsDrawerVisible(false);
+  const remove = async (id: number) => {
+    try {
+      await inventoryApi.materials.remove(id);
+      message.success('Устгагдлаа');
+      load();
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : 'Алдаа');
+    }
   };
 
   return (
-    <div style={{ paddingBottom: '100px' }}> {/* Adding padding to prevent overlap with fixed button */}
-      <h1 style={{ marginBottom: 24 }}>Материал</h1>
-
-      <Space style={{ marginBottom: 16 }} wrap>
-       
-         <Button
-          type="primary"
-          style={{ marginLeft: 'auto' }}
-          onClick={handleDeliveryButton}
-        >
-          + Материал үүсгэх
-        </Button>
-      </Space>
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <Title level={4} style={{ margin: 0 }}>Бараа материал</Title>
+          <Text type="secondary">Материалын мастер бүртгэл (асфальт, хайрга, цемент, түлш...)</Text>
+        </div>
+        <Space wrap>
+          <Input
+            allowClear
+            prefix={<SearchOutlined />}
+            placeholder="Нэр, код, barcode..."
+            style={{ width: 240 }}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onPressEnter={load}
+          />
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+            Бараа нэмэх
+          </Button>
+        </Space>
+      </div>
 
       <Table
-  rowSelection={rowSelection}
-  columns={columns}
-  dataSource={regionData}
-  rowKey="id"
-  pagination={{
-    position: ['topRight'], // 👈 This moves pagination to top-right
-    current: pagination.current,
-    pageSize: pagination.pageSize,
-    total: pagination.total,
-    showSizeChanger: true,
-    onChange: (page, pageSize) => {
-      setPagination((prev) => ({
-        ...prev,
-        current: page,
-        pageSize: pageSize,
-      }));
-    },
-  }}
-/>
+        rowKey="id"
+        loading={loading}
+        dataSource={rows}
+        scroll={{ x: 1100 }}
+        columns={[
+          { title: 'Код', dataIndex: 'code', width: 110 },
+          { title: 'Нэр', dataIndex: 'name', width: 180 },
+          {
+            title: 'Ангилал',
+            dataIndex: ['category', 'name'],
+            width: 120,
+            render: (v) => v || '—',
+          },
+          { title: 'Нэгж', dataIndex: 'unit', width: 80 },
+          { title: 'Бренд', dataIndex: 'brand', width: 100, render: (v) => v || '—' },
+          {
+            title: 'Дахин захиалга',
+            dataIndex: 'reorder_level',
+            width: 110,
+            align: 'right',
+          },
+          {
+            title: 'Стандарт үнэ',
+            dataIndex: 'standard_cost',
+            width: 120,
+            align: 'right',
+            render: (v) => formatMoney(v),
+          },
+          {
+            title: 'Төлөв',
+            dataIndex: 'is_active',
+            width: 90,
+            render: (v) => (v !== false ? <Tag color="green">Идэвхтэй</Tag> : <Tag>Идэвхгүй</Tag>),
+          },
+          {
+            title: 'Үйлдэл',
+            width: 100,
+            fixed: 'right',
+            render: (_, r) => (
+              <Space>
+                <Button type="text" icon={<EditOutlined />} onClick={() => openEdit(r)} />
+                <Popconfirm title="Устгах уу?" onConfirm={() => remove(r.id)}>
+                  <Button type="text" danger icon={<DeleteOutlined />} />
+                </Popconfirm>
+              </Space>
+            ),
+          },
+        ]}
+      />
 
-
- <Drawer
-        title="Ангилал үүсгэх"
-        placement="right"
-        visible={isDrawerVisible}
-        onClose={handleCloseDrawer}
-        width="400px"  // Adjust the width as needed
-        height="100%"  // Full height
-        bodyStyle={{ padding: '20px' }}
+      <Drawer
+        title={editing ? 'Бараа засах' : 'Бараа нэмэх'}
+        open={open}
+        onClose={() => setOpen(false)}
+        width={520}
+        extra={<Button type="primary" onClick={save}>Хадгалах</Button>}
       >
         <Form form={form} layout="vertical">
-
-          <Form.Item
-            label="Ангилал"
-            name="name"
-            rules={[{ required: true, message: 'Please input the address!' }]}
-          >
-            <Input placeholder="Ангилал оруулах" />
-          </Form.Item>
-        
-          <Form.Item>
-            <Button type="primary" onClick={handleOk} block>
-              Үүсгэх
-            </Button>
-          </Form.Item>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
+            <Form.Item name="name" label="Нэр" rules={[{ required: true }]} style={{ gridColumn: '1 / -1' }}>
+              <Input placeholder="Жишээ: Битум 60/70, Цемент М400" />
+            </Form.Item>
+            <Form.Item name="code" label="Код">
+              <Input placeholder="Авто үүснэ" />
+            </Form.Item>
+            <Form.Item name="barcode" label="Barcode">
+              <Input />
+            </Form.Item>
+            <Form.Item name="category_id" label="Ангилал">
+              <Select
+                allowClear
+                options={categories.map((c: any) => ({ value: c.id, label: c.name }))}
+              />
+            </Form.Item>
+            <Form.Item name="unit" label="Нэгж" rules={[{ required: true }]}>
+              <Select options={UNITS.map((u) => ({ value: u, label: u }))} />
+            </Form.Item>
+            <Form.Item name="brand" label="Бренд">
+              <Input />
+            </Form.Item>
+            <Form.Item name="specification" label="Спецификаци">
+              <Input />
+            </Form.Item>
+            <Form.Item name="reorder_level" label="Дахин захиалгын түвшин">
+              <InputNumber style={{ width: '100%' }} min={0} />
+            </Form.Item>
+            <Form.Item name="min_stock" label="Доод үлдэгдэл">
+              <InputNumber style={{ width: '100%' }} min={0} />
+            </Form.Item>
+            <Form.Item name="max_stock" label="Дээд үлдэгдэл">
+              <InputNumber style={{ width: '100%' }} min={0} />
+            </Form.Item>
+            <Form.Item name="standard_cost" label="Стандарт үнэ">
+              <InputNumber style={{ width: '100%' }} min={0} />
+            </Form.Item>
+            <Form.Item name="default_warehouse_id" label="Үндсэн агуулах">
+              <Select
+                allowClear
+                options={warehouses.map((w: any) => ({ value: w.id, label: w.name }))}
+              />
+            </Form.Item>
+            <Form.Item name="default_supplier_id" label="Үндсэн нийлүүлэгч">
+              <Select
+                allowClear
+                options={suppliers.map((s: any) => ({ value: s.id, label: s.name }))}
+              />
+            </Form.Item>
+            <Form.Item name="description" label="Тайлбар" style={{ gridColumn: '1 / -1' }}>
+              <Input.TextArea rows={2} />
+            </Form.Item>
+            <Form.Item name="is_consumable" label="Хэрэглээний" valuePropName="checked">
+              <Switch />
+            </Form.Item>
+            <Form.Item name="is_active" label="Идэвхтэй" valuePropName="checked">
+              <Switch />
+            </Form.Item>
+          </div>
         </Form>
       </Drawer>
-      {/* Fixed Bottom Section */}
-      
     </div>
   );
 }
