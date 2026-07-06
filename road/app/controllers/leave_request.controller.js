@@ -22,16 +22,26 @@ const reviewerInclude = {
 };
 
 function resolveLeaveWindow(body) {
-  const { start_at, end_at, start_date, end_date } = body;
+  const {
+    start_at,
+    end_at,
+    start_date,
+    end_date,
+    start_time,
+    end_time,
+  } = body;
 
-  if (start_at && end_at) {
-    const startAt = parseInstant(start_at);
-    const endAt = parseInstant(end_at);
-    if (!startAt || !endAt) {
-      const err = new Error("Эхлэх, дуусах цагийн формат буруу байна");
-      err.statusCode = 400;
-      throw err;
-    }
+  let startAt = parseInstant(start_at);
+  let endAt = parseInstant(end_at);
+
+  if ((!startAt || !endAt) && start_date && end_date) {
+    const startPart = start_time ? String(start_time).slice(0, 5) : "00:00";
+    const endPart = end_time ? String(end_time).slice(0, 5) : "23:59";
+    startAt = parseInstant(`${start_date}T${startPart}:00`);
+    endAt = parseInstant(`${end_date}T${endPart}:00`);
+  }
+
+  if (startAt && endAt) {
     if (endAt <= startAt) {
       const err = new Error("Дуусах цаг эхлэх цагаас хойш байх ёстой");
       err.statusCode = 400;
@@ -42,22 +52,6 @@ function resolveLeaveWindow(body) {
       end_at: endAt,
       start_date: startAt.toISOString().slice(0, 10),
       end_date: endAt.toISOString().slice(0, 10),
-    };
-  }
-
-  if (start_date && end_date) {
-    if (end_date < start_date) {
-      const err = new Error("Дуусах огноо эхлэх огнооноос өмнө байж болохгүй");
-      err.statusCode = 400;
-      throw err;
-    }
-    const startAt = parseInstant(`${start_date}T00:00:00`);
-    const endAt = parseInstant(`${end_date}T23:59:59`);
-    return {
-      start_at: startAt,
-      end_at: endAt,
-      start_date,
-      end_date,
     };
   }
 
