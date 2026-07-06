@@ -98,14 +98,6 @@ exports.checkIn = async (req, res) => {
       where: { user_id, work_date: workDate },
     });
 
-    if (record && record.check_in_at) {
-      return res.status(400).send({
-        success: false,
-        message: "Өнөөдөр ирц аль хэдийн бүртгэгдсэн байна",
-        data: record,
-      });
-    }
-
     const now = new Date();
     const location = await resolveGeofence(latitude, longitude);
 
@@ -157,35 +149,35 @@ exports.checkOut = async (req, res) => {
   const workDate = todayDateString();
 
   try {
-    const record = await Attendance.findOne({
+    let record = await Attendance.findOne({
       where: { user_id, work_date: workDate },
     });
 
-    if (!record || !record.check_in_at) {
-      return res.status(400).send({
-        success: false,
-        message: "Эхлээд ирц бүртгэнэ үү",
-      });
-    }
-
-    if (record.check_out_at) {
-      return res.status(400).send({
-        success: false,
-        message: "Явц аль хэдийн бүртгэгдсэн",
-        data: record,
-      });
-    }
-
     const location = await resolveGeofence(latitude, longitude);
+    const now = new Date();
 
-    await record.update({
-      check_out_at: new Date(),
-      notes: notes || record.notes,
-      check_out_latitude: location.latitude,
-      check_out_longitude: location.longitude,
-      check_out_office_location_id: location.office_location_id,
-      check_out_distance_meters: location.distance_meters,
-    });
+    if (record) {
+      await record.update({
+        check_out_at: now,
+        notes: notes || record.notes,
+        check_out_latitude: location.latitude,
+        check_out_longitude: location.longitude,
+        check_out_office_location_id: location.office_location_id,
+        check_out_distance_meters: location.distance_meters,
+      });
+    } else {
+      record = await Attendance.create({
+        user_id,
+        work_date: workDate,
+        check_out_at: now,
+        status: "present",
+        notes,
+        check_out_latitude: location.latitude,
+        check_out_longitude: location.longitude,
+        check_out_office_location_id: location.office_location_id,
+        check_out_distance_meters: location.distance_meters,
+      });
+    }
 
     res.send({
       success: true,
