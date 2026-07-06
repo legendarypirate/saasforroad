@@ -10,6 +10,7 @@ export interface ModuleConfig {
   description: string;
   color: string;
   items: NavItemConfig[];
+  comingSoon?: boolean;
 }
 
 export const DASHBOARD_PATH = '/admin';
@@ -88,6 +89,38 @@ export const ADMIN_MODULES: ModuleConfig[] = [
       { path: '/admin/notification', label: 'Мэдэгдэл', permission: 'notification:read' },
     ],
   },
+  {
+    id: 'finance',
+    label: 'Санхүү',
+    description: 'Нэхэмжлэх, төлбөр, санхүүгийн тайлан',
+    color: '#2f54eb',
+    items: [],
+    comingSoon: true,
+  },
+  {
+    id: 'gps',
+    label: 'GPS',
+    description: 'Тээврийн хэрэгслийн байршил, маршрут',
+    color: '#389e0d',
+    items: [],
+    comingSoon: true,
+  },
+  {
+    id: 'ai-tender',
+    label: 'AI Тендер',
+    description: 'AI тусламжтай тендерийн баримт бэлтгэх',
+    color: '#9254de',
+    items: [],
+    comingSoon: true,
+  },
+  {
+    id: 'uniform-supply',
+    label: 'Хувцас хэрэглэл хангамж',
+    description: 'Ажилчдын хувцас, хэрэгслийн хангамж',
+    color: '#d4380d',
+    items: [],
+    comingSoon: true,
+  },
 ];
 
 export function hasPermission(permission: string | undefined, userPermissions: string[]): boolean {
@@ -112,7 +145,7 @@ export function filterModules(userPermissions: string[], userRole?: string): Mod
   return ADMIN_MODULES.map((mod) => ({
     ...mod,
     items: filterNavItems(mod.items, userPermissions),
-  })).filter((mod) => mod.items.length > 0);
+  })).filter((mod) => mod.comingSoon || mod.items.length > 0);
 }
 
 export function getModuleForPath(pathname: string): ModuleConfig | null {

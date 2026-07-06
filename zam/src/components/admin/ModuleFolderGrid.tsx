@@ -10,6 +10,10 @@ import {
   HomeOutlined,
   FileTextOutlined,
   FolderOpenOutlined,
+  AccountBookOutlined,
+  EnvironmentOutlined,
+  RobotOutlined,
+  SkinOutlined,
 } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import {
@@ -25,6 +29,10 @@ const MODULE_ICONS: Record<string, React.ReactNode> = {
   homepage: <HomeOutlined />,
   tender: <FileTextOutlined />,
   documents: <FileDoneOutlined />,
+  finance: <AccountBookOutlined />,
+  gps: <EnvironmentOutlined />,
+  'ai-tender': <RobotOutlined />,
+  'uniform-supply': <SkinOutlined />,
 };
 
 interface ModuleFolderGridProps {
@@ -42,23 +50,30 @@ function ModuleFolder({
   onOpen: (path: string) => void;
 }) {
   const itemCount = mod.items.length;
+  const isComingSoon = Boolean(mod.comingSoon);
+
+  const handleOpen = () => {
+    if (isComingSoon) return;
+    onOpen(getDefaultModulePath(mod, userPermissions));
+  };
 
   return (
     <div
-      role="button"
-      tabIndex={0}
-      onClick={() => onOpen(getDefaultModulePath(mod, userPermissions))}
+      role={isComingSoon ? undefined : 'button'}
+      tabIndex={isComingSoon ? undefined : 0}
+      onClick={handleOpen}
       onKeyDown={(e) => {
+        if (isComingSoon) return;
         if (e.key === 'Enter' || e.key === ' ') {
-          onOpen(getDefaultModulePath(mod, userPermissions));
+          handleOpen();
         }
       }}
       style={{
-        background: '#fff',
+        background: isComingSoon ? '#fafafa' : '#fff',
         border: '1px solid #e8e8e8',
         borderRadius: 12,
         padding: '28px 24px',
-        cursor: 'pointer',
+        cursor: isComingSoon ? 'not-allowed' : 'pointer',
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
@@ -66,18 +81,41 @@ function ModuleFolder({
         textAlign: 'center',
         transition: 'all 0.2s ease',
         boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+        opacity: isComingSoon ? 0.72 : 1,
+        position: 'relative',
       }}
       onMouseEnter={(e) => {
+        if (isComingSoon) return;
         e.currentTarget.style.borderColor = mod.color;
         e.currentTarget.style.boxShadow = `0 8px 24px ${mod.color}33`;
         e.currentTarget.style.transform = 'translateY(-4px)';
       }}
       onMouseLeave={(e) => {
+        if (isComingSoon) return;
         e.currentTarget.style.borderColor = '#e8e8e8';
         e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)';
         e.currentTarget.style.transform = 'translateY(0)';
       }}
     >
+      {isComingSoon && (
+        <span
+          style={{
+            position: 'absolute',
+            top: 12,
+            right: 12,
+            background: '#f0f0f0',
+            color: '#8c8c8c',
+            fontSize: 11,
+            fontWeight: 600,
+            padding: '4px 10px',
+            borderRadius: 20,
+            letterSpacing: 0.3,
+            textTransform: 'uppercase',
+          }}
+        >
+          Coming soon
+        </span>
+      )}
       <div
         style={{
           width: 72,
@@ -91,6 +129,7 @@ function ModuleFolder({
           fontSize: 36,
           marginBottom: 16,
           position: 'relative',
+          filter: isComingSoon ? 'grayscale(0.35)' : undefined,
         }}
       >
         {MODULE_ICONS[mod.id]}
@@ -101,28 +140,33 @@ function ModuleFolder({
             right: -4,
             fontSize: 22,
             color: mod.color,
-            background: '#fff',
+            background: isComingSoon ? '#fafafa' : '#fff',
             borderRadius: 4,
             padding: 2,
           }}
         />
       </div>
-      <Typography.Title level={4} style={{ margin: '0 0 8px', color: '#262626' }}>
+      <Typography.Title
+        level={4}
+        style={{ margin: '0 0 8px', color: isComingSoon ? '#8c8c8c' : '#262626' }}
+      >
         {mod.label}
       </Typography.Title>
       <Typography.Text type="secondary" style={{ fontSize: 13, lineHeight: 1.5 }}>
         {mod.description}
       </Typography.Text>
-      <Typography.Text
-        style={{
-          marginTop: 12,
-          fontSize: 12,
-          color: mod.color,
-          fontWeight: 500,
-        }}
-      >
-        {itemCount} дэд цэс
-      </Typography.Text>
+      {!isComingSoon && (
+        <Typography.Text
+          style={{
+            marginTop: 12,
+            fontSize: 12,
+            color: mod.color,
+            fontWeight: 500,
+          }}
+        >
+          {itemCount} дэд цэс
+        </Typography.Text>
+      )}
     </div>
   );
 }
