@@ -24,6 +24,8 @@ interface LeaveRow {
   leave_type: 'paid' | 'unpaid';
   start_date: string;
   end_date: string;
+  start_at?: string | null;
+  end_at?: string | null;
   hours?: number | null;
   total_hours: number;
   reason: string;
@@ -33,6 +35,19 @@ interface LeaveRow {
   createdAt: string;
   user?: { id: number; username: string; phone?: string; email?: string };
   reviewer?: { id: number; username: string } | null;
+}
+
+function formatLeaveDateTime(value?: string | null, fallback?: string) {
+  if (value) return dayjs(value).format('YYYY-MM-DD HH:mm');
+  if (fallback) return dayjs(fallback).format('YYYY-MM-DD');
+  return '—';
+}
+
+function formatLeaveRange(row: LeaveRow) {
+  if (row.start_at && row.end_at) {
+    return `${formatLeaveDateTime(row.start_at)} → ${formatLeaveDateTime(row.end_at)}`;
+  }
+  return `${formatLeaveDateTime(null, row.start_date)} → ${formatLeaveDateTime(null, row.end_date)}`;
 }
 
 const TYPE_LABEL: Record<string, string> = {
@@ -136,26 +151,25 @@ export default function LeaveRequestPage() {
       ),
     },
     {
-      title: 'Эхлэх',
-      dataIndex: 'start_date',
-      width: 110,
-      render: (v) => dayjs(v).format('YYYY-MM-DD'),
+      title: 'Эхлэх цаг',
+      key: 'start_at',
+      width: 150,
+      render: (_, r) => formatLeaveDateTime(r.start_at, r.start_date),
     },
     {
-      title: 'Дуусах',
-      dataIndex: 'end_date',
-      width: 110,
-      render: (v) => dayjs(v).format('YYYY-MM-DD'),
+      title: 'Дуусах цаг',
+      key: 'end_at',
+      width: 150,
+      render: (_, r) => formatLeaveDateTime(r.end_at, r.end_date),
     },
     {
-      title: 'Цаг',
+      title: 'Тооцогдсон цаг',
       dataIndex: 'total_hours',
-      width: 80,
-      render: (v, r) => (
-        <span>
-          {Number(v).toFixed(1)}
-          {r.hours ? <Text type="secondary"> ({Number(r.hours).toFixed(1)}ц/өдөр)</Text> : null}
-        </span>
+      width: 120,
+      render: (v) => (
+        <Text strong style={{ color: '#1677ff' }}>
+          {Number(v).toFixed(2)} цаг
+        </Text>
       ),
     },
     {
@@ -251,7 +265,7 @@ export default function LeaveRequestPage() {
         columns={columns}
         dataSource={rows}
         loading={loading}
-        scroll={{ x: 1200 }}
+        scroll={{ x: 1300 }}
         pagination={{ pageSize: 20, showSizeChanger: true }}
       />
 
@@ -271,11 +285,14 @@ export default function LeaveRequestPage() {
           <div className="space-y-3">
             <div>
               <Text strong>{activeRow.user?.username}</Text>
-              <div>
-                {TYPE_LABEL[activeRow.leave_type]} · {activeRow.start_date} → {activeRow.end_date} ·{' '}
-                {Number(activeRow.total_hours).toFixed(1)} цаг
+              <div>{TYPE_LABEL[activeRow.leave_type]}</div>
+              <div style={{ marginTop: 4 }}>{formatLeaveRange(activeRow)}</div>
+              <div style={{ marginTop: 6 }}>
+                <Text strong style={{ color: '#1677ff', fontSize: 16 }}>
+                  Тооцогдсон цаг: {Number(activeRow.total_hours).toFixed(2)} цаг
+                </Text>
               </div>
-              <div className="mt-1 text-gray-600">{activeRow.reason}</div>
+              <div className="mt-2 text-gray-600">{activeRow.reason}</div>
             </div>
             <div>
               <Text type="secondary">Тайлбар (заавал биш)</Text>

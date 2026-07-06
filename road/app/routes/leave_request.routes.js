@@ -3,6 +3,7 @@ module.exports = (app) => {
   const router = require("express").Router();
 
   router.post("/", leaveRequest.create);
+  router.post("/preview-hours", leaveRequest.previewHours);
   router.get("/", leaveRequest.findAll);
   router.get("/user/:userId", leaveRequest.findByUser);
   router.patch("/:id/review", leaveRequest.review);

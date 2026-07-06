@@ -210,6 +210,23 @@ async function ensureInventoryColumns(sequelize) {
   }
 }
 
+async function ensureLeaveRequestColumns(sequelize) {
+  const [rows] = await sequelize.query(`
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'leave_requests'
+  `);
+  if (rows.length === 0) return;
+
+  const columns = [
+    `ALTER TABLE "leave_requests" ADD COLUMN IF NOT EXISTS "start_at" TIMESTAMP WITH TIME ZONE;`,
+    `ALTER TABLE "leave_requests" ADD COLUMN IF NOT EXISTS "end_at" TIMESTAMP WITH TIME ZONE;`,
+  ];
+
+  for (const sql of columns) {
+    await sequelize.query(sql);
+  }
+}
+
 async function ensureSchema(sequelize, UserModel) {
   if (!UserModel) {
     throw new Error("User model is required for ensureSchema");
@@ -220,6 +237,7 @@ async function ensureSchema(sequelize, UserModel) {
   await ensureOrgNodeColumns(sequelize);
   await ensureSalaryAdjustmentColumns(sequelize);
   await ensureInventoryColumns(sequelize);
+  await ensureLeaveRequestColumns(sequelize);
 }
 
 module.exports = {
@@ -230,6 +248,7 @@ module.exports = {
   ensureOrgNodeColumns,
   ensureSalaryAdjustmentColumns,
   ensureInventoryColumns,
+  ensureLeaveRequestColumns,
   resolveTableName,
   resolveExistingUserTable,
 };

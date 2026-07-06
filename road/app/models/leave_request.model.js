@@ -17,6 +17,14 @@ module.exports = (sequelize, Sequelize) => {
       type: Sequelize.DATEONLY,
       allowNull: false,
     },
+    start_at: {
+      type: Sequelize.DATE,
+      comment: "Leave start datetime",
+    },
+    end_at: {
+      type: Sequelize.DATE,
+      comment: "Leave end datetime",
+    },
     hours: {
       type: Sequelize.DECIMAL(8, 2),
       comment: "Optional partial-day hours (single day only)",

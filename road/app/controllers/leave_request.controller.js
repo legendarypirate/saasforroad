@@ -2,7 +2,11 @@ const db = require("../models");
 const LeaveRequest = db.leave_requests;
 const User = db.users;
 const Op = db.Sequelize.Op;
-const { computeLeaveTotalHours } = require("../utils/leaveCalculator");
+const {
+  computeLeaveTotalHours,
+  computeHoursBetween,
+  parseInstant,
+} = require("../utils/leaveCalculator");
 
 const userInclude = {
   model: User,
@@ -17,38 +21,81 @@ const reviewerInclude = {
   required: false,
 };
 
-function validateDates(startDate, endDate) {
-  if (!startDate || !endDate) {
-    const err = new Error("Эхлэх болон дуусах огноо шаардлагатай");
-    err.statusCode = 400;
-    throw err;
+function resolveLeaveWindow(body) {
+  const { start_at, end_at, start_date, end_date } = body;
+
+  if (start_at && end_at) {
+    const startAt = parseInstant(start_at);
+    const endAt = parseInstant(end_at);
+    if (!startAt || !endAt) {
+      const err = new Error("Эхлэх, дуусах цагийн формат буруу байна");
+      err.statusCode = 400;
+      throw err;
+    }
+    if (endAt <= startAt) {
+      const err = new Error("Дуусах цаг эхлэх цагаас хойш байх ёстой");
+      err.statusCode = 400;
+      throw err;
+    }
+    return {
+      start_at: startAt,
+      end_at: endAt,
+      start_date: startAt.toISOString().slice(0, 10),
+      end_date: endAt.toISOString().slice(0, 10),
+    };
   }
-  if (endDate < startDate) {
-    const err = new Error("Дуусах огноо эхлэх огнооноос өмнө байж болохгүй");
-    err.statusCode = 400;
-    throw err;
+
+  if (start_date && end_date) {
+    if (end_date < start_date) {
+      const err = new Error("Дуусах огноо эхлэх огнооноос өмнө байж болохгүй");
+      err.statusCode = 400;
+      throw err;
+    }
+    const startAt = parseInstant(`${start_date}T00:00:00`);
+    const endAt = parseInstant(`${end_date}T23:59:59`);
+    return {
+      start_at: startAt,
+      end_at: endAt,
+      start_date,
+      end_date,
+    };
   }
+
+  const err = new Error("Эхлэх, дуусах огноо болон цаг шаардлагатай");
+  err.statusCode = 400;
+  throw err;
 }
 
-async function assertNoOverlap(userId, startDate, endDate, excludeId = null) {
+async function assertNoOverlap(userId, window, excludeId = null) {
   const where = {
     user_id: userId,
     status: { [Op.in]: ["pending", "approved"] },
-    start_date: { [Op.lte]: endDate },
-    end_date: { [Op.gte]: startDate },
   };
   if (excludeId) where.id = { [Op.ne]: excludeId };
 
-  const existing = await LeaveRequest.findOne({ where });
-  if (existing) {
-    const err = new Error("Энэ хугацаанд өөр чөлөөний хүсэлт байна");
-    err.statusCode = 409;
-    throw err;
+  const existing = await LeaveRequest.findAll({ where });
+  for (const row of existing) {
+    if (row.start_at && row.end_at) {
+      const rs = new Date(row.start_at);
+      const re = new Date(row.end_at);
+      if (rs < window.end_at && re > window.start_at) {
+        const err = new Error("Энэ хугацаанд өөр чөлөөний хүсэлт байна");
+        err.statusCode = 409;
+        throw err;
+      }
+    } else if (
+      row.start_date <= window.end_date &&
+      row.end_date >= window.start_date
+    ) {
+      const err = new Error("Энэ хугацаанд өөр чөлөөний хүсэлт байна");
+      err.statusCode = 409;
+      throw err;
+    }
   }
 }
 
 exports.create = async (req, res) => {
-  const { user_id, leave_type, start_date, end_date, hours, reason } = req.body;
+  const { user_id, leave_type, hours, reason } = req.body;
 
   if (!user_id) {
     return res.status(400).send({ success: false, message: "user_id шаардлагатай" });
@@ -64,7 +111,7 @@ exports.create = async (req, res) => {
   }
 
   try {
-    validateDates(start_date, end_date);
+    const window = resolveLeaveWindow(req.body);
 
     const user = await User.findByPk(user_id, {
       attributes: [
@@ -82,23 +129,31 @@ exports.create = async (req, res) => {
       return res.status(404).send({ success: false, message: "Хэрэглэгч олдсонгүй" });
     }
 
-    await assertNoOverlap(user_id, start_date, end_date);
+    await assertNoOverlap(user_id, window);
 
-    const draft = { start_date, end_date, hours };
+    const draft = {
+      start_date: window.start_date,
+      end_date: window.end_date,
+      start_at: window.start_at,
+      end_at: window.end_at,
+      hours,
+    };
     const totalHours = computeLeaveTotalHours(user, draft, []);
 
     if (totalHours <= 0) {
       return res.status(400).send({
         success: false,
-        message: "Сонгосон хугацаанд ажлын өдөр байхгүй байна",
+        message: "Сонгосон хугацаанд тооцогдох цаг байхгүй байна",
       });
     }
 
     const data = await LeaveRequest.create({
       user_id,
       leave_type,
-      start_date,
-      end_date,
+      start_date: window.start_date,
+      end_date: window.end_date,
+      start_at: window.start_at,
+      end_at: window.end_at,
       hours: hours !== undefined && hours !== null && hours !== "" ? Number(hours) : null,
       total_hours: totalHours,
       reason: String(reason).trim(),
@@ -119,6 +174,24 @@ exports.create = async (req, res) => {
   }
 };
 
+exports.previewHours = async (req, res) => {
+  const { start_at, end_at } = req.body;
+  try {
+    const window = resolveLeaveWindow({ start_at, end_at });
+    const totalHours = computeHoursBetween(window.start_at, window.end_at);
+    res.send({
+      success: true,
+      data: {
+        total_hours: totalHours,
+        start_at: window.start_at,
+        end_at: window.end_at,
+      },
+    });
+  } catch (err) {
+    res.status(err.statusCode || 500).send({ success: false, message: err.message });
+  }
+};
+
 exports.findAll = async (req, res) => {
   const { status, user_id, from, to } = req.query;
   const where = {};
@@ -126,8 +199,10 @@ exports.findAll = async (req, res) => {
   if (status) where.status = status;
   if (user_id) where.user_id = user_id;
   if (from && to) {
-    where.start_date = { [Op.lte]: to };
-    where.end_date = { [Op.gte]: from };
+    where[Op.and] = [
+      { start_date: { [Op.lte]: to } },
+      { end_date: { [Op.gte]: from } },
+    ];
   }
 
   try {
@@ -180,7 +255,13 @@ exports.review = async (req, res) => {
     }
 
     if (status === "approved") {
-      await assertNoOverlap(row.user_id, row.start_date, row.end_date, row.id);
+      const window = {
+        start_at: row.start_at || parseInstant(`${row.start_date}T00:00:00`),
+        end_at: row.end_at || parseInstant(`${row.end_date}T23:59:59`),
+        start_date: row.start_date,
+        end_date: row.end_date,
+      };
+      await assertNoOverlap(row.user_id, window, row.id);
     }
 
     await row.update({
