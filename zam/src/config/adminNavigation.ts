@@ -124,6 +124,49 @@ export const ADMIN_MODULES: ModuleConfig[] = [
   },
 ];
 
+export const ADMIN_DATA_FOLDERS: ModuleConfig[] = [
+  {
+    id: 'data-technique',
+    label: 'Техник',
+    description: 'Техникийн мэдээлэл, тоног төхөөрөмжийн дата',
+    color: '#096dd9',
+    items: [],
+    comingSoon: true,
+  },
+  {
+    id: 'data-brigade',
+    label: 'Бригад',
+    description: 'Бригад, багийн бүтэц, гүйцэтгэл',
+    color: '#531dab',
+    items: [],
+    comingSoon: true,
+  },
+  {
+    id: 'data-laboratory',
+    label: 'Лаборатори',
+    description: 'Лабораторийн шинжилгээ, дүн',
+    color: '#08979c',
+    items: [],
+    comingSoon: true,
+  },
+  {
+    id: 'data-job-seeker',
+    label: 'Ажил горилогч',
+    description: 'Ажил горилогчдын мэдээлэл',
+    color: '#d48806',
+    items: [],
+    comingSoon: true,
+  },
+  {
+    id: 'data-production',
+    label: 'Үйлдвэр',
+    description: 'Үйлдвэрлэл, гүйцэтгэлийн дата',
+    color: '#cf1322',
+    items: [],
+    comingSoon: true,
+  },
+];
+
 export function hasPermission(permission: string | undefined, userPermissions: string[]): boolean {
   if (!permission) return true;
   if (userPermissions.length === 0) return true;
@@ -147,6 +190,10 @@ export function filterModules(userPermissions: string[], userRole?: string): Mod
     ...mod,
     items: filterNavItems(mod.items, userPermissions),
   })).filter((mod) => mod.comingSoon || mod.items.length > 0);
+}
+
+export function filterDataFolders(): ModuleConfig[] {
+  return ADMIN_DATA_FOLDERS;
 }
 
 export function getModuleForPath(pathname: string): ModuleConfig | null {

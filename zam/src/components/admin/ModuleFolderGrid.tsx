@@ -14,10 +14,16 @@ import {
   EnvironmentOutlined,
   RobotOutlined,
   SkinOutlined,
+  ToolOutlined,
+  TeamOutlined,
+  ExperimentOutlined,
+  SolutionOutlined,
+  BuildOutlined,
 } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import {
   filterModules,
+  filterDataFolders,
   getDefaultModulePath,
   type ModuleConfig,
 } from '@/config/adminNavigation';
@@ -33,6 +39,11 @@ const MODULE_ICONS: Record<string, React.ReactNode> = {
   gps: <EnvironmentOutlined />,
   'ai-tender': <RobotOutlined />,
   'uniform-supply': <SkinOutlined />,
+  'data-technique': <ToolOutlined />,
+  'data-brigade': <TeamOutlined />,
+  'data-laboratory': <ExperimentOutlined />,
+  'data-job-seeker': <SolutionOutlined />,
+  'data-production': <BuildOutlined />,
 };
 
 interface ModuleFolderGridProps {
@@ -171,29 +182,70 @@ function ModuleFolder({
   );
 }
 
+function FolderSection({
+  title,
+  description,
+  folders,
+  userPermissions,
+  onOpen,
+  compact = false,
+}: {
+  title: string;
+  description: string;
+  folders: ModuleConfig[];
+  userPermissions: string[];
+  onOpen: (path: string) => void;
+  compact?: boolean;
+}) {
+  return (
+    <div style={{ height: '100%' }}>
+      <Typography.Title level={3} style={{ marginBottom: 8, color: '#082c5c' }}>
+        {title}
+      </Typography.Title>
+      <Typography.Paragraph type="secondary" style={{ marginBottom: 28 }}>
+        {description}
+      </Typography.Paragraph>
+      <Row gutter={[24, 24]}>
+        {folders.map((mod) => (
+          <Col xs={24} sm={compact ? 12 : 12} lg={compact ? 12 : 8} xl={compact ? 12 : 6} key={mod.id}>
+            <ModuleFolder mod={mod} userPermissions={userPermissions} onOpen={onOpen} />
+          </Col>
+        ))}
+      </Row>
+    </div>
+  );
+}
+
 export default function ModuleFolderGrid({ userPermissions, userRole }: ModuleFolderGridProps) {
   const router = useRouter();
   const modules = filterModules(userPermissions, userRole);
+  const dataFolders = filterDataFolders();
 
   const handleOpen = (path: string) => {
     router.push(path);
   };
 
   return (
-    <div>
-      <Typography.Title level={3} style={{ marginBottom: 8, color: '#082c5c' }}>
-        Модуль сонгох
-      </Typography.Title>
-      <Typography.Paragraph type="secondary" style={{ marginBottom: 28 }}>
-        ERP системийн модулуудыг сонгон ажиллана уу
-      </Typography.Paragraph>
-      <Row gutter={[24, 24]}>
-        {modules.map((mod) => (
-          <Col xs={24} sm={12} lg={8} xl={6} key={mod.id}>
-            <ModuleFolder mod={mod} userPermissions={userPermissions} onOpen={handleOpen} />
-          </Col>
-        ))}
-      </Row>
-    </div>
+    <Row gutter={[32, 32]} align="top">
+      <Col xs={24} xl={14}>
+        <FolderSection
+          title="Модуль сонгох"
+          description="ERP системийн модулуудыг сонгон ажиллана уу"
+          folders={modules}
+          userPermissions={userPermissions}
+          onOpen={handleOpen}
+        />
+      </Col>
+      <Col xs={24} xl={10}>
+        <FolderSection
+          title="Дата"
+          description="Компанийн мэдээллийн сан, дата модулууд"
+          folders={dataFolders}
+          userPermissions={userPermissions}
+          onOpen={handleOpen}
+          compact
+        />
+      </Col>
+    </Row>
   );
 }
