@@ -13,6 +13,7 @@ const {
   round2,
 } = require("../utils/salaryCalculator");
 const { sendMail, isConfigured } = require("../utils/mailer");
+const { groupApprovedLeavesByUser } = require("../utils/leaveCalculator");
 
 const userAttrs = [
   "id",
@@ -48,6 +49,19 @@ const NULLABLE_NUM_FIELDS = new Set([
   "ndsh",
   "hhoat",
 ]);
+
+async function fetchApprovedLeavesForUsers(userIds, from, to) {
+  if (!userIds.length) return {};
+  const rows = await db.leave_requests.findAll({
+    where: {
+      user_id: userIds,
+      status: "approved",
+      start_date: { [Op.lte]: to },
+      end_date: { [Op.gte]: from },
+    },
+  });
+  return groupApprovedLeavesByUser(rows);
+}
 
 async function fetchExceptionsForUsers(userIds, from, to) {
   if (!userIds.length) return {};
@@ -147,6 +161,7 @@ async function buildMonthlyRows(month, userIds = null) {
   ]);
 
   const exceptionsByUser = await fetchExceptionsForUsers(ids, from, to);
+  const leavesByUser = await fetchApprovedLeavesForUsers(ids, from, to);
   const adjustmentMap = toAdjustmentMap(adjustments);
 
   const byUser = {};
@@ -171,7 +186,8 @@ async function buildMonthlyRows(month, userIds = null) {
       from,
       to,
       byUser[user.id] || [],
-      exceptionsByUser[user.id] || []
+      exceptionsByUser[user.id] || [],
+      leavesByUser[user.id] || []
     );
     const adjustment = adjustmentMap[user.id] || {
       deduction: 0,

@@ -133,6 +133,10 @@ function statusColor(status: string) {
       return '#1677ff';
     case 'unscheduled_work':
       return '#722ed1';
+    case 'leave_paid':
+      return '#1677ff';
+    case 'leave_unpaid':
+      return '#8c8c8c';
     case 'rest':
     default:
       return '#d9d9d9';

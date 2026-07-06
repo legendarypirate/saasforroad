@@ -56,6 +56,7 @@ export const ADMIN_MODULES: ModuleConfig[] = [
       { path: '/admin/action', label: 'Арга хэмжээ', permission: 'action:read' },
       { path: '/admin/feedback', label: 'Санал хүсэлт', permission: 'feedback:read' },
       { path: '/admin/attendance', label: 'Ирцийн хяналт', permission: 'attendance:read' },
+      { path: '/admin/leave-request', label: 'Чөлөөний хүсэлт', permission: 'attendance:read' },
       { path: '/admin/office-location', label: 'Оффисын байршил', permission: 'attendance:read' },
       { path: '/admin/attendance-calculation', label: 'Ирц тооцоолол', permission: 'attendance:read' },
       { path: '/admin/salary-calculation', label: 'Цалин тооцоолол', permission: 'attendance:read' },

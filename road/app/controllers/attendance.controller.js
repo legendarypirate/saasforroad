@@ -10,8 +10,10 @@ const {
   getScheduleLabel,
 } = require("../utils/attendanceCalculator");
 const { validateGeofence } = require("../utils/geo");
+const { groupApprovedLeavesByUser } = require("../utils/leaveCalculator");
 
 const OfficeLocation = db.office_locations;
+const LeaveRequest = db.leave_requests;
 
 function todayDateString() {
   return new Date().toISOString().slice(0, 10);
@@ -60,6 +62,19 @@ async function fetchExceptions(userId, from, to) {
     },
     order: [["start_date", "ASC"]],
   });
+}
+
+async function fetchApprovedLeavesForUsers(userIds, from, to) {
+  if (!userIds.length) return {};
+  const rows = await LeaveRequest.findAll({
+    where: {
+      user_id: userIds,
+      status: "approved",
+      start_date: { [Op.lte]: to },
+      end_date: { [Op.gte]: from },
+    },
+  });
+  return groupApprovedLeavesByUser(rows);
 }
 
 async function fetchExceptionsForUsers(userIds, from, to) {
@@ -300,11 +315,19 @@ exports.calendarReport = async (req, res) => {
     }
 
     const { from, to } = monthRange(year, mon);
-    const [records, exceptions] = await Promise.all([
+    const [records, exceptions, approvedLeaves] = await Promise.all([
       Attendance.findAll({
         where: { user_id, work_date: { [Op.between]: [from, to] } },
       }),
       fetchExceptions(user_id, from, to),
+      LeaveRequest.findAll({
+        where: {
+          user_id,
+          status: "approved",
+          start_date: { [Op.lte]: to },
+          end_date: { [Op.gte]: from },
+        },
+      }),
     ]);
 
     const byDate = {};
@@ -312,8 +335,8 @@ exports.calendarReport = async (req, res) => {
       byDate[r.work_date] = r;
     });
 
-    const days = buildCalendarMonth(user, year, mon, byDate, exceptions);
-    const summary = summarizePeriod(user, from, to, records, exceptions);
+    const days = buildCalendarMonth(user, year, mon, byDate, exceptions, approvedLeaves);
+    const summary = summarizePeriod(user, from, to, records, exceptions, approvedLeaves);
 
     res.send({
       success: true,
@@ -384,7 +407,10 @@ exports.payrollSummary = async (req, res) => {
     });
 
     const userIds = users.map((u) => u.id);
-    const exceptionsByUser = await fetchExceptionsForUsers(userIds, from, to);
+    const [exceptionsByUser, leavesByUser] = await Promise.all([
+      fetchExceptionsForUsers(userIds, from, to),
+      fetchApprovedLeavesForUsers(userIds, from, to),
+    ]);
 
     const byUser = {};
     records.forEach((r) => {
@@ -398,7 +424,8 @@ exports.payrollSummary = async (req, res) => {
         from,
         to,
         byUser[user.id] || [],
-        exceptionsByUser[user.id] || []
+        exceptionsByUser[user.id] || [],
+        leavesByUser[user.id] || []
       )
     );
 
