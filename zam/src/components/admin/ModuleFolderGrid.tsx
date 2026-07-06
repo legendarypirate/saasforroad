@@ -188,17 +188,15 @@ function FolderSection({
   folders,
   userPermissions,
   onOpen,
-  compact = false,
 }: {
   title: string;
   description: string;
   folders: ModuleConfig[];
   userPermissions: string[];
   onOpen: (path: string) => void;
-  compact?: boolean;
 }) {
   return (
-    <div style={{ height: '100%' }}>
+    <div>
       <Typography.Title level={3} style={{ marginBottom: 8, color: '#082c5c' }}>
         {title}
       </Typography.Title>
@@ -207,7 +205,7 @@ function FolderSection({
       </Typography.Paragraph>
       <Row gutter={[24, 24]}>
         {folders.map((mod) => (
-          <Col xs={24} sm={compact ? 12 : 12} lg={compact ? 12 : 8} xl={compact ? 12 : 6} key={mod.id}>
+          <Col xs={24} sm={12} lg={8} xl={6} key={mod.id}>
             <ModuleFolder mod={mod} userPermissions={userPermissions} onOpen={onOpen} />
           </Col>
         ))}
@@ -226,26 +224,23 @@ export default function ModuleFolderGrid({ userPermissions, userRole }: ModuleFo
   };
 
   return (
-    <Row gutter={[32, 32]} align="top">
-      <Col xs={24} xl={14}>
-        <FolderSection
-          title="Модуль сонгох"
-          description="ERP системийн модулуудыг сонгон ажиллана уу"
-          folders={modules}
-          userPermissions={userPermissions}
-          onOpen={handleOpen}
-        />
-      </Col>
-      <Col xs={24} xl={10}>
+    <div>
+      <FolderSection
+        title="Модуль сонгох"
+        description="ERP системийн модулуудыг сонгон ажиллана уу"
+        folders={modules}
+        userPermissions={userPermissions}
+        onOpen={handleOpen}
+      />
+      <div style={{ marginTop: 48 }}>
         <FolderSection
           title="Дата"
           description="Компанийн мэдээллийн сан, дата модулууд"
           folders={dataFolders}
           userPermissions={userPermissions}
           onOpen={handleOpen}
-          compact
         />
-      </Col>
-    </Row>
+      </div>
+    </div>
   );
 }
