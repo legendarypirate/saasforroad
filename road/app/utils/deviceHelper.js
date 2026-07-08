@@ -1,6 +1,10 @@
 const db = require("../models");
 const UserDevice = db.user_devices;
 
+function isTruthyBoolean(value) {
+  return value === true || value === 1 || value === "1" || value === "true";
+}
+
 async function registerOrUpdateDevice(userId, payload) {
   const { device_id, device_name, platform, model } = payload;
 
@@ -10,15 +14,33 @@ async function registerOrUpdateDevice(userId, payload) {
     throw err;
   }
 
+  const normalizedDeviceId = String(device_id).trim();
   const now = new Date();
+
   let device = await UserDevice.findOne({
-    where: { user_id: userId, device_id },
+    where: { user_id: userId, device_id: normalizedDeviceId },
   });
 
   if (!device) {
+    const active = await getActiveApprovedDevice(userId);
+    if (
+      active &&
+      active.platform === (platform || null) &&
+      active.model === (model || null)
+    ) {
+      await active.update({
+        device_id: normalizedDeviceId,
+        device_name: device_name || active.device_name,
+        last_login_at: now,
+        last_seen_at: now,
+      });
+      await active.reload();
+      return active;
+    }
+
     device = await UserDevice.create({
       user_id: userId,
-      device_id,
+      device_id: normalizedDeviceId,
       device_name: device_name || null,
       platform: platform || null,
       model: model || null,
@@ -38,6 +60,7 @@ async function registerOrUpdateDevice(userId, payload) {
     last_seen_at: now,
   });
 
+  await device.reload();
   return device;
 }
 
@@ -135,7 +158,7 @@ function deviceStatusMessage(device) {
 }
 
 function canUseMobileFeatures(device) {
-  return device && device.status === "approved" && device.is_active === true;
+  return device && device.status === "approved" && isTruthyBoolean(device.is_active);
 }
 
 function serializeDevice(device) {
