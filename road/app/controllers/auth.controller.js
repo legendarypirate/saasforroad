@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs"); // Using bcryptjs for hashing and comparing 
 const db = require("../models");
 const User = db.users;
 const { resolveUserRole } = require("../utils/roleHelper");
+const { registerOrUpdateDevice, serializeDevice } = require("../utils/deviceHelper");
 const secretKey = 'your_secret_key';  // You can store this key in .env for better security
 const axios = require("axios");
 
@@ -100,10 +101,14 @@ exports.login = async (req, res) => {
 };
 
 exports.mobile_login = async (req, res) => {
-  const { phone, password } = req.body;
+  const { phone, password, device_id, device_name, platform, model } = req.body;
 
   if (!phone || !password) {
     return res.status(400).json({ message: "phone and password are required!" });
+  }
+
+  if (!device_id) {
+    return res.status(400).json({ message: "device_id шаардлагатай!" });
   }
 
   try {
@@ -128,6 +133,13 @@ exports.mobile_login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials!" });
     }
 
+    const device = await registerOrUpdateDevice(user.id, {
+      device_id,
+      device_name,
+      platform,
+      model,
+    });
+
     const token = jwt.sign(
       { id: user.id, phone: user.phone, role: roleInfo.role, role_id: roleInfo.role_id },
       secretKey,
@@ -144,6 +156,7 @@ exports.mobile_login = async (req, res) => {
         role: roleInfo.role,
         role_id: roleInfo.role_id,
       },
+      device: serializeDevice(device),
     });
   } catch (err) {
     console.error(err);

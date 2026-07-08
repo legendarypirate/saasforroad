@@ -81,16 +81,48 @@ const DEFAULT_HOMEPAGE = {
   ],
 };
 
+const ARRAY_FIELDS = [
+  "stats",
+  "features",
+  "projects",
+  "hero_slides",
+  "awards",
+  "partners",
+  "values",
+  "director_paragraphs",
+  "machinery",
+  "plants",
+  "tech_stack",
+  "hr_benefits",
+  "hr_steps",
+  "hr_positions",
+  "news_articles",
+  "standart_certificates",
+  "standart_sections",
+  "footer_services",
+];
+
 function mergeHomepageContent(stored) {
   const base = { ...DEFAULT_HOMEPAGE };
   if (!stored || typeof stored !== "object") return base;
-  return {
-    ...base,
-    ...stored,
-    stats: stored.stats?.length ? stored.stats : base.stats,
-    features: stored.features?.length ? stored.features : base.features,
-    projects: stored.projects?.length ? stored.projects : base.projects,
-  };
+
+  const merged = { ...base, ...stored };
+
+  for (const key of ARRAY_FIELDS) {
+    const value = stored[key];
+    if (Array.isArray(value) && value.length > 0) {
+      merged[key] = value;
+    }
+  }
+
+  const heroObjects = ["technology_hero", "projects_hero", "hr_hero", "news_hero", "standart_hero"];
+  for (const key of heroObjects) {
+    if (stored[key] && typeof stored[key] === "object") {
+      merged[key] = { ...(base[key] || {}), ...stored[key] };
+    }
+  }
+
+  return merged;
 }
 
 module.exports = { DEFAULT_HOMEPAGE, mergeHomepageContent };

@@ -83,6 +83,7 @@ db.org_nodes = require("./org_node.model.js")(sequelize, Sequelize);
 db.salary_adjustments = require("./salary_adjustment.model.js")(sequelize, Sequelize);
 db.salary_month_settings = require("./salary_month_setting.model.js")(sequelize, Sequelize);
 db.leave_requests = require("./leave_request.model.js")(sequelize, Sequelize);
+db.user_devices = require("./user_device.model.js")(sequelize, Sequelize);
 db.inv_stock_movements = require("./inv_stock_movement.model.js")(sequelize, Sequelize);
 db.inv_documents = require("./inv_document.model.js")(sequelize, Sequelize);
 db.inv_document_lines = require("./inv_document_line.model.js")(sequelize, Sequelize);
@@ -353,6 +354,10 @@ db.users.hasMany(db.salary_adjustments, { foreignKey: "user_id", as: "salaryAdju
 db.leave_requests.belongsTo(db.users, { foreignKey: "user_id", as: "user" });
 db.users.hasMany(db.leave_requests, { foreignKey: "user_id", as: "leaveRequests" });
 db.leave_requests.belongsTo(db.users, { foreignKey: "reviewed_by", as: "reviewer" });
+
+db.user_devices.belongsTo(db.users, { foreignKey: "user_id", as: "user" });
+db.users.hasMany(db.user_devices, { foreignKey: "user_id", as: "devices" });
+db.user_devices.belongsTo(db.users, { foreignKey: "approved_by", as: "approver" });
 
 // Export the db object for easy access throughout the app
 module.exports = db;

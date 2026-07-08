@@ -9,18 +9,20 @@ import {
   message,
   Spin,
   Upload,
-  Card,
   Space,
   Divider,
 } from 'antd';
-import { PlusOutlined, SaveOutlined, UploadOutlined, DeleteOutlined } from '@ant-design/icons';
+import { SaveOutlined, UploadOutlined } from '@ant-design/icons';
 import {
   fetchAdminHomepage,
+  getDefaultHomepageContent,
   saveHomepage,
   uploadHomepageImage,
   resolveImageUrl,
   type HomepageContent,
 } from '@/lib/homepage';
+import SectionDataTable from './SectionDataTable';
+import { getLandingAdminTabs } from './landingAdminTabs';
 
 function ImageField({
   label,
@@ -80,7 +82,7 @@ export default function HomepageAdminPage() {
   useEffect(() => {
     (async () => {
       const data = await fetchAdminHomepage();
-      if (data) form.setFieldsValue(data);
+      form.setFieldsValue(data ?? getDefaultHomepageContent());
       setLoading(false);
     })();
   }, [form]);
@@ -219,30 +221,20 @@ export default function HomepageAdminPage() {
       key: 'stats',
       label: 'Статистик',
       children: (
-        <Form.List name="stats">
-          {(fields, { add, remove }) => (
-            <>
-              {fields.map((field) => (
-                <Card key={field.key} size="small" style={{ marginBottom: 12 }}>
-                  <Space align="start" style={{ width: '100%' }} wrap>
-                    <Form.Item {...field} name={[field.name, 'value']} label="Утга" rules={[{ required: true }]}>
-                      <Input style={{ width: 120 }} />
-                    </Form.Item>
-                    <Form.Item {...field} name={[field.name, 'label']} label="Нэр" rules={[{ required: true }]}>
-                      <Input style={{ width: 220 }} />
-                    </Form.Item>
-                    <Button danger icon={<DeleteOutlined />} onClick={() => remove(field.name)} style={{ marginTop: 30 }}>
-                      Устгах
-                    </Button>
-                  </Space>
-                </Card>
-              ))}
-              <Button type="dashed" onClick={() => add({ value: '', label: '' })} icon={<PlusOutlined />}>
-                Статистик нэмэх
-              </Button>
-            </>
-          )}
-        </Form.List>
+        <SectionDataTable
+          name="stats"
+          modalTitle="Статистик"
+          addLabel="Нэмэх"
+          defaultRow={{ value: '', label: '' }}
+          columns={[
+            { key: 'value', title: 'Утга', width: 120 },
+            { key: 'label', title: 'Нэр' },
+          ]}
+          fields={[
+            { name: 'value', label: 'Утга', rules: [{ required: true, message: 'Заавал' }] },
+            { name: 'label', label: 'Нэр', rules: [{ required: true, message: 'Заавал' }] },
+          ]}
+        />
       ),
     },
     {
@@ -260,31 +252,22 @@ export default function HomepageAdminPage() {
             <Input.TextArea rows={2} />
           </Form.Item>
           <Divider />
-          <Form.List name="features">
-            {(fields, { add, remove }) => (
-              <>
-                {fields.map((field) => (
-                  <Card key={field.key} size="small" style={{ marginBottom: 12 }}>
-                    <Form.Item {...field} name={[field.name, 'title']} label="Гарчиг" rules={[{ required: true }]}>
-                      <Input />
-                    </Form.Item>
-                    <Form.Item {...field} name={[field.name, 'desc']} label="Тайлбар">
-                      <Input.TextArea rows={2} />
-                    </Form.Item>
-                    <Form.Item {...field} name={[field.name, 'icon']} label="Icon (project|safety|clock|team)">
-                      <Input />
-                    </Form.Item>
-                    <Button danger icon={<DeleteOutlined />} onClick={() => remove(field.name)}>
-                      Устгах
-                    </Button>
-                  </Card>
-                ))}
-                <Button type="dashed" onClick={() => add({ title: '', desc: '', icon: 'project' })} icon={<PlusOutlined />}>
-                  Онцлог нэмэх
-                </Button>
-              </>
-            )}
-          </Form.List>
+          <SectionDataTable
+            name="features"
+            modalTitle="Онцлог"
+            addLabel="Нэмэх"
+            defaultRow={{ title: '', desc: '', icon: 'project' }}
+            columns={[
+              { key: 'title', title: 'Гарчиг', width: 180 },
+              { key: 'icon', title: 'Icon', width: 100 },
+              { key: 'desc', title: 'Тайлбар' },
+            ]}
+            fields={[
+              { name: 'title', label: 'Гарчиг', rules: [{ required: true, message: 'Заавал' }] },
+              { name: 'desc', label: 'Тайлбар', type: 'richtext' },
+              { name: 'icon', label: 'Icon', placeholder: 'project|safety|clock|team' },
+            ]}
+          />
         </>
       ),
     },
@@ -300,38 +283,24 @@ export default function HomepageAdminPage() {
             <Input />
           </Form.Item>
           <Divider />
-          <Form.List name="projects">
-            {(fields, { add, remove }) => (
-              <>
-                {fields.map((field) => (
-                  <Card key={field.key} size="small" style={{ marginBottom: 12 }}>
-                    <Form.Item {...field} name={[field.name, 'title']} label="Гарчиг" rules={[{ required: true }]}>
-                      <Input />
-                    </Form.Item>
-                    <Form.Item {...field} name={[field.name, 'desc']} label="Тайлбар">
-                      <Input.TextArea rows={2} />
-                    </Form.Item>
-                    <Form.Item {...field} name={[field.name, 'tag']} label="Төлөв">
-                      <Input placeholder="Дууссан / Явагдаж буй" />
-                    </Form.Item>
-                    <Form.Item {...field} name={[field.name, 'image']} label="Зураг зам">
-                      <Input placeholder="/p1.png эсвэл /assets/..." />
-                    </Form.Item>
-                    <Button danger icon={<DeleteOutlined />} onClick={() => remove(field.name)}>
-                      Устгах
-                    </Button>
-                  </Card>
-                ))}
-                <Button
-                  type="dashed"
-                  onClick={() => add({ title: '', desc: '', tag: '', image: '/p1.png' })}
-                  icon={<PlusOutlined />}
-                >
-                  Төсөл нэмэх
-                </Button>
-              </>
-            )}
-          </Form.List>
+          <SectionDataTable
+            name="projects"
+            modalTitle="Төсөл"
+            addLabel="Нэмэх"
+            defaultRow={{ title: '', desc: '', tag: '', image: '/p1.png' }}
+            scroll={{ x: 800 }}
+            columns={[
+              { key: 'title', title: 'Гарчиг', width: 220 },
+              { key: 'tag', title: 'Төлөв', width: 120 },
+              { key: 'desc', title: 'Тайлбар' },
+            ]}
+            fields={[
+              { name: 'title', label: 'Гарчиг', rules: [{ required: true, message: 'Заавал' }] },
+              { name: 'desc', label: 'Тайлбар', type: 'richtext' },
+              { name: 'tag', label: 'Төлөв', placeholder: 'Дууссан / Явагдаж буй' },
+              { name: 'image', label: 'Зураг', placeholder: '/p1.png' },
+            ]}
+          />
         </>
       ),
     },
@@ -358,15 +327,16 @@ export default function HomepageAdminPage() {
         </>
       ),
     },
+    ...getLandingAdminTabs(),
   ];
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
-          <h2 style={{ margin: 0, color: '#082c5c' }}>Нүүр хуудас удирдлага</h2>
+          <h2 style={{ margin: 0, color: '#082c5c' }}>Landing site удирдлага</h2>
           <p style={{ margin: '4px 0 0', color: '#888' }}>
-            Лого, утас, и-мэйл, hero, төслүүд зэрэг нүүр хуудасны контентыг засна
+            Нүүр болон бүх нийтийн хуудсын контентыг эндээс засна
           </p>
         </div>
         <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleSave} size="large">

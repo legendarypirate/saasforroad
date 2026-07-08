@@ -1,9 +1,23 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Space, Drawer, Form, Input, InputNumber, Select, message, Switch, Tag } from 'antd';
+import {
+  Table,
+  Button,
+  Space,
+  Drawer,
+  Form,
+  Input,
+  InputNumber,
+  Select,
+  message,
+  Switch,
+  Tag,
+  Modal,
+  Tooltip,
+} from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { PlusOutlined } from '@ant-design/icons';
+import { EyeOutlined, KeyOutlined, PlusOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 
 const { Option } = Select;
@@ -38,7 +52,10 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [togglingId, setTogglingId] = useState<number | null>(null);
+  const [passwordUser, setPasswordUser] = useState<User | null>(null);
+  const [passwordSaving, setPasswordSaving] = useState(false);
   const [form] = Form.useForm();
+  const [passwordForm] = Form.useForm();
 
   const fetchRoles = async () => {
     try {
@@ -119,6 +136,43 @@ export default function UsersPage() {
     }
   };
 
+  const openPasswordModal = (user: User) => {
+    setPasswordUser(user);
+    passwordForm.resetFields();
+  };
+
+  const closePasswordModal = () => {
+    setPasswordUser(null);
+    passwordForm.resetFields();
+  };
+
+  const handlePasswordSubmit = async () => {
+    if (!passwordUser) return;
+    try {
+      const values = await passwordForm.validateFields();
+      setPasswordSaving(true);
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/user/${passwordUser.id}/password`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: values.password }),
+        }
+      );
+      const result = await res.json();
+      if (res.ok && result.success) {
+        message.success(result.message || 'Нууц үг солигдлоо');
+        closePasswordModal();
+      } else {
+        message.error(result.message || 'Нууц үг солиход алдаа');
+      }
+    } catch {
+      // validation errors
+    } finally {
+      setPasswordSaving(false);
+    }
+  };
+
   const columns: ColumnsType<User> = [
     { title: 'Нэвтрэх нэр', dataIndex: 'username' },
     { title: 'И-мэйл', dataIndex: 'email' },
@@ -152,13 +206,24 @@ export default function UsersPage() {
     {
       title: 'Үйлдэл',
       key: 'action',
+      width: 100,
       render: (_, record) => (
-        <Button
-          type="link"
-          onClick={() => router.push(`/admin/user/${record.id}`)}
-        >
-          Дэлгэрэнгүй
-        </Button>
+        <Space size={4}>
+          <Tooltip title="Дэлгэрэнгүй">
+            <Button
+              type="text"
+              icon={<EyeOutlined />}
+              onClick={() => router.push(`/admin/user/${record.id}`)}
+            />
+          </Tooltip>
+          <Tooltip title="Нууц үг солих">
+            <Button
+              type="text"
+              icon={<KeyOutlined />}
+              onClick={() => openPasswordModal(record)}
+            />
+          </Tooltip>
+        </Space>
       ),
     },
   ];
@@ -202,6 +267,48 @@ export default function UsersPage() {
           </Button>
         </Form>
       </Drawer>
+
+      <Modal
+        title={passwordUser ? `Нууц үг солих — ${passwordUser.username}` : 'Нууц үг солих'}
+        open={Boolean(passwordUser)}
+        onCancel={closePasswordModal}
+        onOk={handlePasswordSubmit}
+        okText="Хадгалах"
+        cancelText="Болих"
+        confirmLoading={passwordSaving}
+        destroyOnClose
+      >
+        <Form layout="vertical" form={passwordForm}>
+          <Form.Item
+            name="password"
+            label="Шинэ нууц үг"
+            rules={[
+              { required: true, message: 'Нууц үг оруулна уу' },
+              { min: 4, message: 'Хамгийн багадаа 4 тэмдэгт' },
+            ]}
+          >
+            <Input.Password placeholder="Шинэ нууц үг" />
+          </Form.Item>
+          <Form.Item
+            name="confirmPassword"
+            label="Нууц үг давтах"
+            dependencies={['password']}
+            rules={[
+              { required: true, message: 'Нууц үг давтана уу' },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue('password') === value) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(new Error('Нууц үг таарахгүй байна'));
+                },
+              }),
+            ]}
+          >
+            <Input.Password placeholder="Нууц үг давтах" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }

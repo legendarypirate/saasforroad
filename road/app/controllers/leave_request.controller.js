@@ -89,7 +89,8 @@ async function assertNoOverlap(userId, window, excludeId = null) {
 }
 
 exports.create = async (req, res) => {
-  const { user_id, leave_type, hours, reason } = req.body;
+  const user_id = req.user?.id || req.body.user_id;
+  const { leave_type, hours, reason } = req.body;
 
   if (!user_id) {
     return res.status(400).send({ success: false, message: "user_id шаардлагатай" });

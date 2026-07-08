@@ -19,6 +19,8 @@ module.exports = app => {
   
     // Update a Tutorial with id
     router.patch("/:id", user.update);
+
+    router.patch("/:id/password", user.changePassword);
   
     // Delete a Tutorial with id
     router.delete("/:id", user.delete);

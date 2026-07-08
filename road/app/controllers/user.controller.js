@@ -237,6 +237,41 @@ exports.update = async (req, res) => {
   }
 };
 
+exports.changePassword = async (req, res) => {
+  const id = req.params.id;
+  const { password } = req.body;
+
+  if (!password || String(password).trim().length < 4) {
+    return res.status(400).json({
+      success: false,
+      message: "Нууц үг хамгийн багадаа 4 тэмдэгт байх ёстой",
+    });
+  }
+
+  try {
+    const existingUser = await User.findByPk(id);
+    if (!existingUser) {
+      return res.status(404).json({
+        success: false,
+        message: `User with id=${id} not found.`,
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(String(password).trim(), saltRounds);
+    await User.update({ password: hashedPassword }, { where: { id } });
+
+    res.json({
+      success: true,
+      message: "Нууц үг амжилттай солигдлоо",
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message || "Нууц үг солиход алдаа гарлаа",
+    });
+  }
+};
+
 exports.delete = (req, res) => {
   const id = req.params.id;
 

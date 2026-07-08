@@ -96,7 +96,8 @@ async function fetchExceptionsForUsers(userIds, from, to) {
 }
 
 exports.checkIn = async (req, res) => {
-  const { user_id, notes, latitude, longitude } = req.body;
+  const user_id = req.user?.id || req.body.user_id;
+  const { notes, latitude, longitude } = req.body;
   if (!user_id) {
     return res.status(400).send({ success: false, message: "user_id шаардлагатай" });
   }
@@ -156,7 +157,8 @@ exports.checkIn = async (req, res) => {
 };
 
 exports.checkOut = async (req, res) => {
-  const { user_id, notes, latitude, longitude } = req.body;
+  const user_id = req.user?.id || req.body.user_id;
+  const { notes, latitude, longitude } = req.body;
   if (!user_id) {
     return res.status(400).send({ success: false, message: "user_id шаардлагатай" });
   }
