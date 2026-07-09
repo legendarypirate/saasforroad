@@ -7,6 +7,44 @@ const { registerOrUpdateDevice, serializeDevice } = require("../utils/deviceHelp
 const secretKey = 'your_secret_key';  // You can store this key in .env for better security
 const axios = require("axios");
 
+function normalizePhone(phone) {
+  if (!phone) return "";
+  let value = String(phone).trim().replace(/\s+/g, "");
+  if (value.startsWith("+976")) value = value.slice(4);
+  else if (value.startsWith("976") && value.length > 8) value = value.slice(3);
+  return value;
+}
+
+function phoneLookupCandidates(phone) {
+  const normalized = normalizePhone(phone);
+  const raw = String(phone || "").trim();
+  const candidates = [normalized, raw];
+
+  if (normalized) {
+    candidates.push(`+976${normalized}`, `976${normalized}`);
+  }
+
+  return [...new Set(candidates.filter(Boolean))];
+}
+
+async function findUserByPhone(phone) {
+  for (const candidate of phoneLookupCandidates(phone)) {
+    const user = await User.findOne({ where: { phone: candidate } });
+    if (user) return user;
+  }
+  return null;
+}
+
+async function findUserByUsernameOrPhone(loginId) {
+  const identifier = String(loginId || "").trim();
+  if (!identifier) return null;
+
+  const byUsername = await User.findOne({ where: { username: identifier } });
+  if (byUsername) return byUsername;
+
+  return findUserByPhone(identifier);
+}
+
 // Register a new user
 exports.register = async (req, res) => {
   const { username, password, role } = req.body;
@@ -53,14 +91,15 @@ exports.register = async (req, res) => {
 
 // Login user
 exports.login = async (req, res) => {
-  const { username, password } = req.body;
+  const { username, phone, password } = req.body;
+  const loginId = username || phone;
 
-  if (!username || !password) {
-    return res.status(400).json({ message: "Username and password are required!" });
+  if (!loginId || !password) {
+    return res.status(400).json({ message: "Username/phone and password are required!" });
   }
 
   try {
-    const user = await User.findOne({ where: { username } });
+    const user = await findUserByUsernameOrPhone(loginId);
 
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials!" });
@@ -102,17 +141,15 @@ exports.login = async (req, res) => {
 
 exports.mobile_login = async (req, res) => {
   const { phone, password, device_id, device_name, platform, model } = req.body;
+  const resolvedDeviceId =
+    device_id || req.headers["x-device-id"] || req.headers["X-Device-Id"];
 
   if (!phone || !password) {
     return res.status(400).json({ message: "phone and password are required!" });
   }
 
-  if (!device_id) {
-    return res.status(400).json({ message: "device_id шаардлагатай!" });
-  }
-
   try {
-    const user = await User.findOne({ where: { phone } });
+    const user = await findUserByPhone(phone);
 
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials!" });
@@ -133,12 +170,15 @@ exports.mobile_login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials!" });
     }
 
-    const device = await registerOrUpdateDevice(user.id, {
-      device_id,
-      device_name,
-      platform,
-      model,
-    });
+    let device = null;
+    if (resolvedDeviceId) {
+      device = await registerOrUpdateDevice(user.id, {
+        device_id: resolvedDeviceId,
+        device_name,
+        platform,
+        model,
+      });
+    }
 
     const token = jwt.sign(
       { id: user.id, phone: user.phone, role: roleInfo.role, role_id: roleInfo.role_id },
