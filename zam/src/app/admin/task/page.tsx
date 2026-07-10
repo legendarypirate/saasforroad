@@ -186,9 +186,9 @@ export default function TaskTable() {
     },
   ];
   return (
-    <div className="bg-white p-4 rounded-lg shadow w-full">
+    <div className="w-full">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Task List</h2>
+        <h2 className="text-xl font-semibold text-foreground">Task List</h2>
         <Button type="primary" icon={<PlusOutlined />} onClick={showDrawer}>
           Add Task
         </Button>

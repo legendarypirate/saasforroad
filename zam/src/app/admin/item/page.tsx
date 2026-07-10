@@ -67,6 +67,9 @@ export default function MaterialPage() {
 
   const save = async () => {
     const values = await form.validateFields();
+    if (!editing) {
+      delete values.code;
+    }
     try {
       if (editing) {
         await inventoryApi.materials.update(editing.id, values);
@@ -178,9 +181,15 @@ export default function MaterialPage() {
             <Form.Item name="name" label="Нэр" rules={[{ required: true }]} style={{ gridColumn: '1 / -1' }}>
               <Input placeholder="Жишээ: Битум 60/70, Цемент М400" />
             </Form.Item>
-            <Form.Item name="code" label="Код">
-              <Input placeholder="Авто үүснэ" />
-            </Form.Item>
+            {editing ? (
+              <Form.Item name="code" label="Код">
+                <Input />
+              </Form.Item>
+            ) : (
+              <Form.Item label="Код">
+                <Text type="secondary">Авто үүснэ</Text>
+              </Form.Item>
+            )}
             <Form.Item name="barcode" label="Barcode">
               <Input />
             </Form.Item>

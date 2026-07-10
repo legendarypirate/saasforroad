@@ -373,21 +373,7 @@ export default function DeliveryPage() {
 />
 
       </div>
-      <div
-  style={{
-    position: 'fixed',
-    bottom: 0,
-    left: 0,
-    width: '100%',
-    background: '#fff',
-    padding: '16px 24px',
-    borderTop: '1px solid #ddd',
-    boxShadow: '0 -2px 8px rgba(0,0,0,0.1)',
-    zIndex: 1000,
-    maxHeight: '300px',
-    overflowY: 'auto',
-  }}
->
+      <div className="fixed bottom-0 left-0 z-[1000] max-h-[300px] w-full overflow-y-auto border-t border-border bg-card px-6 py-4 shadow-lg">
   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
     <Space>
       <div>{selectedRowKeys.length} item(s) selected</div>

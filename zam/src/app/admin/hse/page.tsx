@@ -2,49 +2,60 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AlertTriangle, ArrowRight, ShieldAlert } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowRight,
+  ClipboardCheck,
+  FileWarning,
+  HardHat,
+  ShieldAlert,
+  Wrench,
+} from 'lucide-react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
+import { Progress } from '@/components/admin/primitives';
+import { fetchHseDashboard, type HseDashboard } from '@/lib/hse';
 
-type AccidentRow = {
-  id: number;
-  status?: number | string;
-  location?: string;
-  description?: string;
-  createdAt?: string;
-};
+const MODULES = [
+  { href: '/admin/hse/daily-safety', title: 'Өглөөний заавар', desc: 'Өдөр тутмын аюулгүй байдлын заавар' },
+  { href: '/admin/hse/toolbox', title: 'Toolbox уулзалт', desc: 'Аюулгүй байдлын уулзалт, ирц' },
+  { href: '/admin/hse/observations', title: 'Ажиглалт', desc: 'Аюултай нөхцөл, үйлдэл, сайн туршлага' },
+  { href: '/admin/hse/near-miss', title: 'Ослын эрсдэл', desc: 'Near miss бүртгэл' },
+  { href: '/admin/hse/incidents', title: 'Осол', desc: 'Ослын мэдээлэл, мөрдөн байцаалт' },
+  { href: '/admin/hse/risk-assessment', title: 'Эрсдэлийн үнэлгээ', desc: 'JSA / JHA' },
+  { href: '/admin/hse/permits', title: 'Ажилын зөвшөөрөл', desc: 'Permit to Work' },
+  { href: '/admin/hse/inspections', title: 'Үзлэг', desc: 'Тоног төхөөрөмж, талбайн үзлэг' },
+  { href: '/admin/hse/ppe', title: 'ХАБЭА хувцас', desc: 'PPE хуваарилалт' },
+  { href: '/admin/hse/training', title: 'Сургалт', desc: 'Гэрчилгээ, хугацаа дуусах' },
+  { href: '/admin/hse/equipment-safety', title: 'Тоног төхөөрөмж', desc: 'Өдөр тутмын үзлэг' },
+  { href: '/admin/hse/environment', title: 'Байгаль орчин', desc: 'Тоос, дуу чимээ, хог хаягдал' },
+  { href: '/admin/hse/capa', title: 'CAPA', desc: 'Засварлах арга хэмжээ' },
+  { href: '/admin/hse/documents', title: 'Баримт бичиг', desc: 'Бодлого, журам, MSDS' },
+  { href: '/admin/hse/reports', title: 'Тайлан', desc: 'ХАБЭА тайлангууд' },
+  { href: '/admin/accident', title: 'Ослын дуудлага (хуучин)', desc: 'Уламжлалт ослын дуудлага' },
+];
 
 export default function HseHubPage() {
   const [loading, setLoading] = useState(true);
-  const [total, setTotal] = useState(0);
-  const [open, setOpen] = useState(0);
+  const [dash, setDash] = useState<HseDashboard | null>(null);
 
   useEffect(() => {
     document.title = 'Хөдөлмөрийн аюулгүй байдал';
     (async () => {
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/accident`);
-        const json = await res.json();
-        const rows: AccidentRow[] = json.success ? json.data || [] : [];
-        setTotal(rows.length);
-        setOpen(rows.filter((r) => Number(r.status) !== 2).length);
-      } catch {
-        setTotal(0);
-        setOpen(0);
-      } finally {
-        setLoading(false);
-      }
+      setDash(await fetchHseDashboard());
+      setLoading(false);
     })();
   }, []);
 
+  const w = dash?.widgets;
+  const di = dash?.daily_instruction;
+
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Хөдөлмөрийн аюулгүй байдал</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          ХАБЭА — осол, эрсдэл, аюулгүй ажиллагааны бүртгэл
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight">Хөдөлмөрийн аюулгүй байдал (ХАБЭА)</h1>
+        <p className="mt-1 text-sm text-muted-foreground">ISO 45001 — аюулгүй ажиллагааны удирдлагын систем</p>
       </div>
 
       {loading ? (
@@ -52,52 +63,76 @@ export default function HseHubPage() {
           <Spinner className="size-8 text-primary" />
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <div className="mb-2 flex size-11 items-center justify-center rounded-xl bg-red-500/10 text-red-600">
-                <ShieldAlert className="size-5" />
-              </div>
-              <CardTitle className="text-base">Нийт осол</CardTitle>
-              <CardDescription>Бүртгэгдсэн дуудлага</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold tracking-tight">{total}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <div className="mb-2 flex size-11 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600">
-                <AlertTriangle className="size-5" />
-              </div>
-              <CardTitle className="text-base">Нээлттэй</CardTitle>
-              <CardDescription>Шийдэгдээгүй дуудлага</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold tracking-tight">{open}</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Өнөөдрийн заавар</CardDescription>
+                <CardTitle className="text-3xl">{di?.completion_percentage ?? 0}%</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Progress percent={di?.completion_percentage ?? 0} />
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {di?.completed_today ?? 0} / {di?.total_employees ?? 0} баталгаажсан
+                </p>
+              </CardContent>
+            </Card>
+            <Widget icon={FileWarning} label="Нээлттэй ажиглалт" value={w?.open_observations ?? 0} color="text-amber-600" />
+            <Widget icon={AlertTriangle} label="Near miss" value={w?.near_miss_count ?? 0} color="text-orange-600" />
+            <Widget icon={ShieldAlert} label="Нээлттэй осол" value={w?.open_incidents ?? 0} color="text-red-600" />
+            <Widget icon={Wrench} label="CAPA хүлээгдэж буй" value={w?.pending_corrective_actions ?? 0} color="text-violet-600" />
+            <Widget icon={ClipboardCheck} label="Гэрчилгээ дууссан" value={w?.expired_certificates ?? 0} color="text-rose-600" />
+            <Widget icon={HardHat} label="PPE хугацаа дууссан" value={w?.expired_ppe ?? 0} color="text-yellow-600" />
+            <Widget icon={ShieldAlert} label="Идэвхтэй зөвшөөрөл" value={w?.active_permits ?? 0} color="text-emerald-600" />
+          </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Модулиуд</CardTitle>
-          <CardDescription>ХАБЭА-н дэд цэс</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Link
-            href="/admin/accident"
-            className="flex items-center justify-between rounded-xl border border-border px-4 py-3 transition hover:bg-muted/60"
-          >
-            <div>
-              <p className="font-semibold">Ослын дуудлага</p>
-              <p className="text-sm text-muted-foreground">Осол, дуудлагын бүртгэл, шийдвэрлэлт</p>
-            </div>
-            <ArrowRight className="size-4 text-muted-foreground" />
-          </Link>
-        </CardContent>
-      </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">ХАБЭА модулиуд</CardTitle>
+              <CardDescription>Дэд системүүд</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-2 sm:grid-cols-2">
+              {MODULES.map((m) => (
+                <Link
+                  key={m.href}
+                  href={m.href}
+                  className="flex items-center justify-between rounded-xl border border-border px-4 py-3 transition hover:bg-muted/60"
+                >
+                  <div>
+                    <p className="font-semibold">{m.title}</p>
+                    <p className="text-sm text-muted-foreground">{m.desc}</p>
+                  </div>
+                  <ArrowRight className="size-4 text-muted-foreground" />
+                </Link>
+              ))}
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
+  );
+}
+
+function Widget({
+  icon: Icon,
+  label,
+  value,
+  color,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: number;
+  color: string;
+}) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <div className={`mb-1 flex size-9 items-center justify-center rounded-lg bg-muted ${color}`}>
+          <Icon className="size-4" />
+        </div>
+        <CardDescription>{label}</CardDescription>
+        <CardTitle className="text-3xl">{value}</CardTitle>
+      </CardHeader>
+    </Card>
   );
 }

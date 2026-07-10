@@ -228,9 +228,9 @@ export default function SectionDataTable({
   };
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white">
-      <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-        <p className="m-0 text-sm font-medium text-slate-700">{modalTitle}</p>
+    <div className="rounded-lg border border-border bg-card">
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <p className="m-0 text-sm font-medium text-foreground">{modalTitle}</p>
         <Button type="default" size="small" icon={<PlusOutlined />} onClick={openCreate}>
           {addLabel}
         </Button>

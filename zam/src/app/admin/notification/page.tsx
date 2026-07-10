@@ -151,9 +151,9 @@ export default function Notification() {
   ];
 
   return (
-    <div className="p-4 bg-white rounded shadow-md">
+    <div className="w-full">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Мэдэгдэл</h2>
+        <h2 className="text-xl font-semibold text-foreground">Мэдэгдэл</h2>
         <Button
           type="primary"
           icon={<PlusOutlined />}

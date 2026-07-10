@@ -493,7 +493,7 @@ export default function DeliveryPage() {
       {/* Fixed Bottom Section */}
       {hasPermission('order:allocate_order') && (
 
-      <div style={{ position: 'fixed', bottom: 0, left: 0, width: '100%', background: '#fff', padding: '16px 24px', borderTop: '1px solid #ddd', zIndex: 999 }}>
+      <div className="fixed bottom-0 left-0 z-[999] w-full border-t border-border bg-card px-6 py-4 shadow-lg">
         <Space style={{ marginRight: 16 }}>
           <div>
             {selectedRowKeys.length} item(s) selected

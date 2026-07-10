@@ -292,7 +292,7 @@ export default function LeaveRequestPage() {
                   Тооцогдсон цаг: {Number(activeRow.total_hours).toFixed(2)} цаг
                 </Text>
               </div>
-              <div className="mt-2 text-gray-600">{activeRow.reason}</div>
+              <div className="mt-2 text-muted-foreground">{activeRow.reason}</div>
             </div>
             <div>
               <Text type="secondary">Тайлбар (заавал биш)</Text>

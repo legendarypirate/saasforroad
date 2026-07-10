@@ -50,9 +50,9 @@ function Kpi({
           <Icon className="size-5" />
         </div>
         <div className="min-w-0">
-          <p className="text-xs font-medium text-muted-foreground">{label}</p>
+          <p className="text-xs font-medium text-foreground/75">{label}</p>
           <p className="text-2xl font-bold tracking-tight">{value}</p>
-          {hint ? <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p> : null}
+          {hint ? <p className="mt-0.5 text-xs text-foreground/65">{hint}</p> : null}
         </div>
       </CardContent>
     </Card>
@@ -112,7 +112,7 @@ export default function DailyReportSummaryPage() {
         </div>
       ) : !data || !t ? (
         <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
+          <CardContent className="py-12 text-center text-foreground/70">
             Өгөгдөл ачаалж чадсангүй
           </CardContent>
         </Card>
@@ -188,7 +188,7 @@ export default function DailyReportSummaryPage() {
               </CardHeader>
               <CardContent>
                 {data.attention.length === 0 ? (
-                  <p className="py-6 text-center text-sm text-muted-foreground">
+                  <p className="py-6 text-center text-sm text-foreground/70">
                     Өнөөдөр онцгой анхаарах зүйл бүртгэгдээгүй.
                   </p>
                 ) : (
@@ -221,7 +221,7 @@ export default function DailyReportSummaryPage() {
               </CardHeader>
               <CardContent className="space-y-2">
                 {data.projects.length === 0 ? (
-                  <p className="py-6 text-center text-sm text-muted-foreground">
+                  <p className="py-6 text-center text-sm text-foreground/70">
                     Энэ өдөр тайлан байхгүй.
                   </p>
                 ) : (
@@ -231,12 +231,12 @@ export default function DailyReportSummaryPage() {
                       className="rounded-lg border border-border px-3 py-2 text-sm"
                     >
                       <p className="font-semibold">{p.project_name}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
+                      <p className="mt-1 text-xs text-foreground/65">
                         Явц {p.progress_pct}% · Ирц {p.labor_present}/{p.labor_planned || '—'} ·
                         Эвдрэл {p.equipment_broken} · Материал {p.materials_shortages}
                       </p>
                       {p.weather_note ? (
-                        <p className="mt-1 text-xs text-slate-500">Цаг агаар: {p.weather_note}</p>
+                        <p className="mt-1 text-xs text-foreground/65">Цаг агаар: {p.weather_note}</p>
                       ) : null}
                     </div>
                   ))

@@ -271,3 +271,46 @@
 .org-pool-user.is-dragging {
   opacity: 0.4;
 }
+
+/* Dark mode */
+.dark .org-chart-panel {
+  background: var(--card);
+  border-color: var(--border);
+}
+
+.dark .org-zoom-toolbar {
+  background: var(--muted);
+  border-color: var(--border);
+}
+
+.dark .org-zoom-viewport {
+  background: linear-gradient(180deg, var(--muted) 0%, var(--card) 100%);
+}
+
+.dark .org-person-card {
+  background: var(--card);
+  border-color: var(--border);
+  color: var(--foreground);
+}
+
+.dark .org-person-card .org-person-name {
+  color: var(--foreground);
+}
+
+.dark .org-person-card .org-person-role {
+  color: var(--muted-foreground);
+}
+
+.dark .org-pool-user {
+  background: var(--card);
+  border-color: var(--border);
+  color: var(--foreground);
+}
+
+.dark .org-pool-user:hover {
+  border-color: rgba(33, 205, 168, 0.45);
+}
+
+.dark .org-chart-wrap {
+  background: linear-gradient(180deg, var(--muted) 0%, var(--card) 100%);
+}

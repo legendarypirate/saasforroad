@@ -65,12 +65,6 @@ export default function PublicSiteHeader({
 
         <div className="hidden items-center gap-2.5 md:flex">
           <Link
-            href="/#contact"
-            className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-bold tracking-wide text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-          >
-            Холбоо барих
-          </Link>
-          <Link
             href="/login"
             className="rounded-lg px-4 py-2 text-xs font-bold tracking-wide text-white transition hover:brightness-110"
             style={{ backgroundColor: BRAND_GREEN }}
@@ -104,18 +98,11 @@ export default function PublicSiteHeader({
               {item.label}
             </Link>
           ))}
-          <div className="flex gap-2 py-4">
-            <Link
-              href="/#contact"
-              onClick={() => setOpen(false)}
-              className="flex-1 rounded-lg border border-slate-200 py-2.5 text-center text-sm font-bold text-slate-700"
-            >
-              Холбоо барих
-            </Link>
+          <div className="py-4">
             <Link
               href="/login"
               onClick={() => setOpen(false)}
-              className="flex-1 rounded-lg py-2.5 text-center text-sm font-bold text-white"
+              className="block rounded-lg py-2.5 text-center text-sm font-bold text-white"
               style={{ backgroundColor: BRAND_GREEN }}
             >
               Нэвтрэх

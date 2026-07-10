@@ -16,13 +16,11 @@ module.exports = app => {
   
     // Update an Item with id
     router.put("/:id", accident.update);
+    router.patch("/:id", accident.update);
   
     // Delete an Item with id
     router.delete("/:id", accident.delete);
-  
-    // Delete all Items
-    router.delete("/", accident.deleteAll);
-  
+
     app.use('/api/accident', router);
   };
   

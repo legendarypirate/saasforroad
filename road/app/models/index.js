@@ -54,6 +54,26 @@ db.project_equipment_links = require("./project_equipment_link.model.js")(sequel
 db.equipment_oil_changes = require("./equipment_oil_change.model.js")(sequelize, Sequelize);
 db.accidents = require("./accident.model.js")(sequelize, Sequelize);
 db.daily_reports = require("./daily_report.model.js")(sequelize, Sequelize);
+db.hse_daily_instructions = require("./hse_daily_instruction.model.js")(sequelize, Sequelize);
+db.hse_daily_instruction_acks = require("./hse_daily_instruction_ack.model.js")(sequelize, Sequelize);
+db.hse_toolbox_meetings = require("./hse_toolbox_meeting.model.js")(sequelize, Sequelize);
+db.hse_toolbox_attendees = require("./hse_toolbox_attendee.model.js")(sequelize, Sequelize);
+db.hse_observations = require("./hse_observation.model.js")(sequelize, Sequelize);
+db.hse_near_misses = require("./hse_near_miss.model.js")(sequelize, Sequelize);
+db.hse_incidents = require("./hse_incident.model.js")(sequelize, Sequelize);
+db.hse_risk_assessments = require("./hse_risk_assessment.model.js")(sequelize, Sequelize);
+db.hse_permits = require("./hse_permit.model.js")(sequelize, Sequelize);
+db.hse_inspection_templates = require("./hse_inspection_template.model.js")(sequelize, Sequelize);
+db.hse_inspections = require("./hse_inspection.model.js")(sequelize, Sequelize);
+db.hse_inspection_items = require("./hse_inspection_item.model.js")(sequelize, Sequelize);
+db.hse_ppe_items = require("./hse_ppe_item.model.js")(sequelize, Sequelize);
+db.hse_ppe_assignments = require("./hse_ppe_assignment.model.js")(sequelize, Sequelize);
+db.hse_trainings = require("./hse_training.model.js")(sequelize, Sequelize);
+db.hse_training_records = require("./hse_training_record.model.js")(sequelize, Sequelize);
+db.hse_equipment_inspections = require("./hse_equipment_inspection.model.js")(sequelize, Sequelize);
+db.hse_environmental_records = require("./hse_environmental_record.model.js")(sequelize, Sequelize);
+db.hse_capas = require("./hse_capa.model.js")(sequelize, Sequelize);
+db.hse_documents = require("./hse_document.model.js")(sequelize, Sequelize);
 db.angilals = require("./angilal.model.js")(sequelize, Sequelize);
 db.materials = require("./material.model.js")(sequelize, Sequelize);
 
@@ -364,6 +384,55 @@ db.leave_requests.belongsTo(db.users, { foreignKey: "reviewed_by", as: "reviewer
 db.user_devices.belongsTo(db.users, { foreignKey: "user_id", as: "user" });
 db.users.hasMany(db.user_devices, { foreignKey: "user_id", as: "devices" });
 db.user_devices.belongsTo(db.users, { foreignKey: "approved_by", as: "approver" });
+
+// HSE associations
+db.hse_daily_instructions.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
+db.hse_daily_instructions.belongsTo(db.users, { foreignKey: "created_by", as: "creator" });
+db.hse_daily_instruction_acks.belongsTo(db.hse_daily_instructions, { foreignKey: "instruction_id", as: "instruction" });
+db.hse_daily_instruction_acks.belongsTo(db.users, { foreignKey: "user_id", as: "user" });
+db.hse_daily_instruction_acks.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
+
+db.hse_toolbox_meetings.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
+db.hse_toolbox_meetings.belongsTo(db.users, { foreignKey: "supervisor_id", as: "supervisor" });
+db.hse_toolbox_attendees.belongsTo(db.hse_toolbox_meetings, { foreignKey: "meeting_id", as: "meeting" });
+db.hse_toolbox_attendees.belongsTo(db.users, { foreignKey: "user_id", as: "user" });
+db.hse_toolbox_meetings.hasMany(db.hse_toolbox_attendees, { foreignKey: "meeting_id", as: "attendees" });
+
+db.hse_observations.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
+db.hse_observations.belongsTo(db.users, { foreignKey: "reported_by", as: "reporter" });
+db.hse_observations.belongsTo(db.users, { foreignKey: "responsible_user_id", as: "responsible" });
+
+db.hse_near_misses.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
+db.hse_near_misses.belongsTo(db.users, { foreignKey: "reported_by", as: "reporter" });
+
+db.hse_incidents.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
+db.hse_incidents.belongsTo(db.users, { foreignKey: "reported_by", as: "reporter" });
+
+db.hse_risk_assessments.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
+db.hse_risk_assessments.belongsTo(db.users, { foreignKey: "responsible_user_id", as: "responsible" });
+
+db.hse_permits.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
+db.hse_permits.belongsTo(db.users, { foreignKey: "requested_by", as: "requester" });
+
+db.hse_inspections.belongsTo(db.hse_inspection_templates, { foreignKey: "template_id", as: "template" });
+db.hse_inspections.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
+db.hse_inspections.belongsTo(db.equipments, { foreignKey: "equipment_id", as: "equipment" });
+db.hse_inspection_items.belongsTo(db.hse_inspections, { foreignKey: "inspection_id", as: "inspection" });
+db.hse_inspections.hasMany(db.hse_inspection_items, { foreignKey: "inspection_id", as: "items" });
+
+db.hse_ppe_assignments.belongsTo(db.hse_ppe_items, { foreignKey: "ppe_item_id", as: "ppeItem" });
+db.hse_ppe_assignments.belongsTo(db.users, { foreignKey: "user_id", as: "user" });
+db.hse_ppe_assignments.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
+
+db.hse_training_records.belongsTo(db.hse_trainings, { foreignKey: "training_id", as: "training" });
+db.hse_training_records.belongsTo(db.users, { foreignKey: "user_id", as: "user" });
+
+db.hse_equipment_inspections.belongsTo(db.equipments, { foreignKey: "equipment_id", as: "equipment" });
+db.hse_equipment_inspections.belongsTo(db.users, { foreignKey: "operator_id", as: "operator" });
+db.hse_equipment_inspections.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
+
+db.hse_environmental_records.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
+db.hse_capas.belongsTo(db.users, { foreignKey: "responsible_user_id", as: "responsible" });
 
 // Export the db object for easy access throughout the app
 module.exports = db;

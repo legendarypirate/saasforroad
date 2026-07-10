@@ -196,3 +196,28 @@
   background: #fff;
   cursor: pointer;
 }
+
+.dark .tiptap-editor {
+  background: var(--card);
+  border-color: var(--border);
+}
+
+.dark .tiptap-editor__toolbar {
+  background: var(--muted);
+  border-color: var(--border);
+}
+
+.dark .tiptap-editor__toolbar-group:not(:last-child) {
+  border-color: var(--border);
+}
+
+.dark .tiptap-editor__content {
+  color: var(--foreground);
+}
+
+.dark .tiptap-toolbar-select,
+.dark .tiptap-color-input {
+  background: var(--muted);
+  border-color: var(--border);
+  color: var(--foreground);
+}

@@ -155,7 +155,7 @@ optgroup {
   --secondary: #2c2c2e;
   --secondary-foreground: #e5e5ea;
   --muted: #2c2c2e;
-  --muted-foreground: #767a81;
+  --muted-foreground: oklch(0.78 0.012 255);
   --accent: #323c46;
   --accent-foreground: #21cda8;
   --destructive: #ed085b;
@@ -200,6 +200,58 @@ optgroup {
 .dark ::selection {
   background: rgba(33, 205, 168, 0.3);
   color: #1c1c1e;
+}
+
+.dark .text-muted-foreground {
+  color: oklch(0.78 0.012 255);
+}
+.dark [data-slot='card-description'],
+.dark .text-xs.text-muted-foreground,
+.dark .text-sm.text-muted-foreground {
+  color: oklch(0.80 0.01 255);
+}
+
+/* Admin: fix hardcoded light surfaces in dark mode */
+.dark .admin-shell main .bg-white {
+  background-color: var(--card);
+  color: var(--card-foreground);
+}
+
+.dark .admin-shell main .bg-gray-50 {
+  background-color: var(--muted);
+  color: var(--muted-foreground);
+}
+
+.dark .admin-shell main .border-gray-200,
+.dark .admin-shell main .border-gray-300,
+.dark .admin-shell main .border-slate-200 {
+  border-color: var(--border);
+}
+
+.dark .admin-shell main .text-gray-500,
+.dark .admin-shell main .text-gray-800,
+.dark .admin-shell main .text-slate-600,
+.dark .admin-shell main .text-slate-700,
+.dark .admin-shell main .text-slate-900 {
+  color: var(--foreground);
+}
+
+.dark .admin-shell main .hover\:bg-orange-50:hover,
+.dark .admin-shell main .hover\:bg-blue-50:hover {
+  background-color: var(--muted);
+}
+
+/* Homepage editor — keep public-site preview light */
+.dark .admin-shell .keep-light-surface.bg-white,
+.dark .admin-shell .keep-light-surface .bg-white {
+  background-color: #fff;
+  color: #0f172a;
+}
+
+.dark .admin-shell .keep-light-surface .text-slate-900,
+.dark .admin-shell .keep-light-surface .text-slate-600,
+.dark .admin-shell .keep-light-surface .text-slate-700 {
+  color: inherit;
 }
 
 @layer base {

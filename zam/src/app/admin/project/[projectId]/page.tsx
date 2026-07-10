@@ -384,7 +384,7 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* Stats strip */}
-      <div style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', padding: '20px 40px' }}>
+      <div className="border-b border-border bg-muted/40 px-10 py-5">
         <Row gutter={[16, 16]}>
           <Col xs={12} sm={6}>
             <Statistic
@@ -418,7 +418,7 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* Main content */}
-      <div style={{ padding: '24px 40px 40px', background: '#fff' }}>
+      <div className="px-10 pb-10 pt-6">
         <Tabs
           defaultActiveKey="tasks"
           tabBarExtraContent={

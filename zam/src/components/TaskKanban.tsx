@@ -321,7 +321,7 @@ function KanbanCard({ item }: { item: Task }) {
       style={style}
       {...attributes}
       {...listeners}
-      className="mb-3 cursor-grab rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 bg-white"
+      className="mb-3 cursor-grab rounded-lg border border-border bg-card shadow-sm transition-shadow duration-200 hover:shadow-md"
     >
       <Card
         size="small"

@@ -33,6 +33,12 @@ const DEFAULT_PERMISSIONS = [
   { module: "daily_report", action: "read", key: "daily_report:read" },
   { module: "daily_report", action: "write", key: "daily_report:write" },
   { module: "daily_report", action: "summary", key: "daily_report:summary" },
+  { module: "hse", action: "read", key: "hse:read" },
+  { module: "hse", action: "write", key: "hse:write" },
+  { module: "hse", action: "approve", key: "hse:approve" },
+  { module: "hse", action: "audit", key: "hse:audit" },
+  { module: "hse", action: "mobile", key: "hse:mobile" },
+  { module: "accident", action: "write", key: "accident:write" },
 ];
 
 const DEFAULT_ROLES = [
@@ -46,7 +52,7 @@ const DEFAULT_ROLES = [
     name: "Ажилчин",
     description: "Замын ажилчин — өдөр бүр ирц бүртгэнэ",
     mobile_access: true,
-    permissionKeys: [],
+    permissionKeys: ["hse:mobile", "attendance:read"],
   },
   {
     name: "Төслийн менежер",
@@ -69,6 +75,10 @@ const DEFAULT_ROLES = [
       "equipment:write",
       "daily_report:read",
       "daily_report:write",
+      "hse:read",
+      "hse:write",
+      "hse:approve",
+      "accident:write",
     ],
   },
   {
@@ -82,6 +92,37 @@ const DEFAULT_ROLES = [
       "project:read",
       "accident:read",
       "attendance:read",
+      "hse:read",
+    ],
+  },
+  {
+    name: "ХАБЭА менежер",
+    description: "Хөдөлмөрийн аюулгүй байдлын удирдлага",
+    mobile_access: false,
+    permissionKeys: [
+      "admin:dashboard",
+      "hse:read",
+      "hse:write",
+      "hse:approve",
+      "hse:audit",
+      "accident:read",
+      "accident:write",
+      "project:read",
+      "user:read",
+      "equipment:read",
+      "daily_report:read",
+    ],
+  },
+  {
+    name: "Хяналт",
+    description: "ХАБЭА хяналт, аудит",
+    mobile_access: false,
+    permissionKeys: [
+      "admin:dashboard",
+      "hse:read",
+      "hse:audit",
+      "accident:read",
+      "project:read",
     ],
   },
 ];

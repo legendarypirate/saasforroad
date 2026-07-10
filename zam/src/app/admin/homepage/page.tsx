@@ -196,7 +196,7 @@ export default function HomepageAdminPage() {
 
       <div className={cn(
         'overflow-hidden border-b border-border shadow-sm',
-        page === 'menu' ? 'bg-background p-4 text-foreground' : 'bg-white text-slate-900',
+        page === 'menu' ? 'bg-background p-4 text-foreground' : 'keep-light-surface bg-white text-slate-900',
       )}>
         {page === 'menu' && (
           <MenuWidgetsPanel

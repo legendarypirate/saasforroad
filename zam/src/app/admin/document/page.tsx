@@ -231,7 +231,7 @@ export default function DocumentTable() {
       </div>
 
       {!hasItems ? (
-        <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 py-16 text-center text-gray-500">
+        <div className="rounded-xl border border-dashed border-border bg-muted/50 py-16 text-center text-muted-foreground">
           Энэ хавтас хоосон байна. Хавтас эсвэл файл нэмнэ үү.
         </div>
       ) : (
@@ -239,7 +239,7 @@ export default function DocumentTable() {
           {currentFolders.map((item) => (
             <div
               key={`folder-${item.id}`}
-              className="group relative flex cursor-pointer flex-col items-center rounded-xl border border-gray-200 bg-white p-4 text-center transition-all hover:border-orange-300 hover:bg-orange-50 hover:shadow-lg"
+              className="group relative flex cursor-pointer flex-col items-center rounded-xl border border-border bg-card p-4 text-center transition-all hover:border-orange-400/60 hover:bg-muted hover:shadow-lg"
               onDoubleClick={() => openFolder(item)}
             >
               <Tooltip title="Давхар дарж нээх">
@@ -247,7 +247,7 @@ export default function DocumentTable() {
                   <OrangeFolderIcon size={72} />
                 </div>
               </Tooltip>
-              <div className="w-full truncate text-sm font-medium text-gray-800" title={item.name}>
+              <div className="w-full truncate text-sm font-medium text-foreground" title={item.name}>
                 {item.name}
               </div>
               <Button
@@ -269,7 +269,7 @@ export default function DocumentTable() {
             return (
               <div
                 key={`file-${record.id}`}
-                className="group relative flex cursor-pointer flex-col items-center rounded-xl border border-gray-200 bg-white p-4 text-center transition-all hover:border-blue-300 hover:bg-blue-50 hover:shadow-lg"
+                className="group relative flex cursor-pointer flex-col items-center rounded-xl border border-border bg-card p-4 text-center transition-all hover:border-blue-400/60 hover:bg-muted hover:shadow-lg"
                 onDoubleClick={() => openFile(record)}
               >
                 <Tooltip title="Давхар дарж нээх / татах">
@@ -277,7 +277,7 @@ export default function DocumentTable() {
                     <FileTypeIcon kind={kind} size={72} />
                   </div>
                 </Tooltip>
-                <div className="w-full truncate text-sm font-medium text-gray-800" title={record.name}>
+                <div className="w-full truncate text-sm font-medium text-foreground" title={record.name}>
                   {record.name}
                 </div>
                 <Button
