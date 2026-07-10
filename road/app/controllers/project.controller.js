@@ -1,9 +1,58 @@
-const express = require('express');
 const db = require("../models");
 const Project = db.projects;
 const Task = db.tasks;
-
 const Op = db.Sequelize.Op;
+
+const PROJECT_FIELDS = [
+  "name",
+  "location",
+  "road_name",
+  "km_from",
+  "km_to",
+  "purpose",
+  "client_name",
+  "contract_number",
+  "engineer",
+  "budget",
+  "equipment",
+  "status",
+  "staff",
+  "planned_start",
+  "planned_end",
+  "actual_start",
+  "actual_end",
+  "progress_percent",
+  "progress_unit",
+  "progress_planned",
+  "progress_actual",
+  "season_note",
+  "notes",
+];
+
+function pickProjectBody(body) {
+  const data = {};
+  PROJECT_FIELDS.forEach((key) => {
+    if (body[key] !== undefined) data[key] = body[key];
+  });
+  if (data.status != null) data.status = Number(data.status);
+  if (data.budget != null) data.budget = Number(data.budget);
+  if (data.km_from != null && data.km_from !== "") data.km_from = Number(data.km_from);
+  if (data.km_to != null && data.km_to !== "") data.km_to = Number(data.km_to);
+  if (data.progress_percent != null) data.progress_percent = Number(data.progress_percent);
+  if (data.progress_planned != null && data.progress_planned !== "") {
+    data.progress_planned = Number(data.progress_planned);
+  }
+  if (data.progress_actual != null && data.progress_actual !== "") {
+    data.progress_actual = Number(data.progress_actual);
+  }
+  return data;
+}
+
+function phaseProgress(phases) {
+  if (!phases?.length) return null;
+  const sum = phases.reduce((s, p) => s + Number(p.completion_percent || 0), 0);
+  return Math.round(sum / phases.length);
+}
 
 exports.create = async (req, res) => {
   if (!req.body.name) {
@@ -11,61 +60,65 @@ exports.create = async (req, res) => {
   }
 
   try {
-    const project = {
-      name: req.body.name,
-      location: req.body.location,
-      purpose: req.body.purpose,
-      engineer: req.body.engineer,
-      budget: req.body.budget,
-      equipment: req.body.equipment,
-      staff: req.body.staff,
-      status: req.body.status ?? 1,
-    };
-
+    const project = pickProjectBody(req.body);
+    if (project.status == null) project.status = 1;
     const data = await Project.create(project);
     res.json({ success: true, data });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message || "Some error occurred while creating the project." });
+    res.status(500).json({
+      success: false,
+      message: err.message || "Some error occurred while creating the project.",
+    });
   }
 };
 
-// Get all projects with their invited users
 exports.getProjectsWithUsers = async (req, res) => {
-    try {
-      const projects = await db.projects.findAll({
-        include: [
-          {
-            model: db.users,
-            attributes: ['id', 'username', 'email', 'position'],
-            through: {
-              attributes: ['inviteStatus', 'role'],
-            }
-          }
-        ]
-      });
-  
-      res.status(200).json({
-        success: true,
-        data: projects
-      });
-    } catch (err) {
-      res.status(500).json({
-        success: false,
-        message: err.message || "Error retrieving projects with users."
-      });
-    }
-  };
+  try {
+    const projects = await db.projects.findAll({
+      include: [
+        {
+          model: db.users,
+          attributes: ["id", "username", "email", "position"],
+          through: { attributes: ["inviteStatus", "role"] },
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
 
- 
-  
-// Retrieve all projects (optionally with team members)
+    res.status(200).json({ success: true, data: projects });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message || "Error retrieving projects with users.",
+    });
+  }
+};
+
 exports.findAll = async (req, res) => {
-  const name = req.query.name;
-  var condition = name ? { name: { [Op.like]: `%${name}%` } } : null;
+  const { name, status, client, q } = req.query;
+  const where = {};
+
+  const search = q || name;
+  if (search) {
+    where[Op.or] = [
+      { name: { [Op.iLike]: `%${search}%` } },
+      { location: { [Op.iLike]: `%${search}%` } },
+      { client_name: { [Op.iLike]: `%${search}%` } },
+      { contract_number: { [Op.iLike]: `%${search}%` } },
+      { road_name: { [Op.iLike]: `%${search}%` } },
+      { engineer: { [Op.iLike]: `%${search}%` } },
+    ];
+  }
+  if (status !== undefined && status !== "" && status !== "all") {
+    where.status = Number(status);
+  }
+  if (client) {
+    where.client_name = { [Op.iLike]: `%${client}%` };
+  }
 
   try {
     const data = await Project.findAll({
-      where: condition,
+      where,
       include: [
         {
           model: db.users,
@@ -73,16 +126,36 @@ exports.findAll = async (req, res) => {
           through: { attributes: ["inviteStatus", "role"] },
           required: false,
         },
+        {
+          model: db.project_phases,
+          as: "phases",
+          attributes: ["id", "completion_percent"],
+          required: false,
+        },
       ],
       order: [["createdAt", "DESC"]],
     });
-    res.json({ success: true, data: data });
+
+    const enriched = data.map((p) => {
+      const json = p.toJSON();
+      const fromPhases = phaseProgress(json.phases);
+      return {
+        ...json,
+        phase_progress: fromPhases,
+        effective_progress:
+          json.progress_percent > 0 ? json.progress_percent : fromPhases ?? 0,
+      };
+    });
+
+    res.json({ success: true, data: enriched });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message || "Some error occurred while retrieving banners." });
+    res.status(500).json({
+      success: false,
+      message: err.message || "Some error occurred while retrieving projects.",
+    });
   }
 };
 
-// Find a single project with tasks and completion stats
 exports.findOne = async (req, res) => {
   const id = req.params.id;
 
@@ -129,12 +202,68 @@ exports.findOne = async (req, res) => {
     const completed = tasks.filter((t) => t.status === 3).length;
     const inProgress = tasks.filter((t) => t.status === 2).length;
     const todo = tasks.filter((t) => t.status === 0 || t.status === 1).length;
-    const completionPercent = total === 0 ? 0 : Math.round((completed / total) * 100);
+    const taskPercent = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+    const json = project.toJSON();
+    const fromPhases = phaseProgress(json.phases);
+    const physicalPercent =
+      json.progress_percent > 0 ? json.progress_percent : fromPhases ?? taskPercent;
+
+    // Related module hub (best-effort)
+    const related = {
+      daily_reports: 0,
+      expenses_total: 0,
+      plant_sales_total: 0,
+      plant_sales_count: 0,
+      contracts: 0,
+      hse_incidents: 0,
+      equipment_count: 0,
+    };
+
+    try {
+      if (db.daily_reports) {
+        related.daily_reports = await db.daily_reports.count({ where: { project_id: id } });
+      }
+      if (db.fin_expenses) {
+        const rows = await db.fin_expenses.findAll({
+          where: { project_id: id },
+          attributes: ["amount"],
+        });
+        related.expenses_total = rows.reduce((s, r) => s + Number(r.amount || 0), 0);
+      }
+      if (db.plant_sales) {
+        const sales = await db.plant_sales.findAll({
+          where: { project_id: id },
+          attributes: ["total_amount"],
+        });
+        related.plant_sales_count = sales.length;
+        related.plant_sales_total = sales.reduce((s, r) => s + Number(r.total_amount || 0), 0);
+      }
+      if (db.fin_contracts) {
+        related.contracts = await db.fin_contracts.count({ where: { project_id: id } });
+      }
+      if (db.hse_incidents) {
+        related.hse_incidents = await db.hse_incidents.count({ where: { project_id: id } });
+      }
+      if (db.project_equipment_links) {
+        related.equipment_count = await db.project_equipment_links.count({
+          where: { project_id: id },
+        });
+      }
+    } catch (hubErr) {
+      console.warn("Project related hub partial:", hubErr.message);
+    }
+
+    const budget = Number(json.budget || 0);
+    const spent = related.expenses_total;
+    const budgetRemaining = budget - spent;
 
     res.json({
       success: true,
       data: {
-        ...project.toJSON(),
+        ...json,
+        phase_progress: fromPhases,
+        effective_progress: physicalPercent,
         tasks: tasks.map((t) => ({
           ...t.toJSON(),
           milestone: t.milestone ? t.milestone.name : null,
@@ -144,7 +273,16 @@ exports.findOne = async (req, res) => {
           completed,
           inProgress,
           todo,
-          completionPercent,
+          completionPercent: taskPercent,
+          physicalPercent,
+          phasePercent: fromPhases,
+        },
+        related,
+        finance: {
+          budget,
+          spent,
+          remaining: budgetRemaining,
+          utilization: budget > 0 ? Math.round((spent / budget) * 100) : 0,
         },
       },
     });
@@ -156,56 +294,38 @@ exports.findOne = async (req, res) => {
   }
 };
 
-exports.total = async (req, res) => {
-  const lastname = req.query.lastname;
-  const condition = lastname ? { lastname: { [Op.like]: `%${lastname}%` } } : null;
-
+exports.total = async (_req, res) => {
   try {
-    // Get all projects
-    const projects = await Project.findAll({ where: condition });
-
+    const projects = await Project.findAll({ attributes: ["id", "status"] });
     const total = projects.length;
-    const ongoing = projects.filter(p => p.status === 1).length;
-    const done = projects.filter(p => p.status === 2).length;
-
-    // Count total number of tasks (across all projects)
+    const planned = projects.filter((p) => p.status === 1).length;
+    const ongoing = projects.filter((p) => p.status === 2).length;
+    const done = projects.filter((p) => p.status === 3).length;
+    const archived = projects.filter((p) => p.status === 4).length;
     const tasks = await Task.count();
 
     res.send({
       success: true,
       total,
+      planned,
       ongoing,
       done,
-      tasks
+      archived,
+      tasks,
     });
   } catch (err) {
     res.status(500).send({
       success: false,
-      message: err.message || "Some error occurred while retrieving summary."
+      message: err.message || "Some error occurred while retrieving summary.",
     });
   }
 };
 
-// Update a project by id
 exports.update = async (req, res) => {
   const id = req.params.id;
 
   try {
-    const updateData = {
-      name: req.body.name,
-      location: req.body.location,
-      purpose: req.body.purpose,
-      engineer: req.body.engineer,
-      budget: req.body.budget,
-      equipment: req.body.equipment,
-      staff: req.body.staff,
-      status: req.body.status,
-    };
-
-    Object.keys(updateData).forEach((key) => {
-      if (updateData[key] === undefined) delete updateData[key];
-    });
-
+    const updateData = pickProjectBody(req.body);
     if (Object.keys(updateData).length === 0) {
       return res.status(400).json({
         success: false,
@@ -236,7 +356,6 @@ exports.update = async (req, res) => {
   }
 };
 
-// Delete a project by id
 exports.delete = async (req, res) => {
   const id = req.params.id;
 
@@ -257,8 +376,7 @@ exports.delete = async (req, res) => {
   }
 };
 
-// Delete all projects
-exports.deleteAll = async (req, res) => {
+exports.deleteAll = async (_req, res) => {
   try {
     const nums = await Project.destroy({ where: {}, truncate: false });
     res.json({ success: true, message: `${nums} projects were deleted successfully!` });
@@ -270,15 +388,54 @@ exports.deleteAll = async (req, res) => {
   }
 };
 
-// Legacy stub (unused)
 exports.findAllPublished = async (_req, res) => {
   try {
-    const data = await Project.findAll();
+    const data = await Project.findAll({
+      where: { status: { [Op.in]: [1, 2, 3] } },
+      order: [["createdAt", "DESC"]],
+    });
     res.json({ success: true, data });
   } catch (err) {
     res.status(500).json({
       success: false,
       message: err.message || "Some error occurred while retrieving projects.",
     });
+  }
+};
+
+/** Soft archive = status 4 */
+exports.archive = async (req, res) => {
+  const id = req.params.id;
+  try {
+    const [num] = await Project.update({ status: 4 }, { where: { id } });
+    if (num !== 1) {
+      return res.status(404).json({ success: false, message: "Project not found" });
+    }
+    const data = await Project.findByPk(id);
+    res.json({ success: true, message: "Архивлагдлаа", data });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.duplicate = async (req, res) => {
+  const id = req.params.id;
+  try {
+    const src = await Project.findByPk(id);
+    if (!src) return res.status(404).json({ success: false, message: "Олдсонгүй" });
+    const json = src.toJSON();
+    delete json.id;
+    delete json.createdAt;
+    delete json.updatedAt;
+    json.name = `${json.name} (хуулбар)`;
+    json.status = 1;
+    json.actual_start = null;
+    json.actual_end = null;
+    json.progress_percent = 0;
+    json.progress_actual = null;
+    const data = await Project.create(json);
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 };

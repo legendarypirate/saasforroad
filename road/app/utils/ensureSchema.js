@@ -295,6 +295,34 @@ async function ensureSchema(sequelize, UserModel) {
   await ensureSalaryAdjustmentColumns(sequelize);
   await ensureInventoryColumns(sequelize);
   await ensureLeaveRequestColumns(sequelize);
+  await ensureProjectColumns(sequelize);
+}
+
+async function ensureProjectColumns(sequelize) {
+  const columns = [
+    `ALTER TABLE "projects" ADD COLUMN IF NOT EXISTS "road_name" VARCHAR(255);`,
+    `ALTER TABLE "projects" ADD COLUMN IF NOT EXISTS "km_from" DECIMAL(10,3);`,
+    `ALTER TABLE "projects" ADD COLUMN IF NOT EXISTS "km_to" DECIMAL(10,3);`,
+    `ALTER TABLE "projects" ADD COLUMN IF NOT EXISTS "client_name" VARCHAR(255);`,
+    `ALTER TABLE "projects" ADD COLUMN IF NOT EXISTS "contract_number" VARCHAR(80);`,
+    `ALTER TABLE "projects" ADD COLUMN IF NOT EXISTS "planned_start" DATE;`,
+    `ALTER TABLE "projects" ADD COLUMN IF NOT EXISTS "planned_end" DATE;`,
+    `ALTER TABLE "projects" ADD COLUMN IF NOT EXISTS "actual_start" DATE;`,
+    `ALTER TABLE "projects" ADD COLUMN IF NOT EXISTS "actual_end" DATE;`,
+    `ALTER TABLE "projects" ADD COLUMN IF NOT EXISTS "progress_percent" INTEGER DEFAULT 0;`,
+    `ALTER TABLE "projects" ADD COLUMN IF NOT EXISTS "progress_unit" VARCHAR(20) DEFAULT '%';`,
+    `ALTER TABLE "projects" ADD COLUMN IF NOT EXISTS "progress_planned" DECIMAL(12,3);`,
+    `ALTER TABLE "projects" ADD COLUMN IF NOT EXISTS "progress_actual" DECIMAL(12,3);`,
+    `ALTER TABLE "projects" ADD COLUMN IF NOT EXISTS "season_note" VARCHAR(255);`,
+    `ALTER TABLE "projects" ADD COLUMN IF NOT EXISTS "notes" TEXT;`,
+  ];
+  for (const sql of columns) {
+    try {
+      await sequelize.query(sql);
+    } catch (err) {
+      console.warn("ensureProjectColumns:", err.message);
+    }
+  }
 }
 
 module.exports = {
@@ -306,6 +334,7 @@ module.exports = {
   ensureSalaryAdjustmentColumns,
   ensureInventoryColumns,
   ensureLeaveRequestColumns,
+  ensureProjectColumns,
   resolveTableName,
   resolveExistingUserTable,
 };

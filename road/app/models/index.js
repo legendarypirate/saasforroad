@@ -87,6 +87,16 @@ db.fin_budgets = require("./fin_budget.model.js")(sequelize, Sequelize);
 db.fin_expenses = require("./fin_expense.model.js")(sequelize, Sequelize);
 db.fin_vat_entries = require("./fin_vat_entry.model.js")(sequelize, Sequelize);
 
+db.plant_sites = require("./plant_site.model.js")(sequelize, Sequelize);
+db.plant_products = require("./plant_product.model.js")(sequelize, Sequelize);
+db.plant_materials = require("./plant_material.model.js")(sequelize, Sequelize);
+db.plant_material_stocks = require("./plant_material_stock.model.js")(sequelize, Sequelize);
+db.plant_material_movements = require("./plant_material_movement.model.js")(sequelize, Sequelize);
+db.plant_batches = require("./plant_batch.model.js")(sequelize, Sequelize);
+db.plant_sales = require("./plant_sale.model.js")(sequelize, Sequelize);
+db.plant_expenses = require("./plant_expense.model.js")(sequelize, Sequelize);
+db.plant_daily_reports = require("./plant_daily_report.model.js")(sequelize, Sequelize);
+
 db.uni_items = require("./uni_item.model.js")(sequelize, Sequelize);
 db.uni_stock_movements = require("./uni_stock_movement.model.js")(sequelize, Sequelize);
 db.uni_issues = require("./uni_issue.model.js")(sequelize, Sequelize);
@@ -533,6 +543,34 @@ db.uni_requests.belongsTo(db.users, { foreignKey: "user_id", as: "requester" });
 db.uni_requests.belongsTo(db.users, { foreignKey: "approved_by", as: "approver" });
 db.uni_requests.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
 db.uni_requests.belongsTo(db.uni_items, { foreignKey: "item_id", as: "item" });
+
+// Plant / factory (Үйлдвэр)
+db.plant_products.belongsTo(db.plant_sites, { foreignKey: "plant_id", as: "plant" });
+db.plant_sites.hasMany(db.plant_products, { foreignKey: "plant_id", as: "products" });
+
+db.plant_material_stocks.belongsTo(db.plant_sites, { foreignKey: "plant_id", as: "plant" });
+db.plant_material_stocks.belongsTo(db.plant_materials, { foreignKey: "material_id", as: "material" });
+db.plant_sites.hasMany(db.plant_material_stocks, { foreignKey: "plant_id", as: "stocks" });
+db.plant_materials.hasMany(db.plant_material_stocks, { foreignKey: "material_id", as: "stocks" });
+
+db.plant_material_movements.belongsTo(db.plant_sites, { foreignKey: "plant_id", as: "plant" });
+db.plant_material_movements.belongsTo(db.plant_materials, { foreignKey: "material_id", as: "material" });
+
+db.plant_batches.belongsTo(db.plant_sites, { foreignKey: "plant_id", as: "plant" });
+db.plant_batches.belongsTo(db.plant_products, { foreignKey: "product_id", as: "product" });
+db.plant_sites.hasMany(db.plant_batches, { foreignKey: "plant_id", as: "batches" });
+
+db.plant_sales.belongsTo(db.plant_sites, { foreignKey: "plant_id", as: "plant" });
+db.plant_sales.belongsTo(db.plant_products, { foreignKey: "product_id", as: "product" });
+db.plant_sales.belongsTo(db.plant_batches, { foreignKey: "batch_id", as: "batch" });
+db.plant_sales.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
+db.plant_sites.hasMany(db.plant_sales, { foreignKey: "plant_id", as: "sales" });
+
+db.plant_expenses.belongsTo(db.plant_sites, { foreignKey: "plant_id", as: "plant" });
+db.plant_sites.hasMany(db.plant_expenses, { foreignKey: "plant_id", as: "expenses" });
+
+db.plant_daily_reports.belongsTo(db.plant_sites, { foreignKey: "plant_id", as: "plant" });
+db.plant_sites.hasMany(db.plant_daily_reports, { foreignKey: "plant_id", as: "dailyReports" });
 
 // Export the db object for easy access throughout the app
 module.exports = db;

@@ -193,6 +193,24 @@ export const ADMIN_MODULES: ModuleConfig[] = [
       { path: '/admin/accident', label: 'Дуудлага', permission: 'accident:read' },
     ],
   },
+  {
+    id: 'plant',
+    label: 'Үйлдвэр',
+    description: 'Асфальт, цемент, бутлуур, эмульс — орлого, зарлага, үйлдвэрлэл',
+    color: '#b45309',
+    items: [
+      { path: '/admin/plant', label: 'Самбар', permission: 'plant:read' },
+      { path: '/admin/plant/sites', label: 'Үйлдвэрүүд', permission: 'plant:read' },
+      { path: '/admin/plant/products', label: 'Бүтээгдэхүүн', permission: 'plant:read' },
+      { path: '/admin/plant/materials', label: 'Түүхий эд', permission: 'plant:read' },
+      { path: '/admin/plant/stocks', label: 'Үлдэгдэл', permission: 'plant:read' },
+      { path: '/admin/plant/movements', label: 'Орлого / зарлага', permission: 'plant:read' },
+      { path: '/admin/plant/batches', label: 'Үйлдвэрлэлийн багц', permission: 'plant:read' },
+      { path: '/admin/plant/sales', label: 'Борлуулалт', permission: 'plant:read' },
+      { path: '/admin/plant/expenses', label: 'Зардал', permission: 'plant:read' },
+      { path: '/admin/plant/daily-reports', label: 'Өдрийн тайлан', permission: 'plant:read' },
+    ],
+  },
 ];
 
 export const ADMIN_DATA_FOLDERS: ModuleConfig[] = [
@@ -225,14 +243,6 @@ export const ADMIN_DATA_FOLDERS: ModuleConfig[] = [
     label: 'Ажил горилогч',
     description: 'Ажил горилогчдын мэдээлэл',
     color: '#d48806',
-    items: [],
-    comingSoon: true,
-  },
-  {
-    id: 'data-production',
-    label: 'Үйлдвэр',
-    description: 'Үйлдвэрлэл, гүйцэтгэлийн дата',
-    color: '#cf1322',
     items: [],
     comingSoon: true,
   },
