@@ -20,7 +20,7 @@ import {
   Select,
   Drawer,
   Progress,
-} from 'antd';
+} from '@/components/admin/primitives';
 import {
   PlusOutlined,
   UserAddOutlined,
@@ -31,7 +31,7 @@ import {
   InboxOutlined,
   EnvironmentOutlined,
   RightOutlined,
-} from '@ant-design/icons';
+} from '@/components/admin/icons';
 import StaffAvatarGroup, { buildMembersFromProject } from '@/components/StaffAvatarGroup';
 
 const { Title, Text } = Typography;

@@ -1,56 +1,36 @@
 const db = require("../models");
 const Banner = db.banners;
 const Op = db.Sequelize.Op;
+const multer = require("multer");
+const { imageUpload, cloudinaryUrl } = require("../utils/uploadHelper");
 
-// Set up multer for file uploads
-const multer = require('multer');
-const path = require('path');
+const upload = imageUpload("image");
 
-// Set storage engine
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'app/assets'); // Specify the destination folder
-  },
-  filename: function (req, file, cb) {
-    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
-  }
-});
-
-// Initialize multer upload
-const upload = multer({ storage: storage }).single('image');
-
-// Create and Save a new Banner
 exports.create = (req, res) => {
-  // Handle file upload
-  upload(req, res, function(err) {
+  upload(req, res, async function (err) {
     if (err instanceof multer.MulterError) {
-      // A multer error occurred
       return res.status(500).json({ success: false, message: "Error uploading file." });
     } else if (err) {
-      // An unknown error occurred
-      return res.status(500).json({ success: false, message: "Unknown error." });
+      return res.status(500).json({ success: false, message: err.message || "Unknown error." });
     }
-    
-    // Validate request
+
     if (!req.body.link || !req.file) {
       return res.status(400).json({ success: false, message: "Link and image are required!" });
     }
 
-    // Create a Banner
-    const banner = {
-      link: req.body.link,
-      text: req.body.text,
-      image: req.file.filename // Save the filename in the database
-    };
+    try {
+      const imageUrl = await cloudinaryUrl(req.file, "banners");
+      const banner = {
+        link: req.body.link,
+        text: req.body.text,
+        image: imageUrl,
+      };
 
-    // Save Banner in the database
-    Banner.create(banner)
-      .then(data => {
-        res.json({ success: true, data: data });
-      })
-      .catch(err => {
-        res.status(500).json({ success: false, message: err.message || "Some error occurred while creating the Banner." });
-      });
+      const data = await Banner.create(banner);
+      res.json({ success: true, data });
+    } catch (createErr) {
+      res.status(500).json({ success: false, message: createErr.message || "Some error occurred while creating the Banner." });
+    }
   });
 };
 

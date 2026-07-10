@@ -3,18 +3,10 @@ const Action = db.actions;
 const User = db.users;
 const Op = db.Sequelize.Op;
 const multer = require("multer");
-const path = require("path");
+const { memoryUpload } = require("../utils/multerMemory");
+const { uploadMulterFile } = require("../utils/cloudinary");
 
-const storage = multer.diskStorage({
-  destination: function (_, __, cb) {
-    cb(null, "app/assets/documents");
-  },
-  filename: function (_, file, cb) {
-    cb(null, `action-doc-${Date.now()}${path.extname(file.originalname)}`);
-  },
-});
-
-const upload = multer({ storage }).single("file");
+const upload = memoryUpload().single("file");
 
 exports.create = async (req, res) => {
   const { title, description, user_id, status, priority } = req.body;
@@ -78,7 +70,7 @@ exports.uploadDocument = async (req, res) => {
       return res.status(500).send({ success: false, message: "File upload error" });
     }
     if (err) {
-      return res.status(500).send({ success: false, message: "Unexpected upload error" });
+      return res.status(500).send({ success: false, message: err.message || "Unexpected upload error" });
     }
     if (!req.file) {
       return res.status(400).send({ success: false, message: "file шаардлагатай" });
@@ -90,7 +82,8 @@ exports.uploadDocument = async (req, res) => {
         return res.status(404).send({ success: false, message: "Арга хэмжээ олдсонгүй" });
       }
 
-      await row.update({ document_url: req.file.filename });
+      const result = await uploadMulterFile(req.file, "actions");
+      await row.update({ document_url: result.secure_url });
       return res.send({ success: true, data: row, message: "Файл амжилттай хадгалагдлаа" });
     } catch (error) {
       return res.status(500).send({ success: false, message: error.message });

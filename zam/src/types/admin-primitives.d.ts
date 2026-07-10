@@ -1,0 +1,83 @@
+declare module '@/components/admin/primitives' {
+  import type { ComponentType, ReactNode } from 'react';
+
+  export type FormRule = any;
+  export type Rule = any;
+  export type FormInstance = any;
+  export type ColumnsType<T = any> = Array<{
+    title?: ReactNode;
+    dataIndex?: any;
+    key?: string;
+    render?: (value: any, record: T, index: number) => ReactNode;
+    width?: number | string;
+    fixed?: 'left' | 'right';
+    align?: 'left' | 'right' | 'center';
+    ellipsis?: boolean;
+    sorter?: boolean | ((a: T, b: T) => number);
+    filters?: Array<{ text: ReactNode; value: string | number | boolean }>;
+    onFilter?: (value: string | number | boolean, record: T) => boolean;
+    [key: string]: any;
+  }>;
+  export type MenuProps = any;
+  export type UploadFile = any;
+
+  export const Table: any;
+  export const Button: any;
+  export const Input: any;
+  export const InputNumber: any;
+  export const Select: any;
+  export const Switch: any;
+  export const Form: {
+    (props: any): any;
+    Item: any;
+    List: any;
+    useForm: <T = any>() => [FormInstance];
+    useWatch: (name: any, form?: FormInstance) => any;
+    useFormInstance: () => FormInstance | undefined;
+  };
+  export const Drawer: any;
+  export const Modal: any;
+  export const ConfirmHost: ComponentType;
+  export const DatePicker: any;
+  export const Upload: any;
+  export const Popconfirm: any;
+  export const Layout: any;
+  export const Menu: any;
+  export const Dropdown: any;
+  export const Avatar: any;
+  export const Tooltip: any;
+  export const Space: any;
+  export const Row: any;
+  export const Col: any;
+  export const Tag: any;
+  export const Card: any;
+  export const Typography: any;
+  export const Spin: any;
+  export const Divider: any;
+  export const Statistic: any;
+  export const Image: any;
+  export const message: any;
+  export const notification: any;
+  export const Tabs: any;
+  export const Descriptions: any;
+  export const Collapse: any;
+  export const Progress: any;
+  export const Slider: any;
+  export const Alert: any;
+  export const Breadcrumb: any;
+  export const Empty: any;
+  export const List: any;
+
+  export const Header: any;
+  export const Content: any;
+  export const Sider: any;
+  export const Title: any;
+  export const Text: any;
+  export const Paragraph: any;
+  export const RangePicker: any;
+  export const Password: any;
+  export const TextArea: any;
+  export const Option: any;
+  export const MenuItem: any;
+  export const MenuDivider: any;
+}

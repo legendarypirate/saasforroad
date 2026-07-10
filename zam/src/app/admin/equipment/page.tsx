@@ -18,14 +18,14 @@ import {
   Tag,
   Typography,
   message,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+} from '@/components/admin/primitives';
+import type { ColumnsType } from '@/components/admin/primitives';
 import {
   DeleteOutlined,
   EditOutlined,
   PlusOutlined,
   ToolOutlined,
-} from '@ant-design/icons';
+} from '@/components/admin/icons';
 import dayjs from 'dayjs';
 import EquipmentDetailPanel, { EquipmentSummaryLabel } from '@/components/EquipmentDetailPanel';
 import EquipmentFormDrawer from '@/components/EquipmentFormDrawer';

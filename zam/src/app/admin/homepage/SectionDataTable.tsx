@@ -1,11 +1,13 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Button, Drawer, Form, Input, Popconfirm, Space, Table } from 'antd';
-import type { Rule } from 'antd/es/form';
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { Button, Drawer, Form, Input, Popconfirm, Space, Table } from '@/components/admin/primitives';
+import type { FormRule as Rule } from '@/components/admin/primitives/form-store';
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/admin/icons';
+import ImageUploadField from '@/components/admin/ImageUploadField';
 import RichTextEditor from '@/components/RichTextEditor';
 import { isEmptyRichText, stripHtml } from '@/lib/richText';
+import { resolveImageUrl } from '@/lib/homepage';
 
 export type SectionColumn = {
   key: string;
@@ -17,7 +19,7 @@ export type SectionColumn = {
 export type SectionField = {
   name: string;
   label: string;
-  type?: 'input' | 'textarea' | 'richtext' | 'number';
+  type?: 'input' | 'textarea' | 'richtext' | 'number' | 'image';
   placeholder?: string;
   rules?: Rule[];
 };
@@ -148,6 +150,16 @@ export default function SectionDataTable({
       render: (value: unknown, record: Record<string, unknown>) => {
         const index = record._index as number;
         if (column.render) return column.render(value, record, index);
+        if (column.key === 'image' && value) {
+          return (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={resolveImageUrl(String(value))}
+              alt=""
+              className="h-10 w-14 rounded object-cover"
+            />
+          );
+        }
         return truncate(value);
       },
     })),
@@ -196,6 +208,14 @@ export default function SectionDataTable({
       );
     }
 
+    if (field.type === 'image') {
+      return (
+        <Form.Item key={field.name} name={field.name} label={field.label} rules={field.rules}>
+          <ImageUploadField label={field.label} />
+        </Form.Item>
+      );
+    }
+
     return (
       <Form.Item key={field.name} name={field.name} label={field.label} rules={field.rules}>
         {field.type === 'textarea' ? (
@@ -225,7 +245,7 @@ export default function SectionDataTable({
         dataSource={tableData}
         locale={{ emptyText: 'Одоогоор мэдээлэл байхгүй' }}
         columns={tableColumns}
-        className="[&_.ant-table-thead>tr>th]:bg-slate-50 [&_.ant-table-thead>tr>th]:text-xs [&_.ant-table-thead>tr>th]:font-semibold [&_.ant-table-thead>tr>th]:text-slate-600"
+        className="admin-data-table"
       />
 
       <Drawer

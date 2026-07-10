@@ -2,7 +2,11 @@ export interface StandartSection {
   id: string;
   label: string;
   title: string;
+  /** TipTap HTML — preferred for long sections (paragraphs + lists). */
+  body?: string;
+  /** Legacy plain paragraphs; used when `body` is empty. */
   paragraphs: string[];
+  /** Legacy bullet list; used when `body` is empty. */
   bullets?: string[];
 }
 

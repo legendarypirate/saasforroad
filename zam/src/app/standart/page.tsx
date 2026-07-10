@@ -6,7 +6,7 @@ import {
   ExperimentOutlined,
   GlobalOutlined,
   SafetyCertificateOutlined,
-} from '@ant-design/icons';
+} from '@/components/admin/icons';
 import PublicSiteHeader from '@/components/public/PublicSiteHeader';
 import PublicSiteFooter from '@/components/public/PublicSiteFooter';
 import PublicBgImage from '@/components/public/PublicBgImage';
@@ -17,6 +17,7 @@ import {
   resolveImageUrl,
   type HomepageContent,
 } from '@/lib/homepage';
+import { isEmptyRichText } from '@/lib/richText';
 
 const BRAND_GREEN = '#3daf72';
 
@@ -39,7 +40,12 @@ export default function StandartPage() {
 
   return (
     <main className="min-h-screen bg-white text-slate-900">
-      <PublicSiteHeader companyName={content.company_name || 'Үлэмжийн зам'} activeHref="/standart" />
+      <PublicSiteHeader
+        companyName={content.company_name || 'Үлэмжийн зам'}
+        logo={content.logo}
+        activeHref="/standart"
+        navItems={content.nav_menu}
+      />
 
       <section className="relative min-h-[220px] overflow-hidden border-b border-slate-200 md:min-h-[280px]">
         <div className="absolute inset-0">
@@ -98,25 +104,41 @@ export default function StandartPage() {
                 </div>
               </div>
 
-              <div>
-                <div className="space-y-4 text-sm leading-relaxed text-slate-600 md:text-base">
-                  {section.paragraphs.map((paragraph) => (
-                    <RichContent key={paragraph.slice(0, 40)} content={paragraph} as="p" className="mb-0" />
-                  ))}
-                </div>
-
-                {section.bullets && section.bullets.length > 0 && (
-                  <ul className="mt-6 space-y-3">
-                    {section.bullets.map((bullet) => (
-                      <li key={bullet.slice(0, 48)} className="flex gap-3 text-sm leading-relaxed text-slate-600">
-                        <CheckCircleOutlined
-                          className="mt-0.5 shrink-0 text-base"
-                          style={{ color: BRAND_GREEN }}
+              <div className="standart-section-body text-sm leading-relaxed text-slate-600 md:text-base">
+                {!isEmptyRichText(section.body) ? (
+                  <RichContent
+                    content={section.body!}
+                    className="prose-p:mb-4 prose-ul:mt-6 prose-ul:space-y-3 prose-li:marker:text-[#3daf72]"
+                  />
+                ) : (
+                  <>
+                    <div className="space-y-4">
+                      {section.paragraphs.map((paragraph) => (
+                        <RichContent
+                          key={paragraph.slice(0, 40)}
+                          content={paragraph}
+                          as="p"
+                          className="mb-0"
                         />
-                        <span>{bullet}</span>
-                      </li>
-                    ))}
-                  </ul>
+                      ))}
+                    </div>
+                    {section.bullets && section.bullets.length > 0 && (
+                      <ul className="mt-6 space-y-3">
+                        {section.bullets.map((bullet) => (
+                          <li
+                            key={bullet.slice(0, 48)}
+                            className="flex gap-3 text-sm leading-relaxed text-slate-600"
+                          >
+                            <CheckCircleOutlined
+                              className="mt-0.5 shrink-0 text-base"
+                              style={{ color: BRAND_GREEN }}
+                            />
+                            <span>{bullet}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </>
                 )}
               </div>
             </article>

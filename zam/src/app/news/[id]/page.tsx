@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeftOutlined, CalendarOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, CalendarOutlined } from '@/components/admin/icons';
 import PublicSiteHeader from '@/components/public/PublicSiteHeader';
 import PublicSiteFooter from '@/components/public/PublicSiteFooter';
 import PublicBgImage from '@/components/public/PublicBgImage';
@@ -37,7 +37,12 @@ export default function NewsDetailPage() {
   if (!article) {
     return (
       <main className="min-h-screen bg-white">
-        <PublicSiteHeader companyName={content.company_name || 'Үлэмжийн зам'} activeHref="/news" />
+        <PublicSiteHeader
+          companyName={content.company_name || 'Үлэмжийн зам'}
+          logo={content.logo}
+          activeHref="/news"
+          navItems={content.nav_menu}
+        />
         <div className="mx-auto max-w-7xl px-4 py-24 text-center">
           <h1 className="text-2xl font-extrabold text-slate-900">Мэдээ олдсонгүй</h1>
           <Link href="/news" className="mt-4 inline-block text-emerald-600 hover:underline">
@@ -51,7 +56,12 @@ export default function NewsDetailPage() {
 
   return (
     <main className="min-h-screen bg-white text-slate-900">
-      <PublicSiteHeader companyName={content.company_name || 'Үлэмжийн зам'} activeHref="/news" />
+      <PublicSiteHeader
+        companyName={content.company_name || 'Үлэмжийн зам'}
+        logo={content.logo}
+        activeHref="/news"
+        navItems={content.nav_menu}
+      />
 
       <article className="mx-auto max-w-4xl px-4 py-10 md:px-8 md:py-14">
         <Link

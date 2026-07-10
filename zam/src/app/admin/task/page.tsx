@@ -10,8 +10,8 @@ import {
   Select,
   DatePicker,
   Space,
-} from 'antd';
-import { EyeOutlined, PlusOutlined } from '@ant-design/icons';
+} from '@/components/admin/primitives';
+import { EyeOutlined, PlusOutlined } from '@/components/admin/icons';
 import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
 const baseUrl = process.env.NEXT_PUBLIC_API_URL;

@@ -3,8 +3,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Button, Drawer, Form, Input, Popconfirm, Select, Space, Table, Typography, message,
-} from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
+} from '@/components/admin/primitives';
+import { DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined } from '@/components/admin/icons';
 import { inventoryApi } from '@/lib/inventory';
 
 const { Title, Text } = Typography;

@@ -7,9 +7,10 @@ export const SIDE_LABELS: Record<string, string> = {
   photo_right: 'Баруун',
 };
 
+import { resolveAssetUrl } from './assetUrl';
+
 export function assetUrl(relativePath?: string | null) {
-  if (!relativePath) return undefined;
-  return `${process.env.NEXT_PUBLIC_API_URL}/assets/${relativePath}`;
+  return resolveAssetUrl(relativePath);
 }
 
 export interface OilChangeRecord {

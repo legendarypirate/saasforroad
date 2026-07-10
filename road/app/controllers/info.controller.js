@@ -2,86 +2,61 @@ const db = require("../models");
 const Info = db.infos;
 const Op = db.Sequelize.Op;
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
 const Category = db.Categories;
 const Doctor = db.doctors;
+const { memoryUpload } = require("../utils/multerMemory");
+const { uploadMulterFile } = require("../utils/cloudinary");
 
-// Ensure directories exist
-const ensureDir = (dir) => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-};
-
-ensureDir("app/assets");
-ensureDir("app/assets/audios");
-
-// Storage settings for image and audio files
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    if (file.mimetype.startsWith("image/")) {
-      cb(null, "app/assets"); // Image storage
-    } else if (file.mimetype === "audio/mpeg") {
-      cb(null, "app/assets/audios"); // MP3 storage
-    } else {
-      return cb(new Error("Invalid file type!"));
-    }
-  },
-  filename: function (req, file, cb) {
-    cb(null, file.fieldname + "-" + Date.now() + path.extname(file.originalname));
-  },
-});
-
-// Initialize multer
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max file size
-  fileFilter: function (req, file, cb) {
-    console.log("Uploading file:", file.originalname, "Type:", file.mimetype);
-
+const upload = memoryUpload({
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: function (_req, file, cb) {
     if (file.mimetype.startsWith("image/") || file.mimetype === "audio/mpeg") {
       cb(null, true);
     } else {
-      console.error("Invalid file type:", file.mimetype);
       cb(new Error("Only image and MP3 files are allowed!"), false);
     }
-  }
+  },
 }).fields([
   { name: "image", maxCount: 1 },
   { name: "audio", maxCount: 1 },
 ]);
 
-// Create and Save a new Info entry
 exports.create = (req, res) => {
-  upload(req, res, function (err) {
+  upload(req, res, async function (err) {
     if (err instanceof multer.MulterError) {
       return res.status(500).json({ success: false, message: "Error uploading file." });
     } else if (err) {
       return res.status(500).json({ success: false, message: err.message || "Unknown error." });
     }
 
-    // Validate request
-    if (!req.body.title || !req.files.image) {
+    if (!req.body.title || !req.files?.image) {
       return res.status(400).json({ success: false, message: "Title and image are required!" });
     }
 
-    // Create an Info entry
-    const info = {
-      title: req.body.title,
-      doctor: req.body.doctor,
-      gender: req.body.gender,
-      category: req.body.category,
-      age: req.body.age,
-      richtext: req.body.richtext,
-      image: req.files.image ? req.files.image[0].filename : null, // Store image filename
-      audio: req.files.audio ? req.files.audio[0].filename : null, // Store audio filename
-    };
+    try {
+      const imageResult = await uploadMulterFile(req.files.image[0], "info");
+      let audioUrl = null;
+      if (req.files.audio?.[0]) {
+        const audioResult = await uploadMulterFile(req.files.audio[0], "info-audio");
+        audioUrl = audioResult.secure_url;
+      }
 
-    // Save Info in the database
-    Info.create(info)
-      .then((data) => res.json({ success: true, data: data }))
-      .catch((err) => res.status(500).json({ success: false, message: err.message || "Some error occurred while creating the entry." }));
+      const info = {
+        title: req.body.title,
+        doctor: req.body.doctor,
+        gender: req.body.gender,
+        category: req.body.category,
+        age: req.body.age,
+        richtext: req.body.richtext,
+        image: imageResult.secure_url,
+        audio: audioUrl,
+      };
+
+      const data = await Info.create(info);
+      res.json({ success: true, data });
+    } catch (createErr) {
+      res.status(500).json({ success: false, message: createErr.message || "Some error occurred while creating the entry." });
+    }
   });
 };
 
@@ -220,70 +195,68 @@ exports.getInfosByCatId = async (req, res) => {
 exports.update = (req, res) => {
   const id = req.params.id;
 
-  // Use multer to process the form data (including files)
-  upload(req, res, function (err) {
+  upload(req, res, async function (err) {
     if (err instanceof multer.MulterError) {
       return res.status(500).json({ success: false, message: "Error uploading file." });
     } else if (err) {
       return res.status(500).json({ success: false, message: err.message || "Unknown error." });
     }
 
-    // Validate request (ensure at least title or image is present)
-    if (Object.keys(req.body).length === 0 && !req.files.image && !req.body.title) {
+    if (Object.keys(req.body).length === 0 && !req.files?.image && !req.body.title) {
       return res.status(400).json({
         success: false,
         message: "Request body cannot be empty and image/title is required.",
       });
     }
 
-    // Fetch the current entry from the database to retain previous image/audio if not provided
-    Info.findByPk(id)
-      .then((existingEntry) => {
-        if (!existingEntry) {
-          return res.status(404).json({
-            success: false,
-            message: "Entry not found.",
-          });
-        }
+    try {
+      const existingEntry = await Info.findByPk(id);
+      if (!existingEntry) {
+        return res.status(404).json({ success: false, message: "Entry not found." });
+      }
 
-        // Prepare the data for updating the entry
-        const updateData = {
-          title: req.body.title || existingEntry.title,
-          doctor: req.body.doctor || existingEntry.doctor,
-          gender: req.body.gender || existingEntry.gender,
-          category: req.body.category || existingEntry.category,
-          age: req.body.age || existingEntry.age,
-          isactive: req.body.isactive || existingEntry.isactive,
-          richtext: req.body.richtext || existingEntry.richtext,
-          image: req.files.image ? req.files.image[0].filename : existingEntry.image, // Keep previous image if not provided
-          audio: req.files.audio ? req.files.audio[0].filename : existingEntry.audio, // Keep previous audio if not provided
-        };
+      let imageUrl = existingEntry.image;
+      let audioUrl = existingEntry.audio;
 
-        // Update the entry in the database
-        return Info.update(updateData, { where: { id: id } });
-      })
-      .then((num) => {
-        if (num == 1) {
-          // Successfully updated
-          return Info.findByPk(id); // Fetch the updated entry
-        } else {
-          throw new Error("No changes were made or entry not found.");
-        }
-      })
-      .then((updatedEntry) => {
-        res.json({
-          success: true,
-          message: "Entry was updated successfully.",
-          data: updatedEntry,
-        });
-      })
-      .catch((err) => {
-        res.status(500).json({
-          success: false,
-          message: "Error updating entry with id=" + id,
-          error: err.message,
-        });
+      if (req.files?.image?.[0]) {
+        const imageResult = await uploadMulterFile(req.files.image[0], "info");
+        imageUrl = imageResult.secure_url;
+      }
+      if (req.files?.audio?.[0]) {
+        const audioResult = await uploadMulterFile(req.files.audio[0], "info-audio");
+        audioUrl = audioResult.secure_url;
+      }
+
+      const updateData = {
+        title: req.body.title || existingEntry.title,
+        doctor: req.body.doctor || existingEntry.doctor,
+        gender: req.body.gender || existingEntry.gender,
+        category: req.body.category || existingEntry.category,
+        age: req.body.age || existingEntry.age,
+        isactive: req.body.isactive || existingEntry.isactive,
+        richtext: req.body.richtext || existingEntry.richtext,
+        image: imageUrl,
+        audio: audioUrl,
+      };
+
+      const num = await Info.update(updateData, { where: { id } });
+      if (num != 1) {
+        throw new Error("No changes were made or entry not found.");
+      }
+
+      const updatedEntry = await Info.findByPk(id);
+      res.json({
+        success: true,
+        message: "Entry was updated successfully.",
+        data: updatedEntry,
       });
+    } catch (updateErr) {
+      res.status(500).json({
+        success: false,
+        message: "Error updating entry with id=" + id,
+        error: updateErr.message,
+      });
+    }
   });
 };
 

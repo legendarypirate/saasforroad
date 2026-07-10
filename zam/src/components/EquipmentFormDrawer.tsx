@@ -1,9 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Col, Drawer, Form, Input, InputNumber, Row, Typography, Upload } from 'antd';
-import type { UploadFile } from 'antd/es/upload';
-import { UploadOutlined } from '@ant-design/icons';
+import { Button, Col, Drawer, Form, Input, InputNumber, Row, Typography, Upload } from '@/components/admin/primitives';
+type UploadFile = {
+  uid: string;
+  name: string;
+  status?: 'done' | 'uploading' | 'error' | 'removed';
+  url?: string;
+  originFileObj?: File;
+};
+import { UploadOutlined } from '@/components/admin/icons';
 import { assetUrl, EQUIPMENT_API, SIDE_LABELS, type EquipmentItem } from '@/lib/equipment';
 
 const { Title } = Typography;

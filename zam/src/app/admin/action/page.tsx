@@ -1,9 +1,11 @@
 'use client';
 
+import { resolveAssetUrl } from '@/lib/assetUrl';
+
 import React, { useEffect, useMemo, useState } from 'react';
-import { Table, Space, Input, Button, Tag, message, Upload } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { UploadOutlined } from '@ant-design/icons';
+import { Table, Space, Input, Button, Tag, message, Upload } from '@/components/admin/primitives';
+import type { ColumnsType } from '@/components/admin/primitives';
+import { UploadOutlined } from '@/components/admin/icons';
 
 interface ActionRow {
   id: number;
@@ -91,7 +93,7 @@ export default function ActionPage() {
       title: 'Баримт',
       render: (_, r) =>
         r.document_url ? (
-          <a href={`${process.env.NEXT_PUBLIC_API_URL}/assets/documents/${r.document_url}`} target="_blank" rel="noreferrer">
+          <a href={resolveAssetUrl(r.document_url)} target="_blank" rel="noreferrer">
             Үзэх
           </a>
         ) : (

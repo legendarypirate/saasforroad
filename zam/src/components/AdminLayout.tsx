@@ -1,20 +1,37 @@
 'use client';
 
-import React, { useState, useTransition, useEffect } from 'react';
-import { Layout, Menu, message, Spin, Modal, Dropdown, Avatar, Button, Typography } from 'antd';
-import {
-  LogoutOutlined,
-  UserOutlined,
-  HomeOutlined,
-  AppstoreOutlined,
-} from '@ant-design/icons';
+import React, { useEffect, useState, useTransition } from 'react';
+import { AppWindow, Home, LogOut, User } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
+
+import ThemeToggle from '@/components/ThemeToggle';
 import ModuleSubNav from '@/components/admin/ModuleSubNav';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Spinner } from '@/components/ui/spinner';
 import { DASHBOARD_PATH } from '@/config/adminNavigation';
-
 import { getUserRole, getUsername, loadUserPermissions } from '@/lib/auth';
-
-const { Header, Content } = Layout;
+import { uiToast } from '@/lib/toast';
+import { cn } from '@/lib/utils';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -24,9 +41,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [userPermissions, setUserPermissions] = useState<string[]>([]);
   const [userRole, setUserRole] = useState(() => getUserRole());
   const [username, setUsername] = useState('Admin');
+  const [logoutOpen, setLogoutOpen] = useState(false);
 
   const handleLogout = () => {
-    message.success('Logged out');
+    uiToast.success('Logged out');
     localStorage.removeItem('user');
     localStorage.removeItem('token');
     localStorage.removeItem('permissions');
@@ -34,29 +52,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     localStorage.removeItem('username');
     router.push('/');
   };
-
-  const showConfirm = () => {
-    Modal.confirm({
-      title: 'Та гарахдаа итгэлтэй байна уу?',
-      okText: 'Тийм',
-      cancelText: 'Үгүй',
-      centered: true,
-      width: 500,
-      onOk: handleLogout,
-    });
-  };
-
-  const userMenu = (
-    <Menu>
-      <Menu.Item key="userinfo" icon={<UserOutlined />} disabled>
-        Таны нэр: {username}
-      </Menu.Item>
-      <Menu.Divider />
-      <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={showConfirm} danger>
-        Гарах
-      </Menu.Item>
-    </Menu>
-  );
 
   useEffect(() => {
     (async () => {
@@ -69,6 +64,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, []);
 
   const isDashboard = pathname === DASHBOARD_PATH;
+  const isBusy = loading || isPending;
 
   const goHome = () => {
     setLoading(true);
@@ -79,68 +75,84 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   return (
-    <Layout style={{ minHeight: '100vh', background: '#f5f7fa' }}>
-      <Header
-        style={{
-          background: '#fff',
-          padding: '0 24px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          borderBottom: '1px solid #f0f0f0',
-          position: 'sticky',
-          top: 0,
-          zIndex: 100,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <Typography.Title
-            level={4}
-            style={{ margin: 0, color: '#082c5c', cursor: 'pointer', userSelect: 'none' }}
+    <div className="admin-shell min-h-screen bg-muted/30">
+      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-border bg-background/95 px-6 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
             onClick={goHome}
+            className="flex items-center gap-2 text-lg font-semibold text-primary transition-opacity hover:opacity-80 dark:text-[var(--neon-green)] dark:hover:drop-shadow-[0_0_8px_rgba(33,205,168,0.45)]"
           >
-            <AppstoreOutlined style={{ marginRight: 8 }} />
+            <AppWindow className="size-5" />
             Замын систем
-          </Typography.Title>
+          </button>
           {!isDashboard && (
-            <Button type="text" icon={<HomeOutlined />} onClick={goHome}>
+            <Button variant="ghost" size="sm" onClick={goHome}>
+              <Home className="size-4" />
               Модуль сонгох
             </Button>
           )}
         </div>
-        <Dropdown overlay={userMenu} trigger={['click']} placement="bottomRight" arrow>
-          <Avatar
-            size="large"
-            style={{ cursor: 'pointer', backgroundColor: '#1890ff' }}
-            icon={<UserOutlined />}
-          />
-        </Dropdown>
-      </Header>
+
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <DropdownMenu>
+          <DropdownMenuTrigger className="rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring">
+            <Avatar className="size-10 cursor-pointer bg-primary dark:shadow-[var(--neon-glow-sm)]">
+              <AvatarFallback className="bg-primary text-primary-foreground">
+                <User className="size-5" />
+              </AvatarFallback>
+            </Avatar>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Таны нэр: {username}</DropdownMenuLabel>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive" onClick={() => setLogoutOpen(true)}>
+              <LogOut className="size-4" />
+              Гарах
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        </div>
+      </header>
 
       {!isDashboard && <ModuleSubNav userPermissions={userPermissions} userRole={userRole} />}
 
-      <Content
-        style={{
-          padding: '16px 20px',
-          maxWidth: '100%',
-          margin: '0 auto',
-          width: '100%',
-        }}
-      >
-        <Spin spinning={loading || isPending} tip="Ачааллаж байна..." size="large">
+      <main className="mx-auto w-full max-w-[100%] px-5 py-4">
+        <div className="relative">
+          {isBusy && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-xl bg-background/70">
+              <Spinner className="size-8 text-primary" />
+              <span className="text-sm text-muted-foreground">Ачааллаж байна...</span>
+            </div>
+          )}
           <div
-            style={{
-              padding: isDashboard ? 32 : 16,
-              background: '#fff',
-              minHeight: 360,
-              borderRadius: 12,
-              boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-            }}
+            className={cn(
+              'min-h-[360px] rounded-xl border border-border/60 bg-card shadow-sm dark:border-[color:var(--neon-border)]',
+              isDashboard ? 'p-8' : 'p-4',
+            )}
           >
             {children}
           </div>
-        </Spin>
-      </Content>
-    </Layout>
+        </div>
+      </main>
+
+      <AlertDialog open={logoutOpen} onOpenChange={setLogoutOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Та гарахдаа итгэлтэй байна уу?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Системээс гарсны дараа дахин нэвтрэх шаардлагатай.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Үгүй</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLogout}>Тийм</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }

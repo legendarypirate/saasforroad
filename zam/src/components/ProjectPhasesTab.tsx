@@ -18,8 +18,8 @@ import {
   Tag,
   Typography,
   message,
-} from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+} from '@/components/admin/primitives';
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/admin/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import StyledFullCalendar from '@/components/StyledFullCalendar';
 

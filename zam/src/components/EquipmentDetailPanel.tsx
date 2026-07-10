@@ -1,10 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Button, Card, Col, Image, Row, Space, Table, Tag, Typography, Popconfirm } from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { Button, Card, Col, Image, Row, Space, Table, Tag, Typography, Popconfirm } from '@/components/admin/primitives';
+import { DeleteOutlined, PlusOutlined } from '@/components/admin/icons';
 import dayjs from 'dayjs';
-import type { ColumnsType } from 'antd/es/table';
+import type { ColumnsType } from '@/components/admin/primitives';
 import { assetUrl, SIDE_LABELS, type EquipmentItem, type OilChangeRecord } from '@/lib/equipment';
 
 const { Title, Text } = Typography;

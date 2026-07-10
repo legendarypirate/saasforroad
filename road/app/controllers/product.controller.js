@@ -2,23 +2,16 @@ const db = require("../models");
 const Product = db.products;
 const ProductImage = db.productImages;
 const Op = db.Sequelize.Op;
+const multer = require("multer");
+const { memoryUpload } = require("../utils/multerMemory");
+const { uploadMulterFile } = require("../utils/cloudinary");
 
-// Set up multer for file uploads
-const multer = require('multer');
-const path = require('path');
-
-// Set storage engine
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'app/assets/product'); // Specify the destination folder
+const upload = memoryUpload({
+  fileFilter: (_req, file, cb) => {
+    const ok = file.mimetype?.startsWith("image/");
+    cb(ok ? null : new Error("Зөвхөн зураг"), ok);
   },
-  filename: function (req, file, cb) {
-    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
-  }
-});
-
-// Initialize multer upload
-const upload = multer({ storage: storage }).array('images', 5); // Assuming up to 5 images can be uploaded
+}).array("images", 5);
 
 // Create and Save a new Product
 exports.create = (req, res) => {
@@ -51,11 +44,10 @@ exports.create = (req, res) => {
       // Handle product images
       const productImages = [];
       for (const file of req.files) {
-        // Create a new product image
+        const result = await uploadMulterFile(file, "products");
         const productImage = {
-          productId: savedProduct.id, // Link the product ID with the image
-          image: file.filename // Save the filename in the database
-          // You may also want to save additional information about the image here
+          productId: savedProduct.id,
+          image: result.secure_url,
         };
         // Save product image in the database
         const savedProductImage = await ProductImage.create(productImage);

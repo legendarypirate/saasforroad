@@ -1,5 +1,3 @@
-const fs = require("fs");
-const path = require("path");
 const {
   Document,
   Packer,
@@ -11,7 +9,6 @@ const {
   TableCell,
   WidthType,
   AlignmentType,
-  BorderStyle,
 } = require("docx");
 
 function cell(text, bold = false) {
@@ -119,12 +116,8 @@ async function generateTenderDocx(tenderPackage, documents) {
     .trim()
     .replace(/\s+/g, "_");
   const filename = `tender_${safeName}_${Date.now()}.docx`;
-  const outDir = path.join(__dirname, "..", "assets", "tender-exports");
-  if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
-  const outPath = path.join(outDir, filename);
-  fs.writeFileSync(outPath, buffer);
 
-  return { filename, outPath, relativePath: `/assets/tender-exports/${filename}` };
+  return { filename, buffer };
 }
 
 module.exports = { generateTenderDocx };

@@ -3,8 +3,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Button, Card, Col, Row, Select, Space, Statistic, Switch, Table, Tag, Typography, message,
-} from 'antd';
-import { ReloadOutlined, WarningOutlined } from '@ant-design/icons';
+} from '@/components/admin/primitives';
+import { ReloadOutlined, WarningOutlined } from '@/components/admin/icons';
 import { formatMoney, formatQty, inventoryApi } from '@/lib/inventory';
 
 const { Title, Text } = Typography;

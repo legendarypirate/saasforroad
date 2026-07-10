@@ -19,15 +19,15 @@ import {
   Tag,
   Typography,
   message,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+} from '@/components/admin/primitives';
+import type { ColumnsType } from '@/components/admin/primitives';
 import {
   CheckCircleOutlined,
   DeleteOutlined,
   EditOutlined,
   PlusOutlined,
   ReloadOutlined,
-} from '@ant-design/icons';
+} from '@/components/admin/icons';
 import dayjs from 'dayjs';
 import { EQUIPMENT_API, type EquipmentItem } from '@/lib/equipment';
 import { DATE_FORMAT, dateFormItemProps, toDayjs } from '@/lib/userDates';

@@ -53,6 +53,7 @@ db.equipments = require("./equipment.model.js")(sequelize, Sequelize);
 db.project_equipment_links = require("./project_equipment_link.model.js")(sequelize, Sequelize);
 db.equipment_oil_changes = require("./equipment_oil_change.model.js")(sequelize, Sequelize);
 db.accidents = require("./accident.model.js")(sequelize, Sequelize);
+db.daily_reports = require("./daily_report.model.js")(sequelize, Sequelize);
 db.angilals = require("./angilal.model.js")(sequelize, Sequelize);
 db.materials = require("./material.model.js")(sequelize, Sequelize);
 
@@ -267,6 +268,11 @@ db.users.hasMany(db.schedule_exceptions, { foreignKey: "user_id" });
 
 db.accidents.belongsTo(db.users, { foreignKey: "user_id" });
 db.users.hasMany(db.accidents, { foreignKey: "user_id" });
+
+db.daily_reports.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
+db.projects.hasMany(db.daily_reports, { foreignKey: "project_id" });
+db.daily_reports.belongsTo(db.users, { foreignKey: "created_by", as: "author" });
+db.users.hasMany(db.daily_reports, { foreignKey: "created_by" });
 
 db.items.belongsTo(db.users, { foreignKey: "user_id" });
 db.users.hasMany(db.items, { foreignKey: "user_id" });

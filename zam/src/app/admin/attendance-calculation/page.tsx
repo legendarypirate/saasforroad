@@ -18,9 +18,9 @@ import {
   Typography,
   message,
   Button,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+} from '@/components/admin/primitives';
+import type { ColumnsType } from '@/components/admin/primitives';
+import { DeleteOutlined, PlusOutlined } from '@/components/admin/icons';
 import StyledFullCalendar from '@/components/StyledFullCalendar';
 import dayjs, { Dayjs } from 'dayjs';
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { EnvironmentOutlined, ProjectOutlined } from '@ant-design/icons';
+import { EnvironmentOutlined, ProjectOutlined } from '@/components/admin/icons';
 import PublicSiteHeader from '@/components/public/PublicSiteHeader';
 import PublicSiteFooter from '@/components/public/PublicSiteFooter';
 import PublicBgImage from '@/components/public/PublicBgImage';
@@ -56,7 +56,12 @@ export default function ProjectsPage() {
 
   return (
     <main className="min-h-screen bg-white text-slate-900">
-      <PublicSiteHeader companyName={content.company_name || 'Үлэмжийн зам'} activeHref="/projects" />
+      <PublicSiteHeader
+        companyName={content.company_name || 'Үлэмжийн зам'}
+        logo={content.logo}
+        activeHref="/projects"
+        navItems={content.nav_menu}
+      />
 
       {/* Hero */}
       <section className="relative min-h-[220px] overflow-hidden border-b border-slate-200 md:min-h-[280px]">

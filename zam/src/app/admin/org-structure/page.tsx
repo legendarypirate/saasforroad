@@ -13,8 +13,8 @@ import {
   Tag,
   Typography,
   message,
-} from 'antd';
-import { PlusOutlined, UserOutlined } from '@ant-design/icons';
+} from '@/components/admin/primitives';
+import { PlusOutlined, UserOutlined } from '@/components/admin/icons';
 import {
   DndContext,
   DragOverlay,

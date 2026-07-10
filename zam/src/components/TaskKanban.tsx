@@ -27,8 +27,8 @@ import {
   Tag,
   Typography,
   Spin,
-} from "antd";
-import { CalendarOutlined, MoreOutlined } from "@ant-design/icons";
+} from "@/components/admin/primitives";
+import { CalendarOutlined, MoreOutlined } from "@/components/admin/icons";
 import toast from "react-hot-toast";
 
 const { Title, Text } = Typography;

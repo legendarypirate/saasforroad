@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Table, Tag } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { Table, Tag } from '@/components/admin/primitives';
+import type { ColumnsType } from '@/components/admin/primitives';
 
 interface FeedbackRow {
   id: number;

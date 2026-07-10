@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Menu, Typography } from 'antd';
-import type { MenuProps } from 'antd';
 import { usePathname, useRouter } from 'next/navigation';
+
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   filterNavItems,
   getModuleForPath,
@@ -33,37 +33,23 @@ export default function ModuleSubNav({ userPermissions, userRole }: ModuleSubNav
   if (!mod) return null;
 
   const items = filterNavItems(mod.items, userPermissions, userRole);
-  if (items.length === 0) return null;
+  // Single-item modules (e.g. homepage) don't need a sub-nav bar
+  if (items.length <= 1) return null;
 
   const selectedKey = resolveSelectedKey(pathname, mod);
 
-  const menuItems: MenuProps['items'] = items.map((item) => ({
-    key: item.path,
-    label: item.label,
-  }));
-
-  const handleClick: MenuProps['onClick'] = ({ key }) => {
-    router.push(key);
-  };
-
   return (
-    <div
-      style={{
-        background: '#fff',
-        borderBottom: '1px solid #f0f0f0',
-        padding: '0 24px',
-      }}
-    >
-      <Typography.Title level={5} style={{ margin: '12px 0 0', color: '#595959' }}>
-        {mod.label}
-      </Typography.Title>
-      <Menu
-        mode="horizontal"
-        selectedKeys={[selectedKey]}
-        items={menuItems}
-        onClick={handleClick}
-        style={{ borderBottom: 'none', minWidth: 0, flex: 1 }}
-      />
+    <div className="border-b border-border bg-background px-6 pb-0 pt-3">
+      <p className="mb-2 text-sm font-medium text-muted-foreground">{mod.label}</p>
+      <Tabs value={selectedKey} onValueChange={(key) => router.push(key)}>
+        <TabsList variant="line" className="h-auto w-full justify-start rounded-none border-0 bg-transparent p-0">
+          {items.map((item) => (
+            <TabsTrigger key={item.path} value={item.path} className="px-4 py-2">
+              {item.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
     </div>
   );
 }

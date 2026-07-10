@@ -10,10 +10,14 @@ export interface HomepageAward {
   title: string;
   issuer: string;
   year: string;
+  /** Certificate / батламж image URL */
+  image?: string;
 }
 
 export interface HomepagePartner {
   name: string;
+  /** Partner logo URL */
+  logo?: string;
 }
 
 export interface HomepageValue {
@@ -82,7 +86,11 @@ export interface HomepageStandartSection {
   id: string;
   label: string;
   title: string;
+  /** TipTap HTML — preferred for long sections (paragraphs + lists). */
+  body?: string;
+  /** Legacy plain paragraphs; used when `body` is empty. */
   paragraphs: string[];
+  /** Legacy bullet list; used when `body` is empty. */
   bullets?: string[];
 }
 
@@ -346,6 +354,7 @@ export const DEFAULT_LANDING_PAGE_FIELDS = {
   partners_title: 'Итгэл харилцаанд суурилсан хамтын ажиллагаа',
   about_hero_badge: 'КОМПАНИ',
   about_hero_title: 'Бидний тухай',
+  director_image: '/p1.png',
   director_role: 'Гүйцэтгэх захирал',
   mission_text:
     'Монгол Улсын хатуу дэд бүтцийг дэлхийн жишгээр бүтээн, иргэдийн амьдралын чанарыг сайжруулах зам, гүүр, дэд бүтцийн шийдлийг хүргэх.',

@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useMemo,useEffect } from 'react';
-import { Table, Button, Space, Input, DatePicker, Drawer, Form ,Select,Tag,Modal} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Input, DatePicker, Drawer, Form ,Select,Tag,Modal} from '@/components/admin/primitives';
+import type { ColumnsType } from '@/components/admin/primitives';
+import { EditOutlined, DeleteOutlined } from '@/components/admin/icons';
 import dayjs, { Dayjs } from 'dayjs';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';

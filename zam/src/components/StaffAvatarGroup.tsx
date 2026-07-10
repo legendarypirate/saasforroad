@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Avatar, Tooltip } from 'antd';
+import { Avatar, Tooltip } from '@/components/admin/primitives';
 
 export interface StaffMember {
   id: number | string;

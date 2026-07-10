@@ -12,14 +12,14 @@ import {
   Spin,
   Typography,
   message,
-} from 'antd';
+} from '@/components/admin/primitives';
 import {
   EditOutlined,
   LinkOutlined,
   PlusOutlined,
   ToolOutlined,
   DisconnectOutlined,
-} from '@ant-design/icons';
+} from '@/components/admin/icons';
 import EquipmentDetailPanel, { EquipmentSummaryLabel } from '@/components/EquipmentDetailPanel';
 import { EQUIPMENT_API, type EquipmentItem } from '@/lib/equipment';
 

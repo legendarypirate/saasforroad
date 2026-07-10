@@ -15,6 +15,11 @@ import {
   type HomepageTechItem,
   type HomepageValue,
 } from './landingContent';
+import {
+  getDefaultNavMenu,
+  type SiteCustomPage,
+  type SiteNavItem,
+} from './siteMenu';
 
 export interface HomepageStat {
   value: string;
@@ -51,6 +56,7 @@ export interface HomepageContent {
   about_image: string;
   about_hero_badge: string;
   about_hero_title: string;
+  director_image: string;
   director_role: string;
   director_paragraphs: string[];
   mission_text: string;
@@ -98,6 +104,10 @@ export interface HomepageContent {
   stats: HomepageStat[];
   features: HomepageFeature[];
   projects: HomepageProject[];
+  /** Editable header menu */
+  nav_menu: SiteNavItem[];
+  /** Custom pages built from fixed widgets */
+  custom_pages: SiteCustomPage[];
 }
 
 const API = process.env.NEXT_PUBLIC_API_URL || '';
@@ -121,6 +131,8 @@ const ARRAY_FIELDS: (keyof HomepageContent)[] = [
   'standart_certificates',
   'standart_sections',
   'footer_services',
+  'nav_menu',
+  'custom_pages',
 ];
 
 export const DEFAULT_HOMEPAGE_CONTENT: HomepageContent = {
@@ -223,6 +235,8 @@ export const DEFAULT_HOMEPAGE_CONTENT: HomepageContent = {
     },
   ],
   ...DEFAULT_LANDING_PAGE_FIELDS,
+  nav_menu: getDefaultNavMenu(),
+  custom_pages: [],
 };
 
 export function getDefaultHomepageContent(): HomepageContent {
@@ -241,6 +255,10 @@ export function mergeHomepageContent(stored?: Partial<HomepageContent> | null): 
       Object.assign(merged, { [key]: value });
     }
   }
+
+  // Allow empty arrays when explicitly saved
+  if (Array.isArray(stored.nav_menu)) merged.nav_menu = stored.nav_menu;
+  if (Array.isArray(stored.custom_pages)) merged.custom_pages = stored.custom_pages;
 
   if (stored.technology_hero) merged.technology_hero = { ...base.technology_hero, ...stored.technology_hero };
   if (stored.projects_hero) merged.projects_hero = { ...base.projects_hero, ...stored.projects_hero };
@@ -266,6 +284,7 @@ export function resolveImageUrl(path: string): string {
   if (!path) return '/logo.jpeg';
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
   if (path.startsWith('/assets/')) return `${API}${path}`;
+  if (path.startsWith('/')) return path;
   return path;
 }
 
@@ -289,7 +308,7 @@ export async function fetchAdminHomepage(): Promise<HomepageContent | null> {
   }
 }
 
-export async function saveHomepage(content: HomepageContent): Promise<boolean> {
+export async function saveHomepage(content: HomepageContent): Promise<HomepageContent | null> {
   try {
     const res = await fetch(`${API}/api/homepage`, {
       method: 'PUT',
@@ -297,9 +316,10 @@ export async function saveHomepage(content: HomepageContent): Promise<boolean> {
       body: JSON.stringify(content),
     });
     const json = await res.json();
-    return json.success === true;
+    if (!json.success) return null;
+    return mergeHomepageContent(json.data ?? content);
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -309,8 +329,12 @@ export async function uploadHomepageImage(file: File): Promise<string | null> {
     form.append('image', file);
     const res = await fetch(`${API}/api/homepage/upload`, { method: 'POST', body: form });
     const json = await res.json();
-    return json.success ? json.data.path : null;
-  } catch {
+    if (!json.success) {
+      throw new Error(json.message || 'Зураг байршуулахад алдаа гарлаа');
+    }
+    return json.data?.url || json.data?.path || null;
+  } catch (err) {
+    if (err instanceof Error) throw err;
     return null;
   }
 }

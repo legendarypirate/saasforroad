@@ -2,55 +2,16 @@ const db = require("../models");
 const Age = db.ages;
 const Op = db.Sequelize.Op;
 
-// Set up multer for file uploads
-const multer = require('multer');
-const path = require('path');
-
-// Set storage engine
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'app/assets'); // Specify the destination folder
-  },
-  filename: function (req, file, cb) {
-    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
-  }
-});
-
-// Initialize multer upload
-const upload = multer({ storage: storage }).single('image');
-
-// Create and Save a new Banner
 exports.create = (req, res) => {
-  // Handle file upload
-  upload(req, res, function(err) {
-    if (err instanceof multer.MulterError) {
-      // A multer error occurred
-      return res.status(500).json({ success: false, message: "Error uploading file." });
-    } else if (err) {
-      // An unknown error occurred
-      return res.status(500).json({ success: false, message: "Unknown error." });
-    }
-    
-    // Validate request
-    if (!req.body.age ) {
-      return res.status(400).json({ success: false, message: "Link and image are required!" });
-    }
+  if (!req.body.age) {
+    return res.status(400).json({ success: false, message: "age is required!" });
+  }
 
-    // Create a Banner
-    const banner = {
-        age: req.body.age
-     // Save the filename in the database
-    };
-
-    // Save Banner in the database
-    Age.create(banner)
-      .then(data => {
-        res.json({ success: true, data: data });
-      })
-      .catch(err => {
-        res.status(500).json({ success: false, message: err.message || "Some error occurred while creating the Banner." });
-      });
-  });
+  Age.create({ age: req.body.age })
+    .then((data) => res.json({ success: true, data }))
+    .catch((err) =>
+      res.status(500).json({ success: false, message: err.message || "Some error occurred while creating the entry." })
+    );
 };
 
 // Retrieve all Banners from the database.

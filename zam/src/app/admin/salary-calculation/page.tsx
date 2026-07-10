@@ -14,14 +14,15 @@ import {
   Tooltip,
   Typography,
   message,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+} from '@/components/admin/primitives';
+import type { ColumnsType } from '@/components/admin/primitives';
 import {
   CheckCircleOutlined,
   MailOutlined,
   ReloadOutlined,
   SaveOutlined,
-} from '@ant-design/icons';
+} from '@/components/admin/icons';
+import { Pencil } from 'lucide-react';
 import dayjs, { Dayjs } from 'dayjs';
 import {
   fetchSalaryCalculation,
@@ -60,18 +61,20 @@ const HOUR_FIELDS = new Set<EditableField>([
 const cellBase: React.CSSProperties = {
   width: '100%',
   fontSize: 11,
-  padding: '0 2px',
-  lineHeight: '22px',
-  height: 24,
-  borderRadius: 2,
-  border: '1px solid transparent',
-  background: '#fffbe6',
+  padding: '0 6px',
+  lineHeight: '24px',
+  height: 26,
+  borderRadius: 4,
+  border: '1px solid var(--border)',
+  background: 'var(--muted)',
+  color: 'var(--foreground)',
 };
 
 const cellFocus: React.CSSProperties = {
   ...cellBase,
-  border: '1px solid #722ed1',
-  background: '#fff',
+  border: '1px solid var(--primary)',
+  background: 'var(--card)',
+  boxShadow: '0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent)',
 };
 
 function CellNum({
@@ -141,7 +144,7 @@ function CellNote({
       size="small"
       placeholder="..."
       style={{
-        ...(focused ? cellFocus : { ...cellBase, background: '#f6ffed' }),
+        ...(focused ? cellFocus : { ...cellBase, background: 'color-mix(in srgb, var(--primary) 8%, var(--muted))' }),
       }}
       onFocus={() => setFocused(true)}
       onBlur={() => {
@@ -361,9 +364,12 @@ export default function SalaryCalculationPage() {
 
   const th = (label: string, tip?: string, edit?: boolean) => (
     <Tooltip title={tip || label}>
-      <span style={{ fontSize: 10, color: edit ? '#d48806' : undefined, whiteSpace: 'nowrap' }}>
+      <span
+        className="inline-flex items-center gap-1 text-[11px] font-semibold leading-none"
+        style={{ color: edit ? '#b45309' : undefined }}
+      >
         {label}
-        {edit ? ' ✎' : ''}
+        {edit && <Pencil className="size-3 opacity-70" />}
       </span>
     </Tooltip>
   );
@@ -406,7 +412,8 @@ export default function SalaryCalculationPage() {
     {
       title: th('Ажилласан', 'Ажилласан цаг', true),
       dataIndex: 'totalWorkedHours',
-      width: 64,
+      width: 72,
+      align: 'right',
       render: (v, r) => (
         <CellNum
           value={v}
@@ -419,7 +426,8 @@ export default function SalaryCalculationPage() {
     {
       title: th('Тооцох', 'Тооцох цаг', true),
       dataIndex: 'totalBillableHours',
-      width: 64,
+      width: 72,
+      align: 'right',
       render: (v, r) => (
         <CellNum
           value={v}
@@ -430,9 +438,10 @@ export default function SalaryCalculationPage() {
       ),
     },
     {
-      title: th('Илүү', 'Илүү цаг', true),
+      title: th('Илүү цаг', 'Илүү цаг', true),
       dataIndex: 'totalOvertimeHours',
-      width: 56,
+      width: 68,
+      align: 'right',
       render: (v, r) => (
         <CellNum
           value={v}
@@ -445,28 +454,29 @@ export default function SalaryCalculationPage() {
     {
       title: th('Олговол', 'Цагийн олговол'),
       dataIndex: 'workPay',
-      width: 78,
+      width: 88,
       align: 'right',
       render: (v) => <Money value={v} color="#595959" />,
     },
     {
-      title: th('Илүү₮', 'Илүү цагийн олговол'),
+      title: th('Илүү олговол', 'Илүү цагийн олговол'),
       dataIndex: 'overtimePay',
-      width: 72,
+      width: 88,
       align: 'right',
       render: (v) => <Money value={v} color="#595959" />,
     },
     {
-      title: th('Нийт олг', 'Нийт олговол (gross)'),
+      title: th('Нийт олговол', 'Нийт олговол (gross)'),
       dataIndex: 'grossPay',
-      width: 82,
+      width: 96,
       align: 'right',
       render: (v) => <Money value={v} strong />,
     },
     {
       title: th('Тасалсан', 'Тасалсан цаг — хасалт = цагийн хөлс × цаг', true),
       dataIndex: 'absentHours',
-      width: 64,
+      width: 72,
+      align: 'right',
       render: (v, r) => (
         <CellNum
           value={v}
@@ -480,7 +490,8 @@ export default function SalaryCalculationPage() {
     {
       title: th('НДШ', 'НДШ 11.5% — засварлах боломжтой', true),
       dataIndex: 'ndsh',
-      width: 72,
+      width: 80,
+      align: 'right',
       render: (v, r) => (
         <CellNum
           value={v}
@@ -494,7 +505,8 @@ export default function SalaryCalculationPage() {
     {
       title: th('ХХОАТ', 'ХХОАТ 10% — засварлах боломжтой', true),
       dataIndex: 'hhoat',
-      width: 72,
+      width: 80,
+      align: 'right',
       render: (v, r) => (
         <CellNum
           value={v}
@@ -508,7 +520,8 @@ export default function SalaryCalculationPage() {
     {
       title: th('Суутгал', 'Бусад суутгал', true),
       dataIndex: 'deduction',
-      width: 72,
+      width: 80,
+      align: 'right',
       render: (v, r) => (
         <CellNum
           value={v}
@@ -522,7 +535,8 @@ export default function SalaryCalculationPage() {
     {
       title: th('Нэмэлт', 'Нэмэлт суутгал', true),
       dataIndex: 'additional_deduction',
-      width: 72,
+      width: 80,
+      align: 'right',
       render: (v, r) => (
         <CellNum
           value={v}
@@ -536,7 +550,7 @@ export default function SalaryCalculationPage() {
     {
       title: th('Тэмдэглэл', undefined, true),
       dataIndex: 'note',
-      width: 90,
+      width: 110,
       render: (v, r) => (
         <CellNote
           value={v}
@@ -546,59 +560,36 @@ export default function SalaryCalculationPage() {
       ),
     },
     {
-      title: th('Нийт олгох'),
+      title: th('Цэвэр олгох'),
       dataIndex: 'netPay',
       fixed: 'right',
-      width: 88,
+      width: 96,
       align: 'right',
-      render: (v) => <Money value={v} strong color="#722ed1" />,
+      render: (v) => <Money value={v} strong color="#0f4c81" />,
     },
   ];
 
   return (
-    <div style={{ margin: -16 }}>
-      <div
-        style={{
-          position: 'sticky',
-          top: 64,
-          zIndex: 20,
-          background: '#fff',
-          borderBottom: '1px solid #f0f0f0',
-          padding: '8px 12px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: 8,
-        }}
-      >
+    <div className="-m-4 space-y-4">
+      <div className="sticky top-16 z-20 flex flex-wrap items-center justify-between gap-3 border-b bg-background px-1 pb-4">
         <div>
           <Title level={5} style={{ margin: 0 }}>
             Цалин тооцоолол
           </Title>
           <Text type="secondary" style={{ fontSize: 11 }}>
-            Тасалсан = цаг (хасалт = цагийн хөлс × цаг) · НДШ 11.5% · ХХОАТ 10% · шар нүд = засварлана
+            Тасалсан = цаг (хасалт = цагийн хөлс × цаг) · НДШ 11.5% · ХХОАТ 10% · шар талбар = засварлана
           </Text>
         </div>
         <Space wrap size={8}>
           <DatePicker
             picker="month"
+            format="YYYY-MM"
             size="small"
             value={month}
             onChange={(d) => d && setMonth(d)}
             allowClear={false}
           />
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              background: '#f9f0ff',
-              border: '1px solid #d3adf7',
-              borderRadius: 6,
-              padding: '2px 8px',
-            }}
-          >
+          <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5">
             <Text style={{ fontSize: 11, whiteSpace: 'nowrap' }} strong>
               Ажиллавал зохих цаг
             </Text>
@@ -640,70 +631,51 @@ export default function SalaryCalculationPage() {
         </Space>
       </div>
 
-      <div style={{ padding: '8px 12px 16px' }}>
+      <div className="space-y-4">
         {!resendConfigured && (
           <Alert
             type="warning"
             showIcon
-            style={{ marginBottom: 8, fontSize: 12 }}
+            style={{ fontSize: 12 }}
             message="Resend тохиргоо хийгдээгүй (RESEND_API_KEY, RESEND_FROM)"
           />
         )}
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-            gap: 6,
-            marginBottom: 8,
-          }}
-        >
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-8">
           {[
-            { label: 'Зохих цаг', value: `${expectedHours} ц`, color: '#722ed1' },
+            { label: 'Зохих цаг', value: `${expectedHours} ц`, color: '#0f4c81' },
             { label: 'Ажилласан', value: `${totals.totalWorkedHours} ц`, color: '#1677ff' },
-            { label: 'Тооцох', value: `${totals.totalBillableHours} ц`, color: '#13c2c2' },
-            { label: 'Нийт олговол', value: formatMnt(totals.totalGrossPay), color: '#2f54eb' },
-            { label: 'НДШ', value: formatMnt(totals.totalNdsh), color: '#fa8c16' },
-            { label: 'ХХОАТ', value: formatMnt(totals.totalHhoat), color: '#fa541c' },
-            { label: 'Нийт олгох', value: formatMnt(totals.totalNetPay), color: '#531dab' },
+            { label: 'Тооцох', value: `${totals.totalBillableHours} ц`, color: '#0891b2' },
+            { label: 'Нийт олговол', value: formatMnt(totals.totalGrossPay), color: '#1d4ed8' },
+            { label: 'НДШ', value: formatMnt(totals.totalNdsh), color: '#ea580c' },
+            { label: 'ХХОАТ', value: formatMnt(totals.totalHhoat), color: '#c2410c' },
+            { label: 'Цэвэр олгох', value: formatMnt(totals.totalNetPay), color: '#0f4c81' },
             {
               label: 'И-мэйл',
               value: `${totals.withEmailCount}/${totals.employeeCount}`,
-              color: '#52c41a',
+              color: '#16a34a',
             },
           ].map((item) => (
-            <div
-              key={item.label}
-              style={{
-                borderLeft: `3px solid ${item.color}`,
-                background: '#fafafa',
-                borderRadius: 4,
-                padding: '6px 8px',
-              }}
-            >
-              <div style={{ fontSize: 10, color: '#8c8c8c' }}>{item.label}</div>
-              <div
-                style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: item.color,
-                  fontVariantNumeric: 'tabular-nums',
-                }}
-              >
-                {item.value}
+            <div key={item.label} className="salary-stat-card">
+              <div className="salary-stat-card-accent" style={{ background: item.color }} />
+              <div className="salary-stat-card-body">
+                <div className="salary-stat-card-label">{item.label}</div>
+                <div className="salary-stat-card-value" style={{ color: item.color }}>
+                  {item.value}
+                </div>
               </div>
             </div>
           ))}
         </div>
 
-        <div style={{ border: '1px solid #f0f0f0', borderRadius: 6, overflow: 'hidden' }}>
+        <div className="overflow-hidden rounded-lg border">
           <Table
             rowKey="user_id"
             columns={columns}
             dataSource={rows}
             loading={loading}
             size="small"
-            scroll={{ x: 1280, y: 'calc(100vh - 300px)' }}
+            scroll={{ x: 1500, y: 'calc(100vh - 340px)' }}
             pagination={false}
             bordered
             className="salary-excel-table"
@@ -721,12 +693,13 @@ export default function SalaryCalculationPage() {
               getCheckboxProps: (record) => ({
                 disabled: !record.hasEmail,
               }),
-              columnWidth: 32,
+              columnWidth: 36,
             }}
             summary={() => (
               <Table.Summary fixed>
-                <Table.Summary.Row style={{ background: '#f9f0ff' }}>
-                  <Table.Summary.Cell index={0} colSpan={4}>
+                <Table.Summary.Row>
+                  <Table.Summary.Cell index={0} />
+                  <Table.Summary.Cell index={1} colSpan={3}>
                     <Text strong style={{ fontSize: 11 }}>
                       Нийт ({rows.length})
                     </Text>
@@ -765,44 +738,13 @@ export default function SalaryCalculationPage() {
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={15} />
                   <Table.Summary.Cell index={16} align="right">
-                    <Money value={totals.totalNetPay} strong color="#722ed1" />
+                    <Money value={totals.totalNetPay} strong color="#0f4c81" />
                   </Table.Summary.Cell>
                 </Table.Summary.Row>
               </Table.Summary>
             )}
           />
         </div>
-
-        <style jsx global>{`
-          .salary-excel-table .ant-table-thead > tr > th {
-            padding: 4px 4px !important;
-            font-size: 10px !important;
-            background: #fafafa !important;
-          }
-          .salary-excel-table .ant-table-tbody > tr > td {
-            padding: 2px 3px !important;
-          }
-          .salary-excel-table .ant-table-summary > tr > td {
-            padding: 4px 3px !important;
-          }
-          .salary-excel-table .ant-input-number-input {
-            font-size: 11px !important;
-            height: 22px !important;
-            padding: 0 4px !important;
-            text-align: right;
-          }
-          .salary-excel-table .ant-input {
-            font-size: 11px !important;
-            height: 24px !important;
-            padding: 0 4px !important;
-          }
-          .salary-row-dirty > td {
-            background: #fffbe6 !important;
-          }
-          .salary-row-saving > td {
-            opacity: 0.65;
-          }
-        `}</style>
       </div>
     </div>
   );

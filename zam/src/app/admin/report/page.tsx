@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Table, Button, Space, Select, Tag, Switch, DatePicker,notification} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Select, Tag, Switch, DatePicker,notification} from '@/components/admin/primitives';
+import type { ColumnsType } from '@/components/admin/primitives';
+import { EditOutlined, DeleteOutlined } from '@/components/admin/icons';
 import dayjs, { Dayjs } from 'dayjs';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
-import { CloseOutlined } from '@ant-design/icons';
+import { CloseOutlined } from '@/components/admin/icons';
 
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);

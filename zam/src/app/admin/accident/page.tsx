@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Space, Drawer, Form, Input, Select, Modal, notification,Tag } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { EditOutlined, DeleteOutlined, CloseOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Drawer, Form, Input, Select, Modal, notification,Tag } from '@/components/admin/primitives';
+import type { ColumnsType } from '@/components/admin/primitives';
+import { EditOutlined, DeleteOutlined, CloseOutlined } from '@/components/admin/icons';
 
 const { Option } = Select;
 

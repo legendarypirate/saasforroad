@@ -2,7 +2,7 @@
 
 import React, { useCallback, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Avatar, Button, Dropdown, Tag, Typography } from 'antd';
+import { Avatar, Button, Dropdown, Tag, Typography } from '@/components/admin/primitives';
 import {
   ApartmentOutlined,
   CompressOutlined,
@@ -13,7 +13,7 @@ import {
   UserOutlined,
   ZoomInOutlined,
   ZoomOutOutlined,
-} from '@ant-design/icons';
+} from '@/components/admin/icons';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import {
   depthColor,

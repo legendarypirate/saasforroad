@@ -4,42 +4,13 @@ const Project = db.projects;
 const Task = db.tasks;
 
 const Op = db.Sequelize.Op;
-const app = express();
 
-// Set up multer for file uploads
-const multer = require('multer');
-const path = require('path');
-
-// Set storage engine
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'app/assets'); // Specify the destination folder
-  },
-  filename: function (req, file, cb) {
-    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
+exports.create = async (req, res) => {
+  if (!req.body.name) {
+    return res.status(400).json({ success: false, message: "name is required!" });
   }
-});
 
-// Initialize multer upload
-const upload = multer({ storage: storage }).single('image');
-app.use('/assets', express.static('app/assets')); // Serve files from 'app/assets' folder under the '/assets' URL
-
-// Create and Save a new Banner
-exports.create = (req, res) => {
-  upload(req, res, function(err) {
-    if (err instanceof multer.MulterError) {
-      return res.status(500).json({ success: false, message: "Error uploading file." });
-    } else if (err) {
-      return res.status(500).json({ success: false, message: "Unknown error." });
-    }
-
-    console.log(req.body);  // Log the request body
-    console.log(req.file);   // Log the uploaded file object
-
-    if (!req.body.name) {
-      return res.status(400).json({ success: false, message: "Link and image are required!" });
-    }
-
+  try {
     const project = {
       name: req.body.name,
       location: req.body.location,
@@ -48,18 +19,15 @@ exports.create = (req, res) => {
       budget: req.body.budget,
       equipment: req.body.equipment,
       staff: req.body.staff,
-
     };
 
-    Project.create(project)
-      .then(data => {
-        res.json({ success: true, data: data });
-      })
-      .catch(err => {
-        res.status(500).json({ success: false, message: err.message || "Some error occurred while creating the Banner." });
-      });
-  });
+    const data = await Project.create(project);
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message || "Some error occurred while creating the project." });
+  }
 };
+
 // Get all projects with their invited users
 exports.getProjectsWithUsers = async (req, res) => {
     try {

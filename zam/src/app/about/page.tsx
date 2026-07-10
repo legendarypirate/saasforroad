@@ -8,7 +8,7 @@ import {
   EyeOutlined,
   HeartOutlined,
   SafetyCertificateOutlined,
-} from '@ant-design/icons';
+} from '@/components/admin/icons';
 import PublicSiteHeader from '@/components/public/PublicSiteHeader';
 import PublicSiteFooter from '@/components/public/PublicSiteFooter';
 import {
@@ -37,11 +37,16 @@ export default function AboutPage() {
   }, []);
 
   const stats = content.stats?.length ? content.stats : DEFAULT_STATS;
-  const directorImage = resolveImageUrl(content.about_image || '/p1.png');
+  const directorImage = resolveImageUrl(content.director_image || '/p1.png');
 
   return (
     <main className="min-h-screen bg-white text-slate-900">
-      <PublicSiteHeader companyName={content.company_name || 'Үлэмжийн зам'} activeHref="/about" />
+      <PublicSiteHeader
+        companyName={content.company_name || 'Үлэмжийн зам'}
+        logo={content.logo}
+        activeHref="/about"
+        navItems={content.nav_menu}
+      />
 
       {/* Page hero */}
       <section className="relative min-h-[220px] overflow-hidden border-b border-slate-200 md:min-h-[280px]">

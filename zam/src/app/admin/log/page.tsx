@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import {  Button, Space, Drawer, Form, Select } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import {  Button, Space, Drawer, Form, Select } from '@/components/admin/primitives';
+import type { ColumnsType } from '@/components/admin/primitives';
+import { EditOutlined, DeleteOutlined } from '@/components/admin/icons';
 
 
 interface User {

@@ -1,27 +1,15 @@
 const db = require("../models");
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
 const { extractDocument, DOC_TYPE_LABELS } = require("../utils/aiExtractor");
 const { generateTenderDocx } = require("../utils/docxGenerator");
+const { memoryUpload } = require("../utils/multerMemory");
+const { uploadMulterFile, uploadBuffer } = require("../utils/cloudinary");
 
 const TenderPackage = db.tender_packages;
 const TenderDocument = db.tender_documents;
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    const dir = path.join("app", "assets", "tender-uploads");
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (_req, file, cb) => {
-    cb(null, `tender-${Date.now()}-${file.originalname.replace(/\s+/g, "_")}`);
-  },
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 15 * 1024 * 1024 },
+const upload = memoryUpload({
+  maxSize: 15 * 1024 * 1024,
   fileFilter: (_req, file, cb) => {
     const ok =
       file.mimetype.startsWith("image/") ||
@@ -29,7 +17,7 @@ const upload = multer({
       file.originalname.toLowerCase().endsWith(".pdf");
     cb(ok ? null : new Error("Зөвхөн JPG, PNG, PDF файл хүлээн авна"), ok);
   },
-});
+}).single("file");
 
 const packageInclude = [{ model: TenderDocument, as: "documents" }];
 
@@ -87,9 +75,6 @@ exports.deletePackage = async (req, res) => {
   try {
     const row = await TenderPackage.findByPk(req.params.id, { include: packageInclude });
     if (!row) return res.status(404).json({ success: false, message: "Олдсонгүй" });
-    for (const doc of row.documents || []) {
-      if (doc.file_path && fs.existsSync(doc.file_path)) fs.unlinkSync(doc.file_path);
-    }
     await row.destroy();
     res.json({ success: true });
   } catch (err) {
@@ -98,7 +83,7 @@ exports.deletePackage = async (req, res) => {
 };
 
 exports.uploadDocument = (req, res) => {
-  upload.single("file")(req, res, async (err) => {
+  upload(req, res, async (err) => {
     if (err) return res.status(400).json({ success: false, message: err.message });
     if (!req.file) return res.status(400).json({ success: false, message: "Файл шаардлагатай" });
 
@@ -106,12 +91,14 @@ exports.uploadDocument = (req, res) => {
       const pkg = await TenderPackage.findByPk(req.params.id);
       if (!pkg) return res.status(404).json({ success: false, message: "Тендер олдсонгүй" });
 
+      const result = await uploadMulterFile(req.file, "tender-uploads");
+
       const doc = await TenderDocument.create({
         tender_package_id: pkg.id,
         doc_type: req.body.doc_type || "other",
         engineer_name: req.body.engineer_name || "",
         original_filename: req.file.originalname,
-        file_path: req.file.path,
+        file_path: result.secure_url,
         mime_type: req.file.mimetype,
         status: "uploaded",
       });
@@ -189,17 +176,33 @@ exports.generateDocx = async (req, res) => {
     const pkg = await TenderPackage.findByPk(req.params.id, { include: packageInclude });
     if (!pkg) return res.status(404).json({ success: false, message: "Тендер олдсонгүй" });
 
-    const { filename, outPath, relativePath } = await generateTenderDocx(pkg, pkg.documents || []);
+    const { filename, buffer } = await generateTenderDocx(pkg, pkg.documents || []);
+    const result = await uploadBuffer(
+      buffer,
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      {
+        folder: "rd_zam/tender-exports",
+        original_filename: filename,
+        resource_type: "raw",
+      }
+    );
+
     await pkg.update({
       status: "ready",
       summary: {
         ...(pkg.summary || {}),
-        last_export: relativePath,
+        last_export: result.secure_url,
         last_export_at: new Date().toISOString(),
       },
     });
 
-    res.download(outPath, filename);
+    res.json({
+      success: true,
+      data: {
+        url: result.secure_url,
+        filename,
+      },
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -209,7 +212,6 @@ exports.deleteDocument = async (req, res) => {
   try {
     const doc = await TenderDocument.findByPk(req.params.docId);
     if (!doc) return res.status(404).json({ success: false, message: "Олдсонгүй" });
-    if (doc.file_path && fs.existsSync(doc.file_path)) fs.unlinkSync(doc.file_path);
     await doc.destroy();
     res.json({ success: true });
   } catch (err) {

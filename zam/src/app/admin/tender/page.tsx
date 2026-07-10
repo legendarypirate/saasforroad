@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Button, Table, Tag, Modal, Form, Input, message, Space } from 'antd';
-import { PlusOutlined, FileTextOutlined } from '@ant-design/icons';
+import { Button, Table, Tag, Modal, Form, Input, message, Space } from '@/components/admin/primitives';
+import { PlusOutlined, FileTextOutlined } from '@/components/admin/icons';
 import { useRouter } from 'next/navigation';
 import { createTender, fetchTenders, STATUS_LABELS, type TenderPackage } from '@/lib/tender';
 

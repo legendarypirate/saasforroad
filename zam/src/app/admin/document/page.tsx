@@ -6,7 +6,7 @@ import {
   PlusOutlined,
   UploadOutlined,
   DeleteOutlined,
-} from '@ant-design/icons';
+} from '@/components/admin/icons';
 import {
   Breadcrumb,
   Button,
@@ -15,9 +15,11 @@ import {
   Upload,
   message,
   Tooltip,
-} from 'antd';
+} from '@/components/admin/primitives';
 import OrangeFolderIcon from '@/components/admin/document/OrangeFolderIcon';
 import FileTypeIcon, { resolveFileKind } from '@/components/admin/document/FileTypeIcon';
+
+import { resolveAssetUrl } from '@/lib/assetUrl';
 
 const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -35,9 +37,7 @@ interface DocumentData {
 }
 
 function resolveFileUrl(record: DocumentData): string {
-  return record.file_url.startsWith('http')
-    ? record.file_url
-    : `${baseUrl}/assets/documents/${record.file_url}`;
+  return resolveAssetUrl(record.file_url) || '';
 }
 
 export default function DocumentTable() {

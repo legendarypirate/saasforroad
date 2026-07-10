@@ -1,25 +1,13 @@
-const fs = require("fs");
-const path = require("path");
 const db = require("../models");
 const Equipment = db.equipments;
 const EquipmentOilChange = db.equipment_oil_changes;
 const ProjectEquipmentLink = db.project_equipment_links;
 const Project = db.projects;
 const multer = require("multer");
+const { memoryUpload } = require("../utils/multerMemory");
+const { uploadMulterFile } = require("../utils/cloudinary");
 
-const equipmentDir = path.join("app", "assets", "equipment");
-if (!fs.existsSync(equipmentDir)) {
-  fs.mkdirSync(equipmentDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, equipmentDir),
-  filename: (_req, file, cb) => {
-    cb(null, `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`);
-  },
-});
-
-const uploadImages = multer({ storage }).fields([
+const uploadImages = memoryUpload().fields([
   { name: "photo_front", maxCount: 1 },
   { name: "photo_back", maxCount: 1 },
   { name: "photo_left", maxCount: 1 },
@@ -27,11 +15,7 @@ const uploadImages = multer({ storage }).fields([
   { name: "certificate_image", maxCount: 1 },
 ]);
 
-function filePath(file) {
-  return file ? `equipment/${file.filename}` : null;
-}
-
-function applyUploadedFiles(body, files) {
+async function applyUploadedFiles(body, files) {
   if (!files) return body;
   const map = {
     photo_front: files.photo_front,
@@ -40,9 +24,13 @@ function applyUploadedFiles(body, files) {
     photo_right: files.photo_right,
     certificate_image: files.certificate_image,
   };
-  Object.entries(map).forEach(([key, arr]) => {
-    if (arr && arr[0]) body[key] = filePath(arr[0]);
-  });
+
+  for (const [key, arr] of Object.entries(map)) {
+    if (arr && arr[0]) {
+      const result = await uploadMulterFile(arr[0], "equipment");
+      body[key] = result.secure_url;
+    }
+  }
   return body;
 }
 
@@ -101,7 +89,7 @@ exports.create = (req, res) => {
     }
 
     try {
-      const payload = applyUploadedFiles(
+      const payload = await applyUploadedFiles(
         {
           name,
           model: model || null,
@@ -133,7 +121,7 @@ exports.update = (req, res) => {
         return res.status(404).json({ success: false, message: "Equipment not found" });
       }
 
-      const updates = applyUploadedFiles({}, req.files);
+      const updates = await applyUploadedFiles({}, req.files);
       const fields = [
         "name",
         "model",

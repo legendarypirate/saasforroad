@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Space, Drawer, Form, message, Switch, Divider, Input } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Drawer, Form, message, Switch, Divider, Input } from '@/components/admin/primitives';
+import type { ColumnsType } from '@/components/admin/primitives';
+import { EditOutlined, PlusOutlined } from '@/components/admin/icons';
 
 interface Role {
   id: number;

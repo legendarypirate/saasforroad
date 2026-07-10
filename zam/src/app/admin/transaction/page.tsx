@@ -4,8 +4,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   Button, DatePicker, Drawer, Form, Input, InputNumber, Popconfirm, Select, Space,
   Table, Tabs, Tag, Typography, message,
-} from 'antd';
-import { PlusOutlined, StopOutlined } from '@ant-design/icons';
+} from '@/components/admin/primitives';
+import { PlusOutlined, StopOutlined } from '@/components/admin/icons';
 import dayjs from 'dayjs';
 import {
   DOC_TYPES,

@@ -15,9 +15,9 @@ import {
   Tag,
   Modal,
   Tooltip,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { EyeOutlined, KeyOutlined, PlusOutlined } from '@ant-design/icons';
+} from '@/components/admin/primitives';
+import type { ColumnsType } from '@/components/admin/primitives';
+import { EyeOutlined, KeyOutlined, PlusOutlined } from '@/components/admin/icons';
 import { useRouter } from 'next/navigation';
 
 const { Option } = Select;

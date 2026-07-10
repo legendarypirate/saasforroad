@@ -15,8 +15,8 @@ import {
   Tag,
   Typography,
   message,
-} from 'antd';
-import { DeleteOutlined, EnvironmentOutlined, PlusOutlined } from '@ant-design/icons';
+} from '@/components/admin/primitives';
+import { DeleteOutlined, EnvironmentOutlined, PlusOutlined } from '@/components/admin/icons';
 import { OFFICE_API, type OfficeLocation } from '@/lib/officeLocation';
 
 const { Title, Text } = Typography;

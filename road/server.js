@@ -12,7 +12,6 @@ var corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use("/assets", express.static(path.join(__dirname, "app", "assets")));
 
 const db = require("./app/models");
 const dbConfig = require("./app/config/db.config");
@@ -42,6 +41,7 @@ function registerRoutes() {
   require("./app/routes/order.routes")(app);
   require("./app/routes/item.routes")(app);
   require("./app/routes/accident.routes")(app);
+  require("./app/routes/daily_report.routes")(app);
   require("./app/routes/notification.routes")(app);
   require("./app/routes/document.routes")(app);
   require("./app/routes/angilal.routes")(app);

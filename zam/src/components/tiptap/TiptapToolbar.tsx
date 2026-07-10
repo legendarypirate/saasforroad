@@ -17,7 +17,7 @@ import {
   UnderlineOutlined,
   UndoOutlined,
   UnorderedListOutlined,
-} from '@ant-design/icons';
+} from '@/components/admin/icons';
 
 type ToolbarButtonProps = {
   onClick: () => void;

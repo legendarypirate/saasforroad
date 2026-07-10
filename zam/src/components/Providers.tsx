@@ -1,20 +1,20 @@
 'use client';
 
-import { ConfigProvider } from 'antd';
 import React from 'react';
+
+import { ThemeProvider } from '@/components/ThemeProvider';
+import { Toaster } from '@/components/ui/sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { ConfirmHost } from '@/components/admin/primitives/modal';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <ConfigProvider
-      theme={{
-        token: {
-          colorPrimary: '#0F4C81',
-          borderRadius: 10,
-          fontFamily: "var(--font-nunito), 'Nunito', sans-serif",
-        },
-      }}
-    >
-      {children}
-    </ConfigProvider>
+    <ThemeProvider>
+      <TooltipProvider>
+        {children}
+        <Toaster position="top-right" richColors closeButton />
+        <ConfirmHost />
+      </TooltipProvider>
+    </ThemeProvider>
   );
 }

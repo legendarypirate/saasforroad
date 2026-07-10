@@ -20,7 +20,7 @@ import {
   Tag,
   Typography,
   message,
-} from 'antd';
+} from '@/components/admin/primitives';
 import {
   ArrowLeftOutlined,
   CalendarOutlined,
@@ -32,7 +32,7 @@ import {
   UserAddOutlined,
   UserOutlined,
   DeleteOutlined,
-} from '@ant-design/icons';
+} from '@/components/admin/icons';
 import dayjs from 'dayjs';
 import TaskKanban from '@/components/TaskKanban';
 import ProjectPhasesTab, { type ProjectPhase } from '@/components/ProjectPhasesTab';

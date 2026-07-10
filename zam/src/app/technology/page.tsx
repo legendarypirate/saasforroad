@@ -9,7 +9,7 @@ import {
   ExperimentOutlined,
   RadarChartOutlined,
   ToolOutlined,
-} from '@ant-design/icons';
+} from '@/components/admin/icons';
 import PublicSiteHeader from '@/components/public/PublicSiteHeader';
 import PublicSiteFooter from '@/components/public/PublicSiteFooter';
 import {
@@ -38,7 +38,12 @@ export default function TechnologyPage() {
 
   return (
     <main className="min-h-screen bg-white text-slate-900">
-      <PublicSiteHeader companyName={content.company_name || 'Үлэмжийн зам'} activeHref="/technology" />
+      <PublicSiteHeader
+        companyName={content.company_name || 'Үлэмжийн зам'}
+        logo={content.logo}
+        activeHref="/technology"
+        navItems={content.nav_menu}
+      />
 
       {/* Hero */}
       <section className="relative min-h-[220px] overflow-hidden border-b border-slate-200 md:min-h-[280px]">

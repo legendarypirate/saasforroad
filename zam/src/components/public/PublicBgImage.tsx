@@ -5,16 +5,18 @@ export default function PublicBgImage({
   alt,
   priority = false,
   sizes = '(max-width: 768px) 100vw, 50vw',
+  className = 'object-cover',
 }: {
   src: string;
   alt: string;
   priority?: boolean;
   sizes?: string;
+  className?: string;
 }) {
   if (src.startsWith('http')) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={src} alt={alt} className="absolute inset-0 h-full w-full object-cover" />
+      <img src={src} alt={alt} className={`absolute inset-0 h-full w-full ${className}`} />
     );
   }
   return (
@@ -23,7 +25,7 @@ export default function PublicBgImage({
       alt={alt}
       fill
       priority={priority}
-      className="object-cover"
+      className={className}
       sizes={sizes}
     />
   );

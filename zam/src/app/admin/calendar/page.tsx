@@ -2,8 +2,8 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import type { EventClickArg, EventInput } from '@fullcalendar/core';
-import { Card, Modal, Spin, Tag, Typography } from 'antd';
-import { CalendarOutlined } from '@ant-design/icons';
+import { Card, Modal, Spin, Tag, Typography } from '@/components/admin/primitives';
+import { CalendarOutlined } from '@/components/admin/icons';
 import StyledFullCalendar, {
   taskPriorityClass,
   taskPriorityColor,

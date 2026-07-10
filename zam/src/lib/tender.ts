@@ -88,6 +88,13 @@ export async function processAllDocuments(packageId: number): Promise<TenderPack
   return json.success ? json.data : null;
 }
 
+export async function exportTenderDocx(packageId: number): Promise<string | null> {
+  const res = await fetch(`${API}/api/tender/${packageId}/export-docx`);
+  const json = await res.json();
+  return json.success ? json.data?.url : null;
+}
+
+/** @deprecated use exportTenderDocx */
 export function getDocxDownloadUrl(packageId: number): string {
   return `${API}/api/tender/${packageId}/export-docx`;
 }

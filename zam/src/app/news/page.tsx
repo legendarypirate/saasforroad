@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRightOutlined, CalendarOutlined } from '@ant-design/icons';
+import { ArrowRightOutlined, CalendarOutlined } from '@/components/admin/icons';
 import PublicSiteHeader from '@/components/public/PublicSiteHeader';
 import PublicSiteFooter from '@/components/public/PublicSiteFooter';
 import PublicBgImage from '@/components/public/PublicBgImage';
@@ -39,7 +39,12 @@ export default function NewsPage() {
 
   return (
     <main className="min-h-screen bg-white text-slate-900">
-      <PublicSiteHeader companyName={content.company_name || 'Үлэмжийн зам'} activeHref="/news" />
+      <PublicSiteHeader
+        companyName={content.company_name || 'Үлэмжийн зам'}
+        logo={content.logo}
+        activeHref="/news"
+        navItems={content.nav_menu}
+      />
 
       {/* Hero */}
       <section className="relative min-h-[220px] overflow-hidden border-b border-slate-200 md:min-h-[280px]">

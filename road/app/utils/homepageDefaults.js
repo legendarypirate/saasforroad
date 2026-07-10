@@ -15,6 +15,7 @@ const DEFAULT_HOMEPAGE = {
   about_text2:
     "Манай системээр төсөл, ажилтан, материал, ирц, аюулгүй байдлыг нэг дороос хянах боломжтой.",
   about_image: "/back.png",
+  director_image: "/p1.png",
   features_label: "Удирдлагын систем",
   features_title: "Нэг платформ — бүх үйл явдал",
   features_subtitle:
@@ -31,6 +32,8 @@ const DEFAULT_HOMEPAGE = {
   email: "info@ulemjin-zam.mn",
   address: "Улаанбаатар, Сүхбаатар дүүрэг",
   footer_copyright: "Бүх эрх хуулиар хамгаалагдсан.",
+  nav_menu: [],
+  custom_pages: [],
   stats: [
     { value: "15+", label: "Жилийн туршлага" },
     { value: "120+", label: "Гүйцэтгэсэн төсөл" },
@@ -100,6 +103,8 @@ const ARRAY_FIELDS = [
   "standart_certificates",
   "standart_sections",
   "footer_services",
+  "nav_menu",
+  "custom_pages",
 ];
 
 function mergeHomepageContent(stored) {
@@ -114,6 +119,10 @@ function mergeHomepageContent(stored) {
       merged[key] = value;
     }
   }
+
+  // Allow empty custom_pages / nav_menu when explicitly saved
+  if (Array.isArray(stored.nav_menu)) merged.nav_menu = stored.nav_menu;
+  if (Array.isArray(stored.custom_pages)) merged.custom_pages = stored.custom_pages;
 
   const heroObjects = ["technology_hero", "projects_hero", "hr_hero", "news_hero", "standart_hero"];
   for (const key of heroObjects) {

@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Table, DatePicker, Card, Statistic, Row, Col, Tag, Space } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { Table, DatePicker, Card, Statistic, Row, Col, Tag, Space } from '@/components/admin/primitives';
+import type { ColumnsType } from '@/components/admin/primitives';
 import dayjs, { Dayjs } from 'dayjs';
 
 interface AttendanceRow {
@@ -95,16 +95,16 @@ export default function AttendancePage() {
   ];
 
   return (
-    <div>
-      <h1 style={{ marginBottom: 24 }}>Ирцийн хяналт</h1>
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold tracking-tight">Ирцийн хяналт</h1>
 
-      <Space style={{ marginBottom: 24 }}>
-        <span>Огноо:</span>
+      <Space className="rounded-lg border bg-card px-4 py-3">
+        <span className="text-sm font-medium text-muted-foreground">Огноо:</span>
         <DatePicker value={selectedDate} onChange={(d) => d && setSelectedDate(d)} allowClear={false} />
       </Space>
 
       {summary && (
-        <Row gutter={16} style={{ marginBottom: 24 }}>
+        <Row gutter={16}>
           <Col span={8}>
             <Card>
               <Statistic title="Нийт бүртгэл" value={summary.total} />
@@ -123,7 +123,9 @@ export default function AttendancePage() {
         </Row>
       )}
 
-      <Table columns={columns} dataSource={records} rowKey="id" loading={loading} />
+      <Card>
+        <Table columns={columns} dataSource={records} rowKey="id" loading={loading} />
+      </Card>
     </div>
   );
 }

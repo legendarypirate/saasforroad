@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { Table, Button, Modal, Form, Input, message, Popconfirm } from "antd";
-import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
+import { Table, Button, Modal, Form, Input, message, Popconfirm } from "@/components/admin/primitives";
+import { PlusOutlined, DeleteOutlined } from "@/components/admin/icons";
 
 const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 

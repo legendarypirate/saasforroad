@@ -2,27 +2,7 @@ const db = require("../models");
 const Milestone = db.milestones;
 const Op = db.Sequelize.Op;
 
-// Set up multer for file uploads
-const multer = require('multer');
-const path = require('path');
-
-// Set storage engine
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'app/assets'); // Specify the destination folder
-  },
-  filename: function (req, file, cb) {
-    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
-  }
-});
-
-// Initialize multer upload
-const upload = multer({ storage: storage }).single('image');
-
-// Create and Save a new Banner
 exports.create = (req, res) => {
-  // Handle file upload
-  
     // Validate request
     if (!req.body.name ) {
       return res.status(400).json({ success: false, message: "Link and image are required!" });

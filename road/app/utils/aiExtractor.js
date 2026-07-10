@@ -1,5 +1,4 @@
 const fs = require("fs");
-const path = require("path");
 const OpenAI = require("openai");
 
 const DOC_TYPE_LABELS = {
@@ -39,10 +38,19 @@ function getClient() {
   return new OpenAI({ apiKey });
 }
 
-async function readPdfText(filePath) {
+async function loadFileBuffer(filePathOrUrl) {
+  if (filePathOrUrl.startsWith("http://") || filePathOrUrl.startsWith("https://")) {
+    const res = await fetch(filePathOrUrl);
+    if (!res.ok) throw new Error("Файл татахад алдаа гарлаа");
+    return Buffer.from(await res.arrayBuffer());
+  }
+  return fs.readFileSync(filePathOrUrl);
+}
+
+async function readPdfText(filePathOrUrl) {
   try {
     const pdfParse = require("pdf-parse");
-    const buffer = fs.readFileSync(filePath);
+    const buffer = await loadFileBuffer(filePathOrUrl);
     const data = await pdfParse(buffer);
     return (data.text || "").trim();
   } catch {
@@ -50,8 +58,8 @@ async function readPdfText(filePath) {
   }
 }
 
-function fileToBase64Image(filePath, mimeType) {
-  const buffer = fs.readFileSync(filePath);
+async function fileToBase64Image(filePathOrUrl, mimeType) {
+  const buffer = await loadFileBuffer(filePathOrUrl);
   return `data:${mimeType};base64,${buffer.toString("base64")}`;
 }
 
@@ -80,10 +88,10 @@ async function extractFromText(text, docType) {
   return JSON.parse(raw);
 }
 
-async function extractFromImage(filePath, mimeType, docType) {
+async function extractFromImage(filePathOrUrl, mimeType, docType) {
   const client = getClient();
   const label = DOC_TYPE_LABELS[docType] || docType;
-  const imageUrl = fileToBase64Image(filePath, mimeType);
+  const imageUrl = await fileToBase64Image(filePathOrUrl, mimeType);
 
   const response = await client.chat.completions.create({
     model: process.env.OPENAI_MODEL || "gpt-4o",
@@ -112,16 +120,17 @@ async function extractFromImage(filePath, mimeType, docType) {
   return JSON.parse(raw);
 }
 
-async function extractDocument(filePath, mimeType, docType) {
+async function extractDocument(filePathOrUrl, mimeType, docType) {
   const isImage = mimeType?.startsWith("image/");
-  const isPdf = mimeType === "application/pdf" || filePath.toLowerCase().endsWith(".pdf");
+  const isPdf =
+    mimeType === "application/pdf" || String(filePathOrUrl).toLowerCase().endsWith(".pdf");
 
   if (isImage) {
-    return extractFromImage(filePath, mimeType, docType);
+    return extractFromImage(filePathOrUrl, mimeType, docType);
   }
 
   if (isPdf) {
-    const text = await readPdfText(filePath);
+    const text = await readPdfText(filePathOrUrl);
     if (text.length > 40) {
       return extractFromText(text, docType);
     }

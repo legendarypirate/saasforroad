@@ -1,56 +1,36 @@
-const express = require('express');
 const db = require("../models");
 const Doctor = db.doctors;
 const Op = db.Sequelize.Op;
-const app = express();
+const multer = require("multer");
+const { imageUpload, cloudinaryUrl } = require("../utils/uploadHelper");
 
-// Set up multer for file uploads
-const multer = require('multer');
-const path = require('path');
+const upload = imageUpload("image");
 
-// Set storage engine
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'app/assets'); // Specify the destination folder
-  },
-  filename: function (req, file, cb) {
-    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
-  }
-});
-
-// Initialize multer upload
-const upload = multer({ storage: storage }).single('image');
-app.use('/assets', express.static('app/assets')); // Serve files from 'app/assets' folder under the '/assets' URL
-
-// Create and Save a new Banner
 exports.create = (req, res) => {
-  upload(req, res, function(err) {
+  upload(req, res, async function (err) {
     if (err instanceof multer.MulterError) {
       return res.status(500).json({ success: false, message: "Error uploading file." });
     } else if (err) {
-      return res.status(500).json({ success: false, message: "Unknown error." });
+      return res.status(500).json({ success: false, message: err.message || "Unknown error." });
     }
-
-    console.log(req.body);  // Log the request body
-    console.log(req.file);   // Log the uploaded file object
 
     if (!req.body.name || !req.file) {
       return res.status(400).json({ success: false, message: "Link and image are required!" });
     }
 
-    const doctor = {
-      prof: req.body.prof,
-      name: req.body.name,
-      image: req.file.filename // Save the filename in the database
-    };
+    try {
+      const imageUrl = await cloudinaryUrl(req.file, "doctors");
+      const doctor = {
+        prof: req.body.prof,
+        name: req.body.name,
+        image: imageUrl,
+      };
 
-    Doctor.create(doctor)
-      .then(data => {
-        res.json({ success: true, data: data });
-      })
-      .catch(err => {
-        res.status(500).json({ success: false, message: err.message || "Some error occurred while creating the Banner." });
-      });
+      const data = await Doctor.create(doctor);
+      res.json({ success: true, data });
+    } catch (createErr) {
+      res.status(500).json({ success: false, message: createErr.message || "Some error occurred while creating the Banner." });
+    }
   });
 };
 

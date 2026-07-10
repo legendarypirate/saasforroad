@@ -15,20 +15,20 @@ import {
   Alert,
   Spin,
   Collapse,
-} from 'antd';
+} from '@/components/admin/primitives';
 import {
   ArrowLeftOutlined,
   UploadOutlined,
   ThunderboltOutlined,
   DownloadOutlined,
   ReloadOutlined,
-} from '@ant-design/icons';
+} from '@/components/admin/icons';
 import { useParams, useRouter } from 'next/navigation';
 import {
   DOC_TYPE_OPTIONS,
   STATUS_LABELS,
   fetchTender,
-  getDocxDownloadUrl,
+  exportTenderDocx,
   processAllDocuments,
   uploadTenderDocument,
   type TenderDocument,
@@ -46,6 +46,7 @@ export default function TenderDetailPage() {
   const [uploading, setUploading] = useState(false);
   const [docType, setDocType] = useState('engineer_certificate');
   const [engineerName, setEngineerName] = useState('');
+  const [exporting, setExporting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -94,6 +95,24 @@ export default function TenderDetailPage() {
       message.error('Алдаа гарлаа');
     } finally {
       setProcessing(false);
+    }
+  };
+
+  const handleExportDocx = async () => {
+    setExporting(true);
+    try {
+      const url = await exportTenderDocx(Number(id));
+      if (url) {
+        window.open(url, '_blank', 'noopener,noreferrer');
+        message.success('DOCX файл бэлэн боллоо');
+        load();
+      } else {
+        message.error('DOCX үүсгэхэд алдаа гарлаа');
+      }
+    } catch {
+      message.error('Алдаа гарлаа');
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -184,8 +203,9 @@ export default function TenderDetailPage() {
             </Button>
             <Button
               icon={<DownloadOutlined />}
-              href={getDocxDownloadUrl(pkg.id)}
+              loading={exporting}
               disabled={processedCount === 0}
+              onClick={handleExportDocx}
             >
               DOCX татах
             </Button>

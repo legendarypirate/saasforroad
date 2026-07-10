@@ -2,94 +2,125 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { MenuOutlined } from '@ant-design/icons';
+import { MenuOutlined } from '@/components/admin/icons';
+import { resolveImageUrl } from '@/lib/homepage';
+import { resolveNavItems, type SiteNavItem } from '@/lib/siteMenu';
 
 const BRAND_GREEN = '#3daf72';
 
-const NAV = [
-  { href: '/about', label: 'Бидний тухай' },
-  { href: '/technology', label: 'Технологи' },
-  { href: '/projects', label: 'Төслүүд' },
-  { href: '/hr', label: 'Ажлын байр' },
-  { href: '/news', label: 'Мэдээлэл' },
-  { href: '/standart', label: 'Стандарт' },
-];
-
 export default function PublicSiteHeader({
   companyName,
+  logo,
   activeHref,
+  navItems,
 }: {
   companyName: string;
+  logo?: string;
   activeHref?: string;
+  navItems?: SiteNavItem[];
 }) {
   const [open, setOpen] = useState(false);
+  const logoSrc = logo ? resolveImageUrl(logo) : '';
+  const NAV = resolveNavItems(navItems).filter((item) => item.visible);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 lg:px-8">
-        <Link href="/" className="shrink-0 text-lg font-extrabold tracking-tight text-slate-900 md:text-xl">
-          {companyName}
+        <Link href="/" className="group flex min-w-0 shrink-0 items-center gap-2.5">
+          {logoSrc ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={logoSrc}
+              alt={companyName}
+              className="h-8 w-auto max-w-[120px] object-contain transition group-hover:opacity-90 md:h-9"
+            />
+          ) : null}
+          <span className="truncate text-sm font-extrabold tracking-tight text-slate-900 md:text-[15px]">
+            {companyName}
+          </span>
         </Link>
 
-        <nav className="hidden items-center gap-6 xl:flex">
-          {NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`text-sm font-medium transition hover:text-slate-900 ${
-                activeHref === item.href ? 'text-slate-900' : 'text-slate-600'
-              }`}
-            >
-              {item.label}
-            </Link>
-          ))}
+        <nav className="hidden items-center gap-1 xl:flex">
+          {NAV.map((item) => {
+            const active = activeHref === item.href;
+            return (
+              <Link
+                key={item.id}
+                href={item.href}
+                className={`relative rounded-md px-3 py-2 text-sm font-medium transition ${
+                  active ? 'text-slate-900' : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                {item.label}
+                {active ? (
+                  <span
+                    className="absolute inset-x-3 -bottom-px h-0.5 rounded-full"
+                    style={{ backgroundColor: BRAND_GREEN }}
+                  />
+                ) : null}
+              </Link>
+            );
+          })}
         </nav>
 
-        <div className="hidden items-center gap-3 md:flex">
+        <div className="hidden items-center gap-2.5 md:flex">
           <Link
             href="/#contact"
-            className="rounded-md border border-slate-300 px-4 py-2 text-xs font-bold tracking-wide text-slate-700 transition hover:border-slate-400"
+            className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-bold tracking-wide text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
           >
-            ХОЛБОО БАРИХ
+            Холбоо барих
           </Link>
           <Link
             href="/login"
-            className="rounded-md px-4 py-2 text-xs font-bold tracking-wide text-white transition hover:opacity-90"
+            className="rounded-lg px-4 py-2 text-xs font-bold tracking-wide text-white transition hover:brightness-110"
             style={{ backgroundColor: BRAND_GREEN }}
           >
-            НЭВТРЭХ
+            Нэвтрэх
           </Link>
         </div>
 
         <button
           type="button"
-          className="text-slate-800 md:hidden"
+          className="inline-flex size-10 items-center justify-center rounded-lg text-slate-800 transition hover:bg-slate-100 md:hidden"
           onClick={() => setOpen(!open)}
           aria-label="Цэс"
+          aria-expanded={open}
         >
           <MenuOutlined className="text-xl" />
         </button>
       </div>
 
       {open && (
-        <div className="border-t border-slate-200 bg-white px-4 py-4 md:hidden">
+        <div className="border-t border-slate-200/80 bg-white px-4 py-3 md:hidden">
           {NAV.map((item) => (
             <Link
-              key={item.href}
+              key={item.id}
               href={item.href}
               onClick={() => setOpen(false)}
-              className="block border-b border-slate-100 py-3 text-sm text-slate-700"
+              className={`block border-b border-slate-100 py-3.5 text-sm ${
+                activeHref === item.href ? 'font-bold text-slate-900' : 'text-slate-600'
+              }`}
             >
               {item.label}
             </Link>
           ))}
-          <Link
-            href="/login"
-            onClick={() => setOpen(false)}
-            className="block py-3 text-sm font-bold text-emerald-600"
-          >
-            Нэвтрэх
-          </Link>
+          <div className="flex gap-2 py-4">
+            <Link
+              href="/#contact"
+              onClick={() => setOpen(false)}
+              className="flex-1 rounded-lg border border-slate-200 py-2.5 text-center text-sm font-bold text-slate-700"
+            >
+              Холбоо барих
+            </Link>
+            <Link
+              href="/login"
+              onClick={() => setOpen(false)}
+              className="flex-1 rounded-lg py-2.5 text-center text-sm font-bold text-white"
+              style={{ backgroundColor: BRAND_GREEN }}
+            >
+              Нэвтрэх
+            </Link>
+          </div>
         </div>
       )}
     </header>

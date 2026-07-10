@@ -27,7 +27,6 @@ export const ADMIN_MODULES: ModuleConfig[] = [
       { path: '/admin/equipment', label: 'Тоног төхөөрөмж' },
       { path: '/admin/equipment-rental', label: 'Тоног төхөөрөмж түрээс' },
       { path: '/admin/calendar', label: 'Календар' },
-      { path: '/admin/accident', label: 'Ослын дуудлага', permission: 'accident:read' },
     ],
   },
   {
@@ -123,6 +122,27 @@ export const ADMIN_MODULES: ModuleConfig[] = [
     items: [],
     comingSoon: true,
   },
+  {
+    id: 'daily-report',
+    label: 'Daily Report',
+    description: 'Өдөр тутмын тайлан, захирлын товч',
+    color: '#0891b2',
+    items: [
+      { path: '/admin/daily-report', label: 'Өдрийн товч', permission: 'daily_report:summary' },
+      { path: '/admin/daily-report/list', label: 'Тайлангууд', permission: 'daily_report:read' },
+      { path: '/admin/daily-report/new', label: 'Шинэ тайлан', permission: 'daily_report:write' },
+    ],
+  },
+  {
+    id: 'hse',
+    label: 'Хөдөлмөрийн аюулгүй байдал',
+    description: 'Осол, эрсдэл, ХАБЭА-н бүртгэл',
+    color: '#dc2626',
+    items: [
+      { path: '/admin/hse', label: 'ХАБЭА тойм', permission: 'accident:read' },
+      { path: '/admin/accident', label: 'Ослын дуудлага', permission: 'accident:read' },
+    ],
+  },
 ];
 
 export const ADMIN_DATA_FOLDERS: ModuleConfig[] = [
@@ -166,6 +186,22 @@ export const ADMIN_DATA_FOLDERS: ModuleConfig[] = [
     items: [],
     comingSoon: true,
   },
+  {
+    id: 'data-student',
+    label: 'Оюутан',
+    description: 'Оюутан, дадлагажигчдын мэдээлэл',
+    color: '#7c3aed',
+    items: [],
+    comingSoon: true,
+  },
+  {
+    id: 'data-road-sign',
+    label: 'Замын тэмдэг',
+    description: 'Замын тэмдэг, тэмдэглэгээний дата',
+    color: '#ea580c',
+    items: [],
+    comingSoon: true,
+  },
 ];
 
 export function hasPermission(permission: string | undefined, userPermissions: string[]): boolean {
@@ -200,16 +236,24 @@ export function filterDataFolders(): ModuleConfig[] {
 export function getModuleForPath(pathname: string): ModuleConfig | null {
   if (pathname === DASHBOARD_PATH) return null;
 
+  // Prefer longest path match so /daily-report/list maps to daily-report module
+  let best: ModuleConfig | null = null;
+  let bestLen = -1;
+
   for (const mod of ADMIN_MODULES) {
-    const matches = mod.items.some(
-      (item) => pathname === item.path || pathname.startsWith(`${item.path}/`)
-    );
-    if (matches) return mod;
+    for (const item of mod.items) {
+      const match =
+        pathname === item.path || pathname.startsWith(`${item.path}/`);
+      if (match && item.path.length > bestLen) {
+        best = mod;
+        bestLen = item.path.length;
+      }
+    }
   }
-  return null;
+  return best;
 }
 
 export function getDefaultModulePath(mod: ModuleConfig, userPermissions: string[]): string {
   const items = filterNavItems(mod.items, userPermissions);
-  return items[0]?.path ?? mod.items[0].path;
+  return items[0]?.path ?? mod.items[0]?.path ?? DASHBOARD_PATH;
 }

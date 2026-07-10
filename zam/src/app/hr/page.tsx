@@ -10,7 +10,7 @@ import {
   RiseOutlined,
   SafetyCertificateOutlined,
   TeamOutlined,
-} from '@ant-design/icons';
+} from '@/components/admin/icons';
 import PublicSiteHeader from '@/components/public/PublicSiteHeader';
 import PublicSiteFooter from '@/components/public/PublicSiteFooter';
 import PublicBgImage from '@/components/public/PublicBgImage';
@@ -50,7 +50,7 @@ export default function HrPage() {
 
   return (
     <main className="min-h-screen bg-white text-slate-900">
-      <PublicSiteHeader companyName={company} activeHref="/hr" />
+      <PublicSiteHeader companyName={company} logo={content.logo} activeHref="/hr" navItems={content.nav_menu} />
 
       {/* Hero */}
       <section className="relative min-h-[220px] overflow-hidden border-b border-slate-200 md:min-h-[280px]">

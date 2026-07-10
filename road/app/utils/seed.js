@@ -30,6 +30,9 @@ const DEFAULT_PERMISSIONS = [
   { module: "tender", action: "write", key: "tender:write" },
   { module: "equipment", action: "read", key: "equipment:read" },
   { module: "equipment", action: "write", key: "equipment:write" },
+  { module: "daily_report", action: "read", key: "daily_report:read" },
+  { module: "daily_report", action: "write", key: "daily_report:write" },
+  { module: "daily_report", action: "summary", key: "daily_report:summary" },
 ];
 
 const DEFAULT_ROLES = [
@@ -64,6 +67,21 @@ const DEFAULT_ROLES = [
       "notification:read",
       "equipment:read",
       "equipment:write",
+      "daily_report:read",
+      "daily_report:write",
+    ],
+  },
+  {
+    name: "Ерөнхий захирал",
+    description: "Өдрийн товч тайлан — зөвхөн summary",
+    mobile_access: false,
+    permissionKeys: [
+      "admin:dashboard",
+      "daily_report:read",
+      "daily_report:summary",
+      "project:read",
+      "accident:read",
+      "attendance:read",
     ],
   },
 ];
