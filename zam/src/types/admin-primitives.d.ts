@@ -21,6 +21,13 @@ declare module '@/components/admin/primitives' {
   export type MenuProps = any;
   export type UploadFile = any;
 
+  export class FormValidationError extends Error {
+    errors: Record<string, string>;
+    errorFields: Array<{ name: string[]; errors: string[] }>;
+    constructor(errors: Record<string, string>);
+  }
+  export function isFormValidationError(error: unknown): error is FormValidationError;
+
   export const Table: any;
   export const Button: any;
   export const Input: any;
