@@ -5,6 +5,7 @@ import { AppWindow, Home, LogOut, User } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 
 import ThemeToggle from '@/components/ThemeToggle';
+import SessionCountdown from '@/components/SessionCountdown';
 import ModuleSubNav from '@/components/admin/ModuleSubNav';
 import {
   AlertDialog,
@@ -102,6 +103,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         <div className="flex items-center gap-3">
+          <SessionCountdown />
           <ThemeToggle />
           <DropdownMenu>
           <DropdownMenuTrigger className="rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring">

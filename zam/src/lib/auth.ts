@@ -165,3 +165,28 @@ export function getToken(): string | null {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem('token');
 }
+
+/** JWT `exp` as epoch ms, or null if missing/invalid. */
+export function getTokenExpiresAt(): number | null {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const part = token.split('.')[1];
+    if (!part) return null;
+    const b64 = part.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
+    const payload = JSON.parse(atob(padded)) as { exp?: number };
+    if (!payload.exp || typeof payload.exp !== 'number') return null;
+    return payload.exp * 1000;
+  } catch {
+    return null;
+  }
+}
+
+/** Remaining ms until JWT expiry (0 if already expired). */
+export function getTokenRemainingMs(): number {
+  const exp = getTokenExpiresAt();
+  if (!exp) return 0;
+  return Math.max(0, exp - Date.now());
+}
+
