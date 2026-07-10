@@ -46,7 +46,8 @@ const DEFAULT_ROLES = [
     name: "Админ",
     description: "Бүх эрхтэй админ",
     mobile_access: false,
-    permissionKeys: DEFAULT_PERMISSIONS.map((p) => p.key),
+    // null = attach every permission in DB
+    permissionKeys: null,
   },
   {
     name: "Ажилчин",
@@ -127,6 +128,46 @@ const DEFAULT_ROLES = [
   },
 ];
 
+function isAdminRoleName(name) {
+  if (!name) return false;
+  const n = String(name).trim().toLowerCase();
+  return (
+    n === "админ" ||
+    n === "admin" ||
+    n === "administrator" ||
+    n === "супер админ" ||
+    n === "superadmin" ||
+    n === "super admin"
+  );
+}
+
+/** Link legacy users (role string only, or English "admin") to Админ role_id. */
+async function linkAdminUsers(adminRole) {
+  if (!adminRole) return 0;
+
+  const users = await db.users.findAll({
+    attributes: ["id", "username", "role", "role_id"],
+  });
+
+  let updated = 0;
+  for (const user of users) {
+    const byString = isAdminRoleName(user.role);
+    const needsLink = byString && user.role_id !== adminRole.id;
+    if (!needsLink) continue;
+
+    await user.update({
+      role_id: adminRole.id,
+      role: adminRole.name,
+    });
+    updated += 1;
+  }
+
+  if (updated > 0) {
+    console.log(`Linked ${updated} user(s) to role "${adminRole.name}" (id=${adminRole.id}).`);
+  }
+  return updated;
+}
+
 async function seedPermissionsAndRoles() {
   for (const perm of DEFAULT_PERMISSIONS) {
     await db.permissions.findOrCreate({
@@ -136,6 +177,9 @@ async function seedPermissionsAndRoles() {
   }
 
   const allPermissions = await db.permissions.findAll();
+  const allPermissionIds = allPermissions.map((p) => p.id);
+
+  let adminRole = null;
 
   for (const roleDef of DEFAULT_ROLES) {
     const [role] = await db.roles.findOrCreate({
@@ -152,16 +196,45 @@ async function seedPermissionsAndRoles() {
       mobile_access: roleDef.mobile_access,
     });
 
-    const permissionIds = allPermissions
-      .filter((p) => roleDef.permissionKeys.includes(p.key))
-      .map((p) => p.id);
+    const permissionIds =
+      roleDef.permissionKeys == null
+        ? allPermissionIds
+        : allPermissions
+            .filter((p) => roleDef.permissionKeys.includes(p.key))
+            .map((p) => p.id);
 
-    if (permissionIds.length > 0) {
-      await role.setPermissions(permissionIds);
+    await role.setPermissions(permissionIds);
+
+    if (isAdminRoleName(roleDef.name)) {
+      adminRole = role;
+      console.log(
+        `Admin role "${role.name}" (id=${role.id}) now has ${permissionIds.length} permissions.`
+      );
     }
   }
 
-  console.log("Roles and permissions seeded.");
+  // Also grant full permissions to any other role named like admin (e.g. "Admin")
+  const extraAdminRoles = await db.roles.findAll();
+  for (const role of extraAdminRoles) {
+    if (!isAdminRoleName(role.name)) continue;
+    if (adminRole && role.id === adminRole.id) continue;
+    await role.setPermissions(allPermissionIds);
+    console.log(
+      `Extra admin-like role "${role.name}" (id=${role.id}) synced to ${allPermissionIds.length} permissions.`
+    );
+    if (!adminRole) adminRole = role;
+  }
+
+  await linkAdminUsers(adminRole);
+
+  console.log(
+    `Roles and permissions seeded. (${allPermissions.length} permissions, ${DEFAULT_ROLES.length} default roles)`
+  );
 }
 
-module.exports = { seedPermissionsAndRoles };
+module.exports = {
+  seedPermissionsAndRoles,
+  isAdminRoleName,
+  DEFAULT_PERMISSIONS,
+  DEFAULT_ROLES,
+};
