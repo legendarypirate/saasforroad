@@ -43,6 +43,7 @@ const equipmentInclude = [
   },
   {
     model: Project,
+    as: "projects",
     attributes: ["id", "name"],
     through: { attributes: [] },
     required: false,
