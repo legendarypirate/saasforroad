@@ -124,17 +124,17 @@ export default function ProjectEquipmentTab({ projectId }: ProjectEquipmentTabPr
           </Title>
           <Text type="secondary">
             Бүртгэлийг{' '}
-            <a onClick={() => router.push('/admin/rental/assets')} style={{ cursor: 'pointer' }}>
+            <a onClick={() => router.push('/admin/equipment')} style={{ cursor: 'pointer' }}>
               Тоног төхөөрөмж
             </a>{' '}
             цэснээс удирдана
           </Text>
         </div>
         <Space wrap>
-          <Button icon={<ToolOutlined />} onClick={() => router.push('/admin/rental/assets')}>
+          <Button icon={<ToolOutlined />} onClick={() => router.push('/admin/equipment')}>
             Бүртгэл рүү
           </Button>
-          <Button icon={<PlusOutlined />} onClick={() => router.push('/admin/rental/assets')}>
+          <Button icon={<PlusOutlined />} onClick={() => router.push('/admin/equipment')}>
             Шинэ бүртгэл
           </Button>
           <Button type="primary" icon={<LinkOutlined />} onClick={openAssignModal}>
@@ -152,7 +152,7 @@ export default function ProjectEquipmentTab({ projectId }: ProjectEquipmentTabPr
             <Button type="primary" icon={<LinkOutlined />} onClick={openAssignModal}>
               Бүртгэлээс холбох
             </Button>
-            <Button icon={<PlusOutlined />} onClick={() => router.push('/admin/rental/assets')}>
+            <Button icon={<PlusOutlined />} onClick={() => router.push('/admin/equipment')}>
               Шинээр бүртгэх
             </Button>
           </Space>
@@ -163,12 +163,12 @@ export default function ProjectEquipmentTab({ projectId }: ProjectEquipmentTabPr
             key: String(item.id),
             label: <EquipmentSummaryLabel item={item} />,
             extra: (
-              <Space onClick={(e) => e.stopPropagation()}>
+              <Space>
                 <Button
                   type="text"
                   size="small"
                   icon={<EditOutlined />}
-                  onClick={() => router.push(`/admin/rental/assets?id=${item.id}`)}
+                  onClick={() => router.push(`/admin/equipment/${item.id}`)}
                 >
                   Засах
                 </Button>
@@ -216,7 +216,7 @@ export default function ProjectEquipmentTab({ projectId }: ProjectEquipmentTabPr
           notFoundContent={
             <span>
               Боломжтой төхөөрөмж байхгүй.{' '}
-              <a onClick={() => router.push('/admin/rental/assets')}>Бүртгэлд нэмэх</a>
+              <a onClick={() => router.push('/admin/equipment')}>Бүртгэлд нэмэх</a>
             </span>
           }
         />

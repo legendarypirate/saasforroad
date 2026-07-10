@@ -15,7 +15,6 @@ import {
   Select,
   Space,
   Spin,
-  Statistic,
   Tabs,
   Tag,
   Typography,
@@ -275,7 +274,7 @@ export default function ProjectDetailPage() {
 
   if (loading && !project) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+      <div className="flex min-h-[400px] items-center justify-center">
         <Spin size="large" tip="Төсөл ачааллаж байна..." />
       </div>
     );
@@ -283,142 +282,142 @@ export default function ProjectDetailPage() {
 
   if (!project) return null;
 
+  const metaItems = [
+    { icon: <EnvironmentOutlined className="size-3.5" />, label: project.location || '—' },
+    { icon: <UserOutlined className="size-3.5" />, label: project.engineer || '—' },
+    { icon: <CalendarOutlined className="size-3.5" />, label: dayjs(project.createdAt).format('YYYY-MM-DD') },
+    {
+      icon: <DollarOutlined className="size-3.5" />,
+      label: `${Number(project.budget || 0).toLocaleString()}₮`,
+    },
+  ];
+
+  const statItems = [
+    { label: 'Нийт', value: stats?.total ?? 0, color: 'text-foreground' },
+    { label: 'Хүлээгдэж буй', value: stats?.todo ?? 0, color: 'text-sky-500' },
+    { label: 'Явагдаж буй', value: stats?.inProgress ?? 0, color: 'text-amber-500' },
+    { label: 'Дууссан', value: stats?.completed ?? 0, color: 'text-emerald-500' },
+  ];
+
   return (
-    <div style={{ margin: -24, minHeight: 'calc(100vh - 112px)' }}>
-      {/* Hero header */}
-      <div
-        style={{
-          background: 'linear-gradient(135deg, #1a365d 0%, #2c5282 45%, #d97706 100%)',
-          padding: '32px 40px 48px',
-          color: '#fff',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-      >
+    <div className="-m-6 min-h-[calc(100vh-112px)]">
+      <section className="relative overflow-hidden border-b border-border bg-card">
         <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            opacity: 0.08,
-            backgroundImage: `repeating-linear-gradient(
-              -45deg,
-              transparent,
-              transparent 20px,
-              #fff 20px,
-              #fff 22px
-            )`,
-          }}
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,color-mix(in_oklab,var(--primary)_18%,transparent),transparent_55%)]"
         />
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <Button
-            type="text"
-            icon={<ArrowLeftOutlined />}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-24 -top-24 size-72 rounded-full bg-primary/10 blur-3xl"
+        />
+
+        <div className="relative px-6 pb-6 pt-5 sm:px-8 lg:px-10">
+          <button
+            type="button"
             onClick={() => router.push('/admin/project')}
-            style={{ color: 'rgba(255,255,255,0.85)', marginBottom: 16, paddingLeft: 0 }}
+            className="mb-5 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
+            <ArrowLeftOutlined className="size-3.5" />
             Төслийн жагсаалт
-          </Button>
+          </button>
 
-          <Row gutter={[32, 24]} align="middle">
-            <Col xs={24} lg={16}>
-              <Space direction="vertical" size={8}>
-                <Space wrap>
-                  <Tag color={statusInfo.color} style={{ fontSize: 13, padding: '2px 10px' }}>
-                    {statusInfo.label}
-                  </Tag>
-                  <Tag color="default" style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff' }}>
-                    Зам барилгын төсөл
-                  </Tag>
-                </Space>
-                <Title level={2} style={{ color: '#fff', margin: 0 }}>
-                  {project.name}
-                </Title>
-                <Space wrap size="large">
-                  <Text style={{ color: 'rgba(255,255,255,0.9)' }}>
-                    <EnvironmentOutlined /> {project.location || '—'}
-                  </Text>
-                  <Text style={{ color: 'rgba(255,255,255,0.9)' }}>
-                    <UserOutlined /> {project.engineer || '—'}
-                  </Text>
-                  <Text style={{ color: 'rgba(255,255,255,0.9)' }}>
-                    <CalendarOutlined /> {dayjs(project.createdAt).format('YYYY-MM-DD')}
-                  </Text>
-                </Space>
-                {project.purpose && (
-                  <Paragraph style={{ color: 'rgba(255,255,255,0.75)', marginBottom: 0, maxWidth: 640 }}>
-                    {project.purpose}
-                  </Paragraph>
-                )}
-                <div style={{ marginTop: 12 }}>
-                  <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, display: 'block', marginBottom: 8 }}>
-                    Ажиллаж буй хүмүүс ({members.length})
-                  </Text>
-                  <StaffAvatarGroup members={members} maxCount={8} size={40} showEmpty />
-                </div>
-              </Space>
-            </Col>
-
-            <Col xs={24} lg={8} style={{ display: 'flex', justifyContent: 'center' }}>
-              <div style={{ textAlign: 'center' }}>
-                <Progress
-                  type="circle"
-                  percent={stats?.completionPercent ?? 0}
-                  strokeColor={progressColor}
-                  trailColor="rgba(255,255,255,0.2)"
-                  strokeWidth={10}
-                  size={160}
-                  format={(pct) => (
-                    <div>
-                      <div style={{ fontSize: 32, fontWeight: 700, color: '#fff' }}>{pct}%</div>
-                      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>Гүйцэтгэл</div>
-                    </div>
-                  )}
-                />
-                <Text style={{ color: 'rgba(255,255,255,0.7)', display: 'block', marginTop: 8 }}>
-                  {stats?.completed ?? 0} / {stats?.total ?? 0} даалгавар дууссан
-                </Text>
+          <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0 flex-1 space-y-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <Tag color={statusInfo.color}>{statusInfo.label}</Tag>
+                <span className="rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-xs text-muted-foreground">
+                  Зам барилгын төсөл
+                </span>
               </div>
-            </Col>
-          </Row>
-        </div>
-      </div>
 
-      {/* Stats strip */}
-      <div className="border-b border-border bg-muted/40 px-10 py-5">
-        <Row gutter={[16, 16]}>
-          <Col xs={12} sm={6}>
-            <Statistic
-              title={<Text type="secondary">Нийт даалгавар</Text>}
-              value={stats?.total ?? 0}
-              valueStyle={{ color: '#1a365d' }}
-            />
-          </Col>
-          <Col xs={12} sm={6}>
-            <Statistic
-              title={<Text type="secondary">Хүлээгдэж буй</Text>}
-              value={stats?.todo ?? 0}
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Col>
-          <Col xs={12} sm={6}>
-            <Statistic
-              title={<Text type="secondary">Явагдаж буй</Text>}
-              value={stats?.inProgress ?? 0}
-              valueStyle={{ color: '#fa8c16' }}
-            />
-          </Col>
-          <Col xs={12} sm={6}>
-            <Statistic
-              title={<Text type="secondary">Дууссан</Text>}
-              value={stats?.completed ?? 0}
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Col>
-        </Row>
-      </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                  {project.name}
+                </h1>
+                {project.purpose ? (
+                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                    {project.purpose}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {metaItems.map((item) => (
+                  <span
+                    key={item.label}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-2.5 py-1.5 text-xs text-foreground/90"
+                  >
+                    <span className="text-muted-foreground">{item.icon}</span>
+                    {item.label}
+                  </span>
+                ))}
+              </div>
+
+              <div>
+                <p className="mb-2 text-xs text-muted-foreground">
+                  Ажиллаж буй хүмүүс ({members.length})
+                </p>
+                <StaffAvatarGroup members={members} maxCount={8} size={36} showEmpty />
+              </div>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-5 rounded-2xl border border-border bg-muted/30 px-5 py-4 sm:px-6">
+              <Progress
+                type="circle"
+                percent={stats?.completionPercent ?? 0}
+                strokeColor={progressColor}
+                trailColor="color-mix(in oklab, var(--muted-foreground) 22%, transparent)"
+                strokeWidth={9}
+                size={112}
+                format={(pct) => (
+                  <div className="text-center">
+                    <div className="text-2xl font-bold tabular-nums text-foreground">{pct}%</div>
+                    <div className="text-[11px] text-muted-foreground">Гүйцэтгэл</div>
+                  </div>
+                )}
+              />
+              <div className="min-w-[7rem]">
+                <p className="text-xs text-muted-foreground">Дууссан даалгавар</p>
+                <p className="mt-1 text-xl font-semibold tabular-nums text-foreground">
+                  {stats?.completed ?? 0}
+                  <span className="text-sm font-normal text-muted-foreground">
+                    {' '}
+                    / {stats?.total ?? 0}
+                  </span>
+                </p>
+                <Button
+                  type="primary"
+                  size="small"
+                  className="mt-3"
+                  icon={<PlusOutlined />}
+                  onClick={() => setTaskDrawerOpen(true)}
+                >
+                  Даалгавар
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {statItems.map((item) => (
+              <div
+                key={item.label}
+                className="rounded-xl border border-border bg-background/60 px-4 py-3"
+              >
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                  {item.label}
+                </p>
+                <p className={`mt-1 text-2xl font-semibold tabular-nums ${item.color}`}>
+                  {item.value}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Main content */}
-      <div className="px-10 pb-10 pt-6">
+      <div className="px-6 pb-10 pt-6 sm:px-8 lg:px-10">
         <Tabs
           defaultActiveKey="tasks"
           tabBarExtraContent={
@@ -455,14 +454,7 @@ export default function ProjectDetailPage() {
               children: (
                 <Row gutter={[24, 24]}>
                   <Col xs={24}>
-                    <div
-                      style={{
-                        border: '1px solid #e2e8f0',
-                        borderRadius: 12,
-                        padding: 24,
-                        height: '100%',
-                      }}
-                    >
+                    <div className="h-full rounded-xl border border-border bg-card p-6">
                       <Title level={5} style={{ marginTop: 0 }}>
                         Гүйцэтгэлийн график
                       </Title>
@@ -526,14 +518,7 @@ export default function ProjectDetailPage() {
                   <Row gutter={[16, 16]}>
                     {brigadeMembers.length === 0 ? (
                       <Col span={24}>
-                        <div
-                          style={{
-                            border: '1px dashed #d9d9d9',
-                            borderRadius: 12,
-                            padding: 40,
-                            textAlign: 'center',
-                          }}
-                        >
+                        <div className="rounded-xl border border-dashed border-border bg-muted/30 px-6 py-10 text-center">
                           <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
                             Бригадын гишүүн байхгүй байна
                           </Text>
@@ -571,17 +556,8 @@ export default function ProjectDetailPage() {
                     { icon: <CalendarOutlined />, label: 'Үүссэн огноо', value: dayjs(project.createdAt).format('YYYY-MM-DD') },
                   ].map((item) => (
                     <Col xs={24} sm={12} md={8} key={item.label}>
-                      <div
-                        style={{
-                          border: '1px solid #e2e8f0',
-                          borderRadius: 10,
-                          padding: '16px 20px',
-                          display: 'flex',
-                          gap: 12,
-                          alignItems: 'flex-start',
-                        }}
-                      >
-                        <span style={{ fontSize: 20, color: '#2c5282' }}>{item.icon}</span>
+                      <div className="flex items-start gap-3 rounded-[10px] border border-border bg-card px-5 py-4">
+                        <span className="text-lg text-primary">{item.icon}</span>
                         <div>
                           <Text type="secondary" style={{ fontSize: 12 }}>
                             {item.label}
@@ -595,7 +571,7 @@ export default function ProjectDetailPage() {
                   ))}
                   {project.purpose && (
                     <Col span={24}>
-                      <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: 20 }}>
+                      <div className="rounded-[10px] border border-border bg-card p-5">
                         <Text type="secondary">Зорилго</Text>
                         <Paragraph style={{ marginBottom: 0, marginTop: 4 }}>{project.purpose}</Paragraph>
                       </div>
@@ -718,18 +694,7 @@ function TeamMemberCard({
   onRemove?: (userId: number) => void;
 }) {
   return (
-    <div
-      style={{
-        border: '1px solid #e2e8f0',
-        borderRadius: 12,
-        padding: 20,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 14,
-        height: '100%',
-        position: 'relative',
-      }}
-    >
+    <div className="relative flex h-full items-center gap-3.5 rounded-xl border border-border bg-card p-5">
       <StaffAvatar name={member.name} size={48} />
       <div style={{ minWidth: 0, flex: 1 }}>
         <Text strong style={{ display: 'block' }}>

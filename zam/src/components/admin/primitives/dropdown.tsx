@@ -32,13 +32,17 @@ export function Dropdown({ children, menu, overlay }: DropdownProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={<span className="inline-flex cursor-pointer" />}>{children}</DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end" className="min-w-48">
         {menu?.items?.map((item) => (
           <DropdownMenuItem
             key={item.key}
             disabled={item.disabled}
             variant={item.danger ? 'destructive' : 'default'}
-            onClick={item.onClick}
+            className="gap-2"
+            onClick={(e) => {
+              e.stopPropagation();
+              item.onClick?.();
+            }}
           >
             {item.icon}
             {item.label}

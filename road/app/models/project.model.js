@@ -25,7 +25,7 @@ module.exports = (sequelize, Sequelize) => {
       },   
       status: {
         type: Sequelize.INTEGER,
-        defaultValue: 0
+        defaultValue: 1
       },
       staff: {
         type: Sequelize.STRING,

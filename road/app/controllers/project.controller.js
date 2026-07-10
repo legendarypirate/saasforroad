@@ -19,6 +19,7 @@ exports.create = async (req, res) => {
       budget: req.body.budget,
       equipment: req.body.equipment,
       staff: req.body.staff,
+      status: req.body.status ?? 1,
     };
 
     const data = await Project.create(project);
@@ -185,31 +186,11 @@ exports.total = async (req, res) => {
   }
 };
 
-// Update a Banner by the id in the request
-exports.update = (req, res) => {
+// Update a project by id
+exports.update = async (req, res) => {
   const id = req.params.id;
 
-  // Use multer to process form-data and files
-  upload(req, res, function (err) {
-    if (err instanceof multer.MulterError) {
-      return res.status(500).json({ success: false, message: "Error uploading file." });
-    } else if (err) {
-      return res.status(500).json({ success: false, message: err.message || "Unknown error." });
-    }
-
-    // Log form data and file
-    console.log("Request body:", req.body);
-    console.log("Uploaded file:", req.file);
-
-    // Validate at least one field to update
-    if (!req.body.name && !req.body.location && !req.body.purpose && !req.body.engineer) {
-      return res.status(400).json({
-        success: false,
-        message: "Request body is empty or invalid. Provide at least one field to update.",
-      });
-    }
-
-    // Build update data object
+  try {
     const updateData = {
       name: req.body.name,
       location: req.body.location,
@@ -218,84 +199,86 @@ exports.update = (req, res) => {
       budget: req.body.budget,
       equipment: req.body.equipment,
       staff: req.body.staff,
-      // Optional: handle image or file fields if used
-      // image: req.file ? req.file.filename : req.body.image || null
+      status: req.body.status,
     };
 
-    // Remove undefined or null fields to prevent overwriting
-    Object.keys(updateData).forEach(key => {
-      if (updateData[key] === undefined || updateData[key] === null) {
-        delete updateData[key];
-      }
+    Object.keys(updateData).forEach((key) => {
+      if (updateData[key] === undefined) delete updateData[key];
     });
 
-    // Update project
-    Project.update(updateData, { where: { id: id } })
-      .then(num => {
-        if (num == 1) {
-          return Project.findByPk(id);
-        } else {
-          throw new Error("Project not found or no changes were made.");
-        }
-      })
-      .then(updatedProject => {
-        res.json({
-          success: true,
-          message: "Project updated successfully.",
-          data: updatedProject
-        });
-      })
-      .catch(err => {
-        res.status(500).json({
-          success: false,
-          message: "Error updating project with id=" + id,
-          error: err.message
-        });
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Request body is empty. Provide at least one field to update.",
       });
-  });
+    }
+
+    const [num] = await Project.update(updateData, { where: { id } });
+    if (num !== 1) {
+      return res.status(404).json({
+        success: false,
+        message: `Cannot update project with id=${id}. Maybe project was not found.`,
+      });
+    }
+
+    const updatedProject = await Project.findByPk(id);
+    res.json({
+      success: true,
+      message: "Project updated successfully.",
+      data: updatedProject,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Error updating project with id=" + id,
+      error: err.message,
+    });
+  }
 };
 
-
-// Delete a Banner with the specified id in the request
-exports.delete = (req, res) => {
+// Delete a project by id
+exports.delete = async (req, res) => {
   const id = req.params.id;
 
-  Doctor.destroy({
-    where: { id: id }
-  })
-    .then(num => {
-      if (num == 1) {
-        res.json({ success: true, message: "Doctor was deleted successfully!" });
-      } else {
-        res.status(404).json({ success: false, message: `Cannot delete Doctor with id=${id}. Maybe Doctor was not found!` });
-      }
-    })
-    .catch(err => {
-      res.status(500).json({ success: false, message: "Could not delete Doctor with id=" + id });
+  try {
+    const num = await Project.destroy({ where: { id } });
+    if (num === 1) {
+      return res.json({ success: true, message: "Project was deleted successfully!" });
+    }
+    res.status(404).json({
+      success: false,
+      message: `Cannot delete project with id=${id}. Maybe project was not found.`,
     });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Could not delete project with id=" + id,
+    });
+  }
 };
 
-// Delete all Banners from the database.
-exports.deleteAll = (req, res) => {
-  Banner.destroy({
-    where: {},
-    truncate: false
-  })
-    .then(nums => {
-      res.json({ success: true, message: `${nums} Banners were deleted successfully!` });
-    })
-    .catch(err => {
-      res.status(500).json({ success: false, message: err.message || "Some error occurred while removing all banners." });
+// Delete all projects
+exports.deleteAll = async (req, res) => {
+  try {
+    const nums = await Project.destroy({ where: {}, truncate: false });
+    res.json({ success: true, message: `${nums} projects were deleted successfully!` });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message || "Some error occurred while removing all projects.",
     });
+  }
 };
 
-// find all published Banner
-exports.findAllPublished = (req, res) => {
-  Banner.findAll({ where: { published: true } })
-    .then(data => {
-      res.json({ success: true, data: data });
-    })
-    .catch(err => {
-      res.status(500).json({ success: false, message: err.message || "Some error occurred while retrieving banners." });
+// Legacy stub (unused)
+exports.findAllPublished = async (_req, res) => {
+  try {
+    const data = await Project.findAll();
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message || "Some error occurred while retrieving projects.",
     });
+  }
 };

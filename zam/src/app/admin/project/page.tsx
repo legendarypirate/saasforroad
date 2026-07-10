@@ -3,16 +3,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Card,
-  Row,
-  Col,
   Button,
-  Space,
   Typography,
   Tag,
-  Tooltip,
   Dropdown,
-  Menu,
   message,
   Form,
   Input,
@@ -30,9 +24,11 @@ import {
   DeleteOutlined,
   InboxOutlined,
   EnvironmentOutlined,
+  UserOutlined,
   RightOutlined,
 } from '@/components/admin/icons';
 import StaffAvatarGroup, { buildMembersFromProject } from '@/components/StaffAvatarGroup';
+import { cn } from '@/lib/utils';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -62,18 +58,23 @@ interface TaskSummary {
   status: string | number;
 }
 
-const statusTag = (status: number) => {
-  switch (status) {
-    case 1:
-      return <Tag color="blue">Төлөвлөсөн</Tag>;
-    case 2:
-      return <Tag color="orange">Явагдаж буй</Tag>;
-    case 3:
-      return <Tag color="green">Дууссан</Tag>;
-    default:
-      return <Tag color="default">Тодорхойгүй</Tag>;
-  }
+const STATUS_META: Record<
+  number,
+  { label: string; color: string; dot: string }
+> = {
+  1: { label: 'Төлөвлөсөн', color: 'blue', dot: 'bg-sky-500' },
+  2: { label: 'Явагдаж буй', color: 'orange', dot: 'bg-amber-500' },
+  3: { label: 'Дууссан', color: 'green', dot: 'bg-emerald-500' },
 };
+
+function normalizeStatus(status: number) {
+  return STATUS_META[status] ? status : 1;
+}
+
+function statusTag(status: number) {
+  const meta = STATUS_META[normalizeStatus(status)];
+  return <Tag color={meta.color}>{meta.label}</Tag>;
+}
 
 function computeProjectStats(tasks: TaskSummary[]) {
   const map: Record<number, { total: number; done: number }> = {};
@@ -85,6 +86,12 @@ function computeProjectStats(tasks: TaskSummary[]) {
     if (isDone) map[pid].done += 1;
   });
   return map;
+}
+
+function formatBudget(value: number) {
+  const n = Number(value) || 0;
+  if (n >= 1_000_000) return `${(n / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}сая₮`;
+  return `${n.toLocaleString()}₮`;
 }
 
 export default function ProjectPage() {
@@ -122,27 +129,28 @@ export default function ProjectPage() {
     setIsEditMode(false);
     setEditingProjectId(null);
     form.resetFields();
+    form.setFieldsValue({ status: 1, budget: 0 });
     setFormDrawerVisible(true);
   };
 
-  const openEditDrawer = (project: Project, e?: React.MouseEvent) => {
-    e?.stopPropagation();
+  const openEditDrawer = (project: Project) => {
     setIsEditMode(true);
     setEditingProjectId(project.id ?? null);
-    form.setFieldsValue({ ...project });
+    form.setFieldsValue({ ...project, status: normalizeStatus(project.status) });
     setFormDrawerVisible(true);
   };
 
   const handleFormSubmit = async () => {
     try {
       const values = await form.validateFields();
+      const payload = { ...values, status: normalizeStatus(Number(values.status)) };
       const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/project${isEditMode && editingProjectId ? `/${editingProjectId}` : ''}`;
       const method = isEditMode ? 'PUT' : 'POST';
 
       const res = await fetch(apiUrl, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
+        body: JSON.stringify(payload),
       });
       const result = await res.json();
 
@@ -152,7 +160,11 @@ export default function ProjectPage() {
 
         if (isEditMode) {
           setProjects((prev) =>
-            prev.map((p) => (p.id === editingProjectId ? { ...values, id: editingProjectId!, createdAt: p.createdAt } : p))
+            prev.map((p) =>
+              p.id === editingProjectId
+                ? { ...payload, id: editingProjectId!, createdAt: p.createdAt, users: p.users }
+                : p,
+            ),
           );
         } else {
           setProjects((prev) => [...prev, result.data]);
@@ -165,129 +177,208 @@ export default function ProjectPage() {
     }
   };
 
-  const menu = (project: Project) => (
-    <Menu
-      onClick={({ key, domEvent }) => {
-        domEvent.stopPropagation();
-        if (key === 'edit') openEditDrawer(project);
-        else if (key === 'view') router.push(`/admin/project/${project.id}`);
-        else message.info(`"${project.name}" дээр ${key} үйлдэл.`);
-      }}
-      items={[
-        { key: 'view', label: 'Дэлгэрэнгүй харах', icon: <RightOutlined /> },
-        { key: 'invite', label: 'Хэрэглэгч урь', icon: <UserAddOutlined /> },
-        { key: 'duplicate', label: 'Хувилах', icon: <CopyOutlined /> },
-        { key: 'edit', label: 'Засах', icon: <EditOutlined /> },
-        { key: 'archive', label: 'Архивлах', icon: <InboxOutlined /> },
-        { key: 'delete', label: 'Устгах', icon: <DeleteOutlined />, danger: true },
-      ]}
-    />
-  );
+  const projectActions = (project: Project) => [
+    {
+      key: 'view',
+      label: 'Дэлгэрэнгүй харах',
+      icon: <RightOutlined className="size-3.5" />,
+      onClick: () => router.push(`/admin/project/${project.id}`),
+    },
+    {
+      key: 'edit',
+      label: 'Засах',
+      icon: <EditOutlined className="size-3.5" />,
+      onClick: () => openEditDrawer(project),
+    },
+    {
+      key: 'invite',
+      label: 'Хэрэглэгч урь',
+      icon: <UserAddOutlined className="size-3.5" />,
+      onClick: () => message.info(`"${project.name}" — урилга удахгүй`),
+    },
+    {
+      key: 'duplicate',
+      label: 'Хувилах',
+      icon: <CopyOutlined className="size-3.5" />,
+      onClick: () => message.info(`"${project.name}" — хувилах удахгүй`),
+    },
+    {
+      key: 'archive',
+      label: 'Архивлах',
+      icon: <InboxOutlined className="size-3.5" />,
+      onClick: () => message.info(`"${project.name}" — архивлах удахгүй`),
+    },
+    {
+      key: 'delete',
+      label: 'Устгах',
+      icon: <DeleteOutlined className="size-3.5" />,
+      danger: true,
+      onClick: () => message.info(`"${project.name}" — устгах удахгүй`),
+    },
+  ];
 
   const summary = useMemo(() => {
-    const ongoing = projects.filter((p) => p.status === 2).length;
-    const planned = projects.filter((p) => p.status === 1).length;
-    const done = projects.filter((p) => p.status === 3).length;
+    const ongoing = projects.filter((p) => normalizeStatus(p.status) === 2).length;
+    const planned = projects.filter((p) => normalizeStatus(p.status) === 1).length;
+    const done = projects.filter((p) => normalizeStatus(p.status) === 3).length;
     return { total: projects.length, ongoing, planned, done };
   }, [projects]);
 
+  const summaryChips = [
+    { label: 'Нийт', value: summary.total, className: 'bg-muted text-foreground' },
+    { label: 'Явагдаж буй', value: summary.ongoing, className: 'bg-amber-500/15 text-amber-700 dark:text-amber-300' },
+    { label: 'Төлөвлөсөн', value: summary.planned, className: 'bg-sky-500/15 text-sky-700 dark:text-sky-300' },
+    { label: 'Дууссан', value: summary.done, className: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' },
+  ];
+
   return (
-    <div style={{ padding: '24px' }}>
-      <Space style={{ marginBottom: 24, width: '100%', justifyContent: 'space-between' }} wrap>
-        <div>
-          <Title level={4} style={{ marginBottom: 4 }}>
-            Төслийн жагсаалт
-          </Title>
-          <Text type="secondary">
-            Нийт {summary.total} · Явагдаж буй {summary.ongoing} · Төлөвлөсөн {summary.planned} · Дууссан {summary.done}
-          </Text>
+    <div className="space-y-6 p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-3">
+          <div>
+            <Title level={4} className="!mb-1">
+              Төслийн жагсаалт
+            </Title>
+            <Text type="secondary">Зам барилгын төслүүд болон гүйцэтгэлийн тойм</Text>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {summaryChips.map((chip) => (
+              <span
+                key={chip.label}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium',
+                  chip.className,
+                )}
+              >
+                <span className="opacity-70">{chip.label}</span>
+                <span className="tabular-nums font-semibold">{chip.value}</span>
+              </span>
+            ))}
+          </div>
         </div>
         <Button type="primary" icon={<PlusOutlined />} onClick={openAddDrawer}>
           Шинэ төсөл
         </Button>
-      </Space>
+      </div>
 
-      <Row gutter={[16, 16]}>
-        {projects.map((project) => {
-          const stats = project.id ? taskStats[project.id] : undefined;
-          const percent = stats && stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
-          const progressColor = percent >= 80 ? '#52c41a' : percent >= 40 ? '#faad14' : '#1890ff';
-          const members = buildMembersFromProject(project);
+      {projects.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-border bg-muted/30 px-6 py-16 text-center">
+          <Text type="secondary" className="mb-4 block">
+            Төсөл бүртгэгдээгүй байна
+          </Text>
+          <Button type="primary" icon={<PlusOutlined />} onClick={openAddDrawer}>
+            Эхний төсөл нэмэх
+          </Button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          {projects.map((project) => {
+            const stats = project.id ? taskStats[project.id] : undefined;
+            const percent =
+              stats && stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
+            const progressColor =
+              percent >= 80 ? '#22c55e' : percent >= 40 ? '#f59e0b' : '#38bdf8';
+            const members = buildMembersFromProject(project);
+            const status = normalizeStatus(project.status);
+            const meta = STATUS_META[status];
 
-          return (
-            <Col key={project.id} xs={24} sm={12} lg={8} xl={6}>
-              <Card
-                hoverable
+            return (
+              <article
+                key={project.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => router.push(`/admin/project/${project.id}`)}
-                title={
-                  <Tooltip title={project.name}>
-                    <Text strong style={{ color: '#1a365d', fontSize: 15 }}>
-                      {project.name}
-                    </Text>
-                  </Tooltip>
-                }
-                bordered
-                extra={
-                  <Dropdown overlay={menu(project)} trigger={['click']}>
-                    <EllipsisOutlined
-                      style={{ fontSize: 20, cursor: 'pointer' }}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </Dropdown>
-                }
-                styles={{ body: { paddingBottom: 12 } }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    router.push(`/admin/project/${project.id}`);
+                  }
+                }}
+                className={cn(
+                  'group flex cursor-pointer flex-col rounded-2xl border border-border bg-card',
+                  'p-5 shadow-sm transition-all duration-200',
+                  'hover:border-primary/40 hover:shadow-md hover:shadow-primary/5',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+                )}
               >
-                <Space direction="vertical" size={12} style={{ width: '100%' }}>
-                  <Space wrap size={4}>
-                    {statusTag(project.status)}
-                    <Tag icon={<EnvironmentOutlined />}>{project.location || '—'}</Tag>
-                  </Space>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <Progress
-                      type="circle"
-                      percent={percent}
-                      size={64}
-                      strokeColor={progressColor}
-                      format={(p) => <span style={{ fontSize: 13 }}>{p}%</span>}
-                    />
-                    <div>
-                      <Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
-                        Гүйцэтгэл
-                      </Text>
-                      <Text strong>
-                        {stats?.done ?? 0}/{stats?.total ?? 0} даалгавар
-                      </Text>
-                      <br />
-                      <Text type="secondary" style={{ fontSize: 12 }}>
-                        {project.engineer || 'Инженер тодорхойгүй'}
-                      </Text>
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                      <span className={cn('size-1.5 rounded-full', meta.dot)} aria-hidden />
+                      {statusTag(status)}
                     </div>
+                    <h3 className="truncate text-base font-semibold text-foreground transition-colors group-hover:text-primary">
+                      {project.name}
+                    </h3>
+                    <p className="mt-1 flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+                      <EnvironmentOutlined className="size-3.5 shrink-0 opacity-70" />
+                      <span className="truncate">{project.location || 'Байршил тодорхойгүй'}</span>
+                    </p>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>
-                        Ажиллаж буй хүмүүс
-                      </Text>
-                      <StaffAvatarGroup members={members} maxCount={4} size={32} showEmpty />
-                    </div>
-                    <Text type="danger" strong style={{ fontSize: 13 }}>
-                      {Number(project.budget).toLocaleString()}₮
-                    </Text>
-                  </div>
+                  <Dropdown menu={{ items: projectActions(project) }}>
+                    <button
+                      type="button"
+                      aria-label="Үйлдлүүд"
+                      className={cn(
+                        'inline-flex size-8 shrink-0 items-center justify-center rounded-lg',
+                        'text-muted-foreground transition-colors',
+                        'hover:bg-muted hover:text-foreground',
+                      )}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <EllipsisOutlined className="size-4" />
+                    </button>
+                  </Dropdown>
+                </div>
 
-                  <div style={{ textAlign: 'right' }}>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      Дэлгэрэнгүй <RightOutlined />
-                    </Text>
+                <div className="mb-4 flex items-center gap-4 rounded-xl bg-muted/40 px-3 py-3">
+                  <Progress
+                    type="circle"
+                    percent={percent}
+                    size={56}
+                    strokeWidth={7}
+                    strokeColor={progressColor}
+                    trailColor="color-mix(in oklab, var(--muted-foreground) 25%, transparent)"
+                    format={(p) => (
+                      <span className="text-xs font-semibold tabular-nums text-foreground">{p}%</span>
+                    )}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                      Гүйцэтгэл
+                    </p>
+                    <p className="mt-0.5 text-sm font-semibold tabular-nums text-foreground">
+                      {stats?.done ?? 0}
+                      <span className="font-normal text-muted-foreground"> / {stats?.total ?? 0}</span>
+                      <span className="ml-1 text-xs font-normal text-muted-foreground">даалгавар</span>
+                    </p>
+                    <p className="mt-1 flex items-center gap-1 truncate text-xs text-muted-foreground">
+                      <UserOutlined className="size-3 shrink-0 opacity-70" />
+                      <span className="truncate">
+                        {project.engineer?.trim() || 'Инженер тодорхойгүй'}
+                      </span>
+                    </p>
                   </div>
-                </Space>
-              </Card>
-            </Col>
-          );
-        })}
-      </Row>
+                </div>
+
+                <div className="mt-auto flex items-end justify-between gap-3 border-t border-border/70 pt-4">
+                  <div className="min-w-0">
+                    <p className="mb-1.5 text-[11px] text-muted-foreground">Баг</p>
+                    <StaffAvatarGroup members={members} maxCount={4} size={28} showEmpty />
+                  </div>
+                  <div className="text-right">
+                    <p className="mb-0.5 text-[11px] text-muted-foreground">Төсөв</p>
+                    <p className="text-sm font-semibold tabular-nums text-foreground">
+                      {formatBudget(Number(project.budget))}
+                    </p>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
 
       <Drawer
         title={isEditMode ? 'Төслийг засах' : 'Шинэ төсөл нэмэх'}
@@ -295,39 +386,37 @@ export default function ProjectPage() {
         onClose={() => setFormDrawerVisible(false)}
         open={formDrawerVisible}
         footer={
-          <div style={{ textAlign: 'right' }}>
-            <Button onClick={() => setFormDrawerVisible(false)} style={{ marginRight: 8 }}>
-              Болих
-            </Button>
+          <div className="flex justify-end gap-2">
+            <Button onClick={() => setFormDrawerVisible(false)}>Болих</Button>
             <Button onClick={handleFormSubmit} type="primary">
               {isEditMode ? 'Хадгалах' : 'Нэмэх'}
             </Button>
           </div>
         }
       >
-        <Form form={form} layout="vertical">
+        <Form form={form} layout="vertical" initialValues={{ status: 1, budget: 0 }}>
           <Form.Item label="Нэр" name="name" rules={[{ required: true, message: 'Нэр оруулна уу' }]}>
-            <Input />
+            <Input placeholder="Жишээ: УБ — Дархан зам" />
           </Form.Item>
-          <Form.Item label="Байршил" name="location" rules={[{ required: true }]}>
-            <Input />
+          <Form.Item label="Байршил" name="location" rules={[{ required: true, message: 'Байршил оруулна уу' }]}>
+            <Input placeholder="Хот / аймаг / хэсэг" />
           </Form.Item>
           <Form.Item label="Зорилго" name="purpose">
-            <Input />
+            <Input.TextArea rows={2} placeholder="Товч зорилго..." />
           </Form.Item>
           <Form.Item label="Инженер" name="engineer">
-            <Input />
+            <Input placeholder="Хариуцсан инженер" />
           </Form.Item>
           <Form.Item label="Тоног төхөөрөмж" name="equipment">
-            <Input />
+            <Input placeholder="Товч тэмдэглэл (заавал биш)" />
           </Form.Item>
           <Form.Item label="Ажилтан" name="staff">
-            <Input />
+            <Input placeholder="Нэрсийг таслалаар" />
           </Form.Item>
           <Form.Item label="Төсөв (₮)" name="budget" rules={[{ required: true, type: 'number', min: 0 }]}>
-            <InputNumber style={{ width: '100%' }} />
+            <InputNumber className="w-full" min={0} />
           </Form.Item>
-          <Form.Item label="Төлөв" name="status" rules={[{ required: true }]}>
+          <Form.Item label="Төлөв" name="status" rules={[{ required: true, message: 'Төлөв сонгоно уу' }]}>
             <Select>
               <Option value={1}>Төлөвлөсөн</Option>
               <Option value={2}>Явагдаж буй</Option>

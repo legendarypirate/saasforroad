@@ -240,16 +240,8 @@ export default function TaskKanban({ projectId, onTasksChange }: TaskKanbanProps
           {(Object.entries(columns) as [Status, Task[]][]).map(([status, items]) => (
             <Col key={status} xs={24} md={8}>
               <DroppableColumn id={status}>
-                <div
-                  style={{
-                    background: "#f8fafc",
-                    borderRadius: 12,
-                    padding: 16,
-                    minHeight: 360,
-                    border: "1px solid #e2e8f0",
-                  }}
-                >
-                  <div className="flex justify-between items-center mb-3">
+                <div className="min-h-[360px] rounded-xl border border-border bg-muted/50 p-4">
+                  <div className="mb-3 flex items-center justify-between">
                     <Title level={5} style={{ color: columnColors[status], margin: 0 }}>
                       {columnLabels[status]}
                     </Title>
@@ -358,7 +350,7 @@ function KanbanCard({ item }: { item: Task }) {
         </div>
 
         {item.due_date && (
-          <div className="flex items-center text-gray-500 text-sm gap-2">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <CalendarOutlined />
             <span>{new Date(item.due_date).toLocaleDateString("mn-MN")}</span>
           </div>

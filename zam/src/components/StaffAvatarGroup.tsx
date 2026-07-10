@@ -139,7 +139,7 @@ export default function StaffAvatarGroup({
   }
 
   return (
-    <Avatar.Group max={{ count: maxCount, style: { color: '#f56a00', backgroundColor: '#fde3cf' } }}>
+    <Avatar.Group maxCount={maxCount}>
       {members.map((member) => (
         <Tooltip
           key={member.id}

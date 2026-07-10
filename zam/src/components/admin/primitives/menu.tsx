@@ -36,12 +36,17 @@ function MenuDivider() {
   return <Separator className="my-1" />;
 }
 
+type MenuClickInfo = {
+  key: string;
+  domEvent: React.MouseEvent<HTMLButtonElement>;
+};
+
 type MenuProps = {
   children?: React.ReactNode;
   mode?: 'horizontal' | 'vertical' | 'inline';
   selectedKeys?: string[];
   items?: Array<{ key: string; label: React.ReactNode; icon?: React.ReactNode; danger?: boolean; disabled?: boolean }>;
-  onClick?: (info: { key: string }) => void;
+  onClick?: (info: MenuClickInfo) => void;
   className?: string;
   style?: React.CSSProperties;
 };
@@ -61,7 +66,10 @@ function MenuRoot({ children, mode = 'vertical', selectedKeys, items, onClick, c
             key={item.key}
             type="button"
             disabled={item.disabled}
-            onClick={() => onClick?.({ key: item.key })}
+            onClick={(domEvent) => {
+              domEvent.stopPropagation();
+              onClick?.({ key: item.key, domEvent });
+            }}
             className={cn(
               'rounded-md px-3 py-2 text-sm hover:bg-muted',
               selectedKeys?.includes(item.key) && 'bg-muted font-medium text-primary',

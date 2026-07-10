@@ -18,12 +18,14 @@ export function Tabs({
   activeKey,
   onChange,
   className,
+  tabBarExtraContent,
 }: {
   items?: TabItem[];
   defaultActiveKey?: string;
   activeKey?: string;
   onChange?: (key: string) => void;
   className?: string;
+  tabBarExtraContent?: React.ReactNode;
 }) {
   const [internal, setInternal] = React.useState(defaultActiveKey ?? items?.[0]?.key ?? '');
   const current = activeKey ?? internal;
@@ -37,8 +39,8 @@ export function Tabs({
       }}
       className={cn('w-full gap-0', className)}
     >
-      <div className="mb-4 border-b border-border">
-        <div className="overflow-x-auto scrollbar-thin">
+      <div className="mb-4 flex items-end gap-3 border-b border-border">
+        <div className="min-w-0 flex-1 overflow-x-auto scrollbar-thin">
           <TabsList
             variant="line"
             className="h-auto min-h-10 w-max min-w-full justify-start gap-0 rounded-none border-0 bg-transparent p-0"
@@ -60,6 +62,9 @@ export function Tabs({
             ))}
           </TabsList>
         </div>
+        {tabBarExtraContent ? (
+          <div className="mb-1.5 shrink-0">{tabBarExtraContent}</div>
+        ) : null}
       </div>
       {items?.map((item) => (
         <TabsContent key={item.key} value={item.key} className="mt-0 outline-none">
@@ -130,7 +135,12 @@ export function Collapse({
   items,
   defaultActiveKey,
 }: {
-  items?: Array<{ key: string; label: React.ReactNode; children: React.ReactNode }>;
+  items?: Array<{
+    key: string;
+    label: React.ReactNode;
+    children: React.ReactNode;
+    extra?: React.ReactNode;
+  }>;
   defaultActiveKey?: string | string[];
 }) {
   const [openKeys, setOpenKeys] = React.useState<string[]>(
@@ -143,18 +153,21 @@ export function Collapse({
         const open = openKeys.includes(item.key);
         return (
           <div key={item.key} className="rounded-lg border">
-            <button
-              type="button"
-              className="flex w-full items-center justify-between px-4 py-3 text-left font-medium"
-              onClick={() =>
-                setOpenKeys((prev) =>
-                  prev.includes(item.key) ? prev.filter((k) => k !== item.key) : [...prev, item.key],
-                )
-              }
-            >
-              {item.label}
-              <span>{open ? '−' : '+'}</span>
-            </button>
+            <div className="flex w-full items-center gap-2 px-4 py-3">
+              <button
+                type="button"
+                className="flex min-w-0 flex-1 items-center justify-between text-left font-medium"
+                onClick={() =>
+                  setOpenKeys((prev) =>
+                    prev.includes(item.key) ? prev.filter((k) => k !== item.key) : [...prev, item.key],
+                  )
+                }
+              >
+                <span className="min-w-0">{item.label}</span>
+                <span className="ml-2 shrink-0">{open ? '−' : '+'}</span>
+              </button>
+              {item.extra ? <div className="shrink-0">{item.extra}</div> : null}
+            </div>
             {open && <div className="border-t px-4 py-3">{item.children}</div>}
           </div>
         );
@@ -163,13 +176,89 @@ export function Collapse({
   );
 }
 
-export function Progress({ percent = 0, status }: { percent?: number; status?: string }) {
-  return (
-    <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+export function Progress({
+  percent = 0,
+  status,
+  type = 'line',
+  size,
+  strokeColor,
+  trailColor,
+  strokeWidth,
+  format,
+  style,
+  className,
+}: {
+  percent?: number;
+  status?: string;
+  type?: 'line' | 'circle' | 'dashboard';
+  size?: number;
+  strokeColor?: string;
+  trailColor?: string;
+  strokeWidth?: number;
+  format?: (percent?: number) => React.ReactNode;
+  style?: React.CSSProperties;
+  className?: string;
+}) {
+  const pct = Math.min(100, Math.max(0, percent));
+  const stroke = status === 'exception' ? undefined : strokeColor;
+
+  if (type === 'circle' || type === 'dashboard') {
+    const dim = size ?? 120;
+    const sw = strokeWidth ?? 8;
+    const r = (dim - sw) / 2;
+    const c = 2 * Math.PI * r;
+    const offset = c - (pct / 100) * c;
+    const label = format ? format(Math.round(pct)) : `${Math.round(pct)}%`;
+
+    return (
       <div
-        className={cn('h-full rounded-full bg-primary transition-all', status === 'exception' && 'bg-destructive')}
-        style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
-      />
+        className={cn('relative inline-flex items-center justify-center', className)}
+        style={{ width: dim, height: dim, ...style }}
+      >
+        <svg width={dim} height={dim} className="-rotate-90">
+          <circle
+            cx={dim / 2}
+            cy={dim / 2}
+            r={r}
+            fill="none"
+            stroke={trailColor || 'currentColor'}
+            strokeWidth={sw}
+            className={trailColor ? undefined : 'text-muted'}
+            opacity={trailColor ? 1 : 0.25}
+          />
+          <circle
+            cx={dim / 2}
+            cy={dim / 2}
+            r={r}
+            fill="none"
+            stroke={stroke || (status === 'exception' ? 'var(--destructive)' : 'var(--primary)')}
+            strokeWidth={sw}
+            strokeLinecap="round"
+            strokeDasharray={c}
+            strokeDashoffset={offset}
+            className="transition-all"
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">{label}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn('w-full', className)} style={style}>
+      <div className="h-2 w-full overflow-hidden rounded-full bg-muted" style={{ background: trailColor }}>
+        <div
+          className={cn(
+            'h-full rounded-full bg-primary transition-all',
+            status === 'exception' && 'bg-destructive',
+          )}
+          style={{
+            width: `${pct}%`,
+            background: stroke,
+          }}
+        />
+      </div>
+      {format ? <div className="mt-1 text-sm text-muted-foreground">{format(Math.round(pct))}</div> : null}
     </div>
   );
 }
