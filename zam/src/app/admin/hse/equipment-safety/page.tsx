@@ -14,7 +14,7 @@ export default function Page() {
         { key: 'maintenance_requested', label: 'Засвар хүссэн (1/0)', type: 'number' },
       ]}
       columns={[
-        { title: 'Тоног төхөөрөмж', render: (_, r) => (r.equipment as { name?: string })?.name || r.equipment_id },
+        { title: 'Тоног төхөөрөмж', render: (_, r) => (r.equipment as { name?: string })?.name || String(r.equipment_id ?? '—') },
         { title: 'Огноо', dataIndex: 'inspected_at' },
         { title: 'Засвар', dataIndex: 'maintenance_requested', render: (v: boolean) => (v ? <Tag color="orange">Тийм</Tag> : 'Үгүй') },
       ]}

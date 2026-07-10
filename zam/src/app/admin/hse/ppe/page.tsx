@@ -17,8 +17,8 @@ export default function Page() {
         ]},
       ]}
       columns={[
-        { title: 'PPE', render: (_, r) => (r.ppeItem as { name?: string })?.name || r.ppe_item_id },
-        { title: 'Ажилтан', render: (_, r) => (r.user as { username?: string })?.username || r.user_id },
+        { title: 'PPE', render: (_, r) => (r.ppeItem as { name?: string })?.name || String(r.ppe_item_id ?? '—') },
+        { title: 'Ажилтан', render: (_, r) => (r.user as { username?: string })?.username || String(r.user_id ?? '—') },
         { title: 'Олгосон', dataIndex: 'issued_at' },
         { title: 'Төлөв', dataIndex: 'status', render: (s: string) => <Tag>{s}</Tag> },
       ]}

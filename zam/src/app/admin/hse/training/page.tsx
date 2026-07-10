@@ -16,8 +16,8 @@ export default function Page() {
         { key: 'notes', label: 'Тэмдэглэл', type: 'textarea' },
       ]}
       columns={[
-        { title: 'Сургалт', render: (_, r) => (r.training as { name?: string })?.name || r.training_id },
-        { title: 'Ажилтан', render: (_, r) => (r.user as { username?: string })?.username || r.user_id },
+        { title: 'Сургалт', render: (_, r) => (r.training as { name?: string })?.name || String(r.training_id ?? '—') },
+        { title: 'Ажилтан', render: (_, r) => (r.user as { username?: string })?.username || String(r.user_id ?? '—') },
         { title: 'Дуусах', dataIndex: 'expires_at' },
         { title: 'Сургагч', dataIndex: 'trainer' },
       ]}
