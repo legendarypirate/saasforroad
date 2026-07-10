@@ -14,6 +14,27 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.STRING,
         allowNull: true,
       },
+      /** machine | tool | material */
+      category: {
+        type: Sequelize.STRING,
+        defaultValue: "machine",
+      },
+      unit: {
+        type: Sequelize.STRING,
+        defaultValue: "ширхэг",
+      },
+      default_daily_rate: {
+        type: Sequelize.DECIMAL(14, 2),
+        defaultValue: 0,
+      },
+      is_rentable: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true,
+      },
+      status: {
+        type: Sequelize.STRING,
+        defaultValue: "available", // available | rented | maintenance | retired
+      },
       motor_hours: {
         type: Sequelize.DECIMAL(12, 2),
         defaultValue: 0,

@@ -32,6 +32,16 @@ module.exports = (sequelize, Sequelize) => {
       type: Sequelize.DATEONLY,
       allowNull: false,
     },
+    /** Primary billing input — ₮ / өдөр */
+    daily_rate: {
+      type: Sequelize.DECIMAL(14, 2),
+      allowNull: false,
+      defaultValue: 0,
+    },
+    /**
+     * Cached display: daily_rate * 30 (approx month).
+     * Actual invoices use daily_rate * days in each period.
+     */
     monthly_rate: {
       type: Sequelize.DECIMAL(14, 2),
       allowNull: false,

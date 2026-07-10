@@ -18,6 +18,35 @@ import {
 
 const { Title, Text } = Typography;
 
+const QUICK_TYPES = [
+  'RECEIPT',
+  'ISSUE',
+  'TRANSFER',
+  'PROJECT_TRANSFER',
+  'RETURN',
+  'ADJUSTMENT',
+] as const;
+
+function warehouseLabel(r: any) {
+  if (r.doc_type === 'TRANSFER') {
+    return `${r.warehouse?.name || '—'} → ${r.toWarehouse?.name || '—'}`;
+  }
+  if (r.doc_type === 'PROJECT_TRANSFER') {
+    if (r.toWarehouse?.name && r.toWarehouse?.id !== r.warehouse?.id) {
+      return `${r.warehouse?.name || '—'} → ${r.toWarehouse.name}`;
+    }
+    return r.warehouse?.name || '—';
+  }
+  return r.warehouse?.name || '—';
+}
+
+function projectLabel(r: any) {
+  if (r.doc_type === 'PROJECT_TRANSFER') {
+    return `${r.project?.name || '—'} → ${r.toProject?.name || '—'}`;
+  }
+  return r.project?.name || '—';
+}
+
 export default function TransactionPage() {
   const [docs, setDocs] = useState<any[]>([]);
   const [movements, setMovements] = useState<any[]>([]);
@@ -85,6 +114,7 @@ export default function TransactionPage() {
         warehouse_id: values.warehouse_id,
         to_warehouse_id: values.to_warehouse_id,
         project_id: values.project_id,
+        to_project_id: values.to_project_id,
         supplier_id: values.supplier_id,
         receiver_name: values.receiver_name,
         doc_date: values.doc_date?.format?.('YYYY-MM-DD') || values.doc_date,
@@ -112,20 +142,23 @@ export default function TransactionPage() {
     }
   };
 
+  const projectOptions = projects.map((p: any) => ({ value: p.id, label: p.name }));
+  const warehouseOptions = warehouses.map((w: any) => ({ value: w.id, label: w.name }));
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <Title level={4} style={{ margin: 0 }}>Хөдөлгөөн / Баримт</Title>
           <Text type="secondary">
-            Бүх үлдэгдлийн өөрчлөлт баримтаар хийгдэнэ. Түүх устгахгүй — зөвхөн цуцлалт.
+            Агуулах болон төсөл хоорондын шилжүүлэг багтана. Түүх устгахгүй — зөвхөн цуцлалт.
           </Text>
         </div>
         <Space wrap>
           <Select
             allowClear
             placeholder="Баримтын төрөл"
-            style={{ width: 180 }}
+            style={{ width: 200 }}
             value={docType}
             onChange={setDocType}
             options={DOC_TYPES.map((d) => ({ value: d.value, label: d.label }))}
@@ -137,11 +170,14 @@ export default function TransactionPage() {
       </div>
 
       <Space wrap style={{ marginBottom: 12 }}>
-        {DOC_TYPES.slice(0, 6).map((d) => (
-          <Button key={d.value} size="small" onClick={() => openCreate(d.value)}>
-            + {d.label}
-          </Button>
-        ))}
+        {QUICK_TYPES.map((value) => {
+          const d = DOC_TYPES.find((x) => x.value === value)!;
+          return (
+            <Button key={d.value} size="small" onClick={() => openCreate(d.value)}>
+              + {d.label}
+            </Button>
+          );
+        })}
       </Space>
 
       <Tabs
@@ -154,28 +190,25 @@ export default function TransactionPage() {
                 rowKey="id"
                 loading={loading}
                 dataSource={docs}
-                scroll={{ x: 1100 }}
+                scroll={{ x: 1200 }}
                 columns={[
                   { title: 'Дугаар', dataIndex: 'doc_no', width: 150 },
                   {
                     title: 'Төрөл',
                     dataIndex: 'doc_type',
-                    width: 130,
+                    width: 150,
                     render: (v) => <Tag color={docTypeColor(v)}>{docTypeLabel(v)}</Tag>,
                   },
                   { title: 'Огноо', dataIndex: 'doc_date', width: 110 },
                   {
                     title: 'Агуулах',
-                    dataIndex: ['warehouse', 'name'],
-                    render: (v, r) =>
-                      r.doc_type === 'TRANSFER'
-                        ? `${r.warehouse?.name || '—'} → ${r.toWarehouse?.name || '—'}`
-                        : v || '—',
+                    width: 180,
+                    render: (_, r) => warehouseLabel(r),
                   },
                   {
                     title: 'Төсөл',
-                    dataIndex: ['project', 'name'],
-                    render: (v) => v || '—',
+                    width: 200,
+                    render: (_, r) => projectLabel(r),
                   },
                   {
                     title: 'Дүн',
@@ -226,6 +259,12 @@ export default function TransactionPage() {
                   { title: 'Бараа', dataIndex: ['material', 'name'] },
                   { title: 'Агуулах', dataIndex: ['warehouse', 'name'], width: 120 },
                   {
+                    title: 'Төсөл',
+                    dataIndex: ['project', 'name'],
+                    width: 140,
+                    render: (v) => v || '—',
+                  },
+                  {
                     title: 'Тоо',
                     dataIndex: 'quantity',
                     width: 90,
@@ -269,26 +308,55 @@ export default function TransactionPage() {
             <Form.Item name="doc_date" label="Огноо" rules={[{ required: true }]}>
               <DatePicker style={{ width: '100%' }} />
             </Form.Item>
+
             <Form.Item
               name="warehouse_id"
-              label={watchType === 'TRANSFER' ? 'Гарах агуулах' : 'Агуулах'}
+              label={
+                watchType === 'TRANSFER' || watchType === 'PROJECT_TRANSFER'
+                  ? 'Гарах агуулах'
+                  : 'Агуулах'
+              }
               rules={[{ required: true }]}
             >
-              <Select options={warehouses.map((w: any) => ({ value: w.id, label: w.name }))} />
+              <Select options={warehouseOptions} />
             </Form.Item>
+
             {watchType === 'TRANSFER' && (
               <Form.Item name="to_warehouse_id" label="Орох агуулах" rules={[{ required: true }]}>
-                <Select options={warehouses.map((w: any) => ({ value: w.id, label: w.name }))} />
+                <Select options={warehouseOptions} />
               </Form.Item>
             )}
+
+            {watchType === 'PROJECT_TRANSFER' && (
+              <>
+                <Form.Item
+                  name="to_warehouse_id"
+                  label="Орох агуулах (сонголттой)"
+                  extra="Хоосон бол ижил агуулахад төсөл солино"
+                >
+                  <Select allowClear placeholder="Ижил агуулах" options={warehouseOptions} />
+                </Form.Item>
+                <Form.Item name="project_id" label="Гарах төсөл" rules={[{ required: true }]}>
+                  <Select options={projectOptions} />
+                </Form.Item>
+                <Form.Item name="to_project_id" label="Орох төсөл" rules={[{ required: true }]}>
+                  <Select options={projectOptions} />
+                </Form.Item>
+              </>
+            )}
+
             {(watchType === 'ISSUE' || watchType === 'CONSUMPTION' || watchType === 'RETURN') && (
               <Form.Item name="project_id" label="Төсөл">
-                <Select
-                  allowClear
-                  options={projects.map((p: any) => ({ value: p.id, label: p.name }))}
-                />
+                <Select allowClear options={projectOptions} />
               </Form.Item>
             )}
+
+            {watchType === 'TRANSFER' && (
+              <Form.Item name="project_id" label="Төсөл (сонголттой)">
+                <Select allowClear options={projectOptions} />
+              </Form.Item>
+            )}
+
             {watchType === 'RECEIPT' && (
               <Form.Item name="supplier_id" label="Нийлүүлэгч">
                 <Select
@@ -303,7 +371,7 @@ export default function TransactionPage() {
               </Form.Item>
             )}
             <Form.Item name="reason" label="Шалтгаан" style={{ gridColumn: '1 / -1' }}>
-              <Input />
+              <Input placeholder={watchType === 'PROJECT_TRANSFER' ? 'Жишээ: А төслийн илүүдэл → Б төсөл' : undefined} />
             </Form.Item>
             <Form.Item name="remarks" label="Тэмдэглэл" style={{ gridColumn: '1 / -1' }}>
               <Input.TextArea rows={2} />

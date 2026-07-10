@@ -175,8 +175,8 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <div className="flex w-full flex-col justify-center bg-white px-6 py-10 md:px-12 lg:w-[480px] lg:shrink-0 lg:px-14 xl:w-[520px]">
-        <div className="mx-auto w-full max-w-sm">
+      <div className="flex w-full flex-col justify-center bg-white px-6 py-10 text-slate-900 md:px-12 lg:w-[480px] lg:shrink-0 lg:px-14 xl:w-[520px]">
+        <div className="login-form mx-auto w-full max-w-sm">
           <div className="mb-8">
             <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--road-accent)] text-white">
               <ShieldCheck className="size-6" />
@@ -203,7 +203,11 @@ export default function LoginPage() {
                   }}
                   placeholder="admin"
                   autoComplete="username"
-                  className={cn('h-11 pl-10', errors.username && 'border-destructive')}
+                  className={cn(
+                    'h-11 bg-white pl-10 text-slate-900 caret-slate-900 placeholder:text-slate-400',
+                    'dark:bg-white dark:text-slate-900 dark:placeholder:text-slate-400',
+                    errors.username && 'border-destructive',
+                  )}
                 />
               </div>
               {errors.username && (
@@ -227,7 +231,11 @@ export default function LoginPage() {
                   }}
                   placeholder="••••••••"
                   autoComplete="current-password"
-                  className={cn('h-11 pr-10 pl-10', errors.password && 'border-destructive')}
+                  className={cn(
+                    'h-11 bg-white pr-10 pl-10 text-slate-900 caret-slate-900 placeholder:text-slate-400',
+                    'dark:bg-white dark:text-slate-900 dark:placeholder:text-slate-400',
+                    errors.password && 'border-destructive',
+                  )}
                 />
                 <button
                   type="button"

@@ -8,7 +8,17 @@ const rentalInclude = [
   {
     model: Equipment,
     as: "equipment",
-    attributes: ["id", "name", "model", "registration_number", "motor_hours"],
+    attributes: [
+      "id",
+      "name",
+      "model",
+      "registration_number",
+      "motor_hours",
+      "category",
+      "unit",
+      "default_daily_rate",
+      "status",
+    ],
   },
   {
     model: EquipmentRentalPayment,
@@ -32,6 +42,32 @@ function formatDateOnly(date) {
 
 function lastDayOfMonth(year, month) {
   return new Date(year, month, 0).getDate();
+}
+
+function round2(n) {
+  return Math.round(Number(n) * 100) / 100;
+}
+
+/** Inclusive calendar days between two Date objects. */
+function daysInclusive(start, end) {
+  const a = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+  const b = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
+  return Math.floor((b - a) / 86400000) + 1;
+}
+
+/**
+ * Resolve daily rate.
+ * Prefer daily_rate; if only monthly_rate given (legacy), use monthly/30.
+ */
+function resolveDailyRate(rental) {
+  const daily = Number(rental.daily_rate) || 0;
+  if (daily > 0) return daily;
+  const monthly = Number(rental.monthly_rate) || 0;
+  return monthly > 0 ? monthly / 30 : 0;
+}
+
+function approxMonthlyFromDaily(dailyRate) {
+  return round2((Number(dailyRate) || 0) * 30);
 }
 
 function refreshPaymentStatus(payment) {
@@ -61,12 +97,16 @@ async function syncPaymentStatuses(rentalId) {
   }
 }
 
+/**
+ * Build monthly invoice rows.
+ * amount_due = daily_rate × days in that month period (prorated).
+ */
 function buildMonthlyPayments(rental) {
   const start = parseDate(rental.start_date);
   const end = parseDate(rental.end_date);
   if (!start || !end || end < start) return [];
 
-  const monthlyRate = Number(rental.monthly_rate) || 0;
+  const dailyRate = resolveDailyRate(rental);
   const rows = [];
   let cursor = new Date(start.getFullYear(), start.getMonth(), 1);
 
@@ -77,6 +117,7 @@ function buildMonthlyPayments(rental) {
     const monthEnd = new Date(year, month - 1, lastDayOfMonth(year, month));
     const periodStart = start > monthStart ? start : monthStart;
     const periodEnd = end < monthEnd ? end : monthEnd;
+    const days = daysInclusive(periodStart, periodEnd);
 
     rows.push({
       rental_id: rental.id,
@@ -84,15 +125,31 @@ function buildMonthlyPayments(rental) {
       period_month: month,
       period_start: formatDateOnly(periodStart),
       period_end: formatDateOnly(periodEnd),
-      amount_due: monthlyRate,
+      amount_due: round2(dailyRate * days),
       amount_paid: 0,
       status: "pending",
+      notes: `${days} өдөр × ${round2(dailyRate)}₮`,
     });
 
     cursor = new Date(year, month, 1);
   }
 
   return rows;
+}
+
+function normalizeRates(body) {
+  let daily = Number(body.daily_rate);
+  let monthly = Number(body.monthly_rate);
+  if (!Number.isFinite(daily) || daily < 0) daily = 0;
+  if (!Number.isFinite(monthly) || monthly < 0) monthly = 0;
+
+  if (daily > 0) {
+    monthly = approxMonthlyFromDaily(daily);
+  } else if (monthly > 0) {
+    daily = round2(monthly / 30);
+  }
+
+  return { daily_rate: daily, monthly_rate: monthly };
 }
 
 async function assertEquipmentAvailable(equipmentId, startDate, endDate, excludeRentalId) {
@@ -124,9 +181,12 @@ exports.stats = async (_req, res) => {
     const activeRentals = await EquipmentRental.count({ where: { status: "active" } });
     const activeRows = await EquipmentRental.findAll({
       where: { status: "active" },
-      attributes: ["monthly_rate"],
+      attributes: ["daily_rate", "monthly_rate"],
     });
-    const monthlyRevenue = activeRows.reduce((sum, row) => sum + Number(row.monthly_rate || 0), 0);
+    const monthlyRevenue = activeRows.reduce((sum, row) => {
+      const daily = resolveDailyRate(row);
+      return sum + approxMonthlyFromDaily(daily);
+    }, 0);
 
     const overduePayments = await EquipmentRentalPayment.findAll({
       where: { status: { [Op.in]: ["overdue", "partial"] } },
@@ -207,6 +267,14 @@ exports.create = async (req, res) => {
   try {
     await assertEquipmentAvailable(body.equipment_id, body.start_date, body.end_date);
 
+    const rates = normalizeRates(body);
+    if (rates.daily_rate <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Өдрийн түрээсийн үнэ оруулна уу (сараар автоматаар бодогдоно).",
+      });
+    }
+
     const rental = await EquipmentRental.create({
       contract_number: body.contract_number || `TR-${Date.now()}`,
       equipment_id: body.equipment_id,
@@ -217,7 +285,8 @@ exports.create = async (req, res) => {
       client_email: body.client_email,
       start_date: body.start_date,
       end_date: body.end_date,
-      monthly_rate: body.monthly_rate || 0,
+      daily_rate: rates.daily_rate,
+      monthly_rate: rates.monthly_rate,
       deposit_amount: body.deposit_amount || 0,
       motor_hours_start: body.motor_hours_start,
       motor_hours_end: body.motor_hours_end,
@@ -225,6 +294,8 @@ exports.create = async (req, res) => {
       status: body.status || "active",
       notes: body.notes,
     });
+
+    await Equipment.update({ status: "rented" }, { where: { id: body.equipment_id } });
 
     const paymentRows = buildMonthlyPayments(rental);
     if (paymentRows.length) {
@@ -246,16 +317,25 @@ exports.update = async (req, res) => {
     const nextEquipmentId = req.body.equipment_id ?? rental.equipment_id;
     const nextStart = req.body.start_date ?? rental.start_date;
     const nextEnd = req.body.end_date ?? rental.end_date;
-    const nextRate = req.body.monthly_rate ?? rental.monthly_rate;
+
+    const rates = normalizeRates({
+      daily_rate: req.body.daily_rate ?? rental.daily_rate,
+      monthly_rate: req.body.monthly_rate ?? rental.monthly_rate,
+    });
 
     await assertEquipmentAvailable(nextEquipmentId, nextStart, nextEnd, rental.id);
 
     const scheduleChanged =
       nextStart !== rental.start_date ||
       nextEnd !== rental.end_date ||
-      Number(nextRate) !== Number(rental.monthly_rate);
+      Number(rates.daily_rate) !== Number(rental.daily_rate) ||
+      Number(rates.monthly_rate) !== Number(rental.monthly_rate);
 
-    await rental.update(req.body);
+    await rental.update({
+      ...req.body,
+      daily_rate: rates.daily_rate,
+      monthly_rate: rates.monthly_rate,
+    });
 
     if (scheduleChanged) {
       await EquipmentRentalPayment.destroy({ where: { rental_id: rental.id } });
@@ -320,6 +400,8 @@ exports.completeRental = async (req, res) => {
       status: "completed",
       motor_hours_end: req.body.motor_hours_end ?? rental.motor_hours_end,
     });
+
+    await Equipment.update({ status: "available" }, { where: { id: rental.equipment_id } });
 
     const data = await EquipmentRental.findByPk(rental.id, { include: rentalInclude });
     res.json({ success: true, data });

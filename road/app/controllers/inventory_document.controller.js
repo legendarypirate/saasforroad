@@ -14,6 +14,7 @@ const docInclude = [
   { model: db.warehouses, as: "warehouse", attributes: ["id", "name"] },
   { model: db.warehouses, as: "toWarehouse", attributes: ["id", "name"] },
   { model: db.projects, as: "project", attributes: ["id", "name"] },
+  { model: db.projects, as: "toProject", attributes: ["id", "name"] },
   { model: db.suppliers, as: "supplier", attributes: ["id", "name"] },
 ];
 
@@ -24,6 +25,7 @@ exports.create = async (req, res) => {
       warehouseId: req.body.warehouse_id,
       toWarehouseId: req.body.to_warehouse_id,
       projectId: req.body.project_id,
+      toProjectId: req.body.to_project_id,
       supplierId: req.body.supplier_id,
       receiverName: req.body.receiver_name,
       docDate: req.body.doc_date,

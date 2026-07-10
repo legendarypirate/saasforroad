@@ -4,7 +4,7 @@ module.exports = (sequelize, Sequelize) => {
     doc_type: {
       type: Sequelize.STRING,
       allowNull: false,
-      // RECEIPT | ISSUE | RETURN | TRANSFER | ADJUSTMENT | COUNT | DAMAGE | LOSS | CONSUMPTION
+      // RECEIPT | ISSUE | RETURN | TRANSFER | PROJECT_TRANSFER | ADJUSTMENT | COUNT | DAMAGE | LOSS | CONSUMPTION
     },
     status: {
       type: Sequelize.STRING,
@@ -14,6 +14,7 @@ module.exports = (sequelize, Sequelize) => {
     warehouse_id: { type: Sequelize.INTEGER },
     to_warehouse_id: { type: Sequelize.INTEGER },
     project_id: { type: Sequelize.INTEGER },
+    to_project_id: { type: Sequelize.INTEGER },
     supplier_id: { type: Sequelize.INTEGER },
     receiver_name: { type: Sequelize.STRING },
     doc_date: { type: Sequelize.DATEONLY, allowNull: false },

@@ -51,7 +51,19 @@ const equipmentInclude = [
 
 exports.findAll = async (req, res) => {
   const q = req.query.q;
-  const where = q ? { name: { [db.Sequelize.Op.iLike]: `%${q}%` } } : {};
+  const category = req.query.category;
+  const rentable = req.query.is_rentable;
+  const where = {};
+  if (q) {
+    where[db.Sequelize.Op.or] = [
+      { name: { [db.Sequelize.Op.iLike]: `%${q}%` } },
+      { model: { [db.Sequelize.Op.iLike]: `%${q}%` } },
+      { registration_number: { [db.Sequelize.Op.iLike]: `%${q}%` } },
+    ];
+  }
+  if (category) where.category = category;
+  if (rentable === "true") where.is_rentable = true;
+  if (rentable === "false") where.is_rentable = false;
 
   try {
     const data = await Equipment.findAll({
@@ -83,7 +95,18 @@ exports.create = (req, res) => {
       return res.status(500).json({ success: false, message: err.message });
     }
 
-    const { name, model, registration_number, motor_hours, notes } = req.body;
+    const {
+      name,
+      model,
+      registration_number,
+      motor_hours,
+      notes,
+      category,
+      unit,
+      default_daily_rate,
+      is_rentable,
+      status,
+    } = req.body;
     if (!name) {
       return res.status(400).json({ success: false, message: "name is required" });
     }
@@ -96,6 +119,11 @@ exports.create = (req, res) => {
           registration_number: registration_number || null,
           motor_hours: motor_hours ?? 0,
           notes: notes || null,
+          category: category || "machine",
+          unit: unit || "ширхэг",
+          default_daily_rate: default_daily_rate ?? 0,
+          is_rentable: is_rentable === false || is_rentable === "false" ? false : true,
+          status: status || "available",
         },
         req.files
       );
@@ -128,6 +156,11 @@ exports.update = (req, res) => {
         "registration_number",
         "motor_hours",
         "notes",
+        "category",
+        "unit",
+        "default_daily_rate",
+        "is_rentable",
+        "status",
         "photo_front",
         "photo_back",
         "photo_left",
@@ -139,8 +172,17 @@ exports.update = (req, res) => {
           updates[f] = req.body[f];
         }
       });
+      if (req.body.is_rentable === false || req.body.is_rentable === "false") {
+        updates.is_rentable = false;
+      }
+      if (req.body.is_rentable === true || req.body.is_rentable === "true") {
+        updates.is_rentable = true;
+      }
       if (updates.motor_hours !== undefined) {
         updates.motor_hours = Number(updates.motor_hours);
+      }
+      if (updates.default_daily_rate !== undefined) {
+        updates.default_daily_rate = Number(updates.default_daily_rate);
       }
 
       await item.update(updates);

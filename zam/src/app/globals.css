@@ -254,6 +254,28 @@ optgroup {
   color: inherit;
 }
 
+/* Login form stays on a white panel — force readable typed text in dark mode */
+.login-form input[data-slot='input'] {
+  color: #0f172a;
+  -webkit-text-fill-color: #0f172a;
+  caret-color: #0f172a;
+  background-color: #fff;
+}
+
+.login-form input[data-slot='input']::placeholder {
+  color: #94a3b8;
+  -webkit-text-fill-color: #94a3b8;
+  opacity: 1;
+}
+
+.login-form input[data-slot='input']:-webkit-autofill,
+.login-form input[data-slot='input']:-webkit-autofill:hover,
+.login-form input[data-slot='input']:-webkit-autofill:focus {
+  -webkit-text-fill-color: #0f172a;
+  box-shadow: 0 0 0 1000px #fff inset;
+  transition: background-color 99999s ease-out;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

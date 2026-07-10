@@ -29,6 +29,11 @@ export interface EquipmentItem {
   name: string;
   model?: string;
   registration_number?: string;
+  category?: 'machine' | 'tool' | 'material';
+  unit?: string;
+  default_daily_rate?: number;
+  is_rentable?: boolean;
+  status?: string;
   motor_hours?: number;
   photo_front?: string;
   photo_back?: string;

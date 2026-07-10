@@ -10,6 +10,7 @@ const DOC_TYPES = {
   ISSUE: "ISSUE",
   RETURN: "RETURN",
   TRANSFER: "TRANSFER",
+  PROJECT_TRANSFER: "PROJECT_TRANSFER",
   ADJUSTMENT: "ADJUSTMENT",
   COUNT: "COUNT",
   DAMAGE: "DAMAGE",
@@ -48,6 +49,7 @@ async function nextDocNo(docType, transaction) {
     ISSUE: "ISS",
     RETURN: "RET",
     TRANSFER: "TRF",
+    PROJECT_TRANSFER: "PTR",
     ADJUSTMENT: "ADJ",
     COUNT: "CNT",
     DAMAGE: "DMG",
@@ -282,6 +284,30 @@ function resolveLineMovements(doc, line) {
           quantity: qty,
         },
       ];
+    case DOC_TYPES.PROJECT_TRANSFER: {
+      // project_id = from, to_project_id = to
+      // Optional warehouse move: to_warehouse_id defaults to same warehouse
+      const fromWh = doc.warehouse_id;
+      const toWh = doc.to_warehouse_id || doc.warehouse_id;
+      return [
+        {
+          ...base,
+          projectId: doc.project_id,
+          movementType: MOVEMENT_TYPES.TRANSFER,
+          warehouseId: fromWh,
+          toWarehouseId: toWh !== fromWh ? toWh : null,
+          quantity: -qty,
+        },
+        {
+          ...base,
+          projectId: doc.to_project_id,
+          movementType: MOVEMENT_TYPES.TRANSFER,
+          warehouseId: toWh,
+          toWarehouseId: toWh !== fromWh ? fromWh : null,
+          quantity: qty,
+        },
+      ];
+    }
     case DOC_TYPES.COUNT: {
       // line.quantity = counted qty; we adjust to match
       // actual delta computed at post time using current balance
@@ -297,6 +323,7 @@ async function createDocument({
   warehouseId,
   toWarehouseId,
   projectId,
+  toProjectId,
   supplierId,
   receiverName,
   docDate,
@@ -307,14 +334,25 @@ async function createDocument({
   postImmediately = true,
 }) {
   if (!lines?.length) throw bizError("Барааны мөр шаардлагатай");
-  if (!warehouseId && docType !== DOC_TYPES.TRANSFER) {
+  if (!warehouseId && docType !== DOC_TYPES.TRANSFER && docType !== DOC_TYPES.PROJECT_TRANSFER) {
     throw bizError("Агуулах сонгоно уу");
   }
   if (docType === DOC_TYPES.TRANSFER && (!warehouseId || !toWarehouseId)) {
     throw bizError("Шилжүүлэх агуулахуудыг сонгоно уу");
   }
-  if (warehouseId && toWarehouseId && warehouseId === toWarehouseId) {
+  if (docType === DOC_TYPES.TRANSFER && warehouseId && toWarehouseId && warehouseId === toWarehouseId) {
     throw bizError("Ижил агуулах руу шилжүүлэх боломжгүй");
+  }
+  if (docType === DOC_TYPES.PROJECT_TRANSFER) {
+    if (!warehouseId) throw bizError("Агуулах сонгоно уу");
+    if (!projectId || !toProjectId) throw bizError("Гарах болон орох төслийг сонгоно уу");
+    if (Number(projectId) === Number(toProjectId)) {
+      throw bizError("Ижил төсөл рүү шилжүүлэх боломжгүй");
+    }
+    const destWh = toWarehouseId || warehouseId;
+    if (Number(warehouseId) === Number(destWh) && Number(projectId) === Number(toProjectId)) {
+      throw bizError("Агуулах болон төсөл хоёулаа ижил байна");
+    }
   }
 
   const t = await db.sequelize.transaction();
@@ -346,8 +384,14 @@ async function createDocument({
         doc_type: docType,
         status: "DRAFT",
         warehouse_id: warehouseId || null,
-        to_warehouse_id: toWarehouseId || null,
+        to_warehouse_id:
+          docType === DOC_TYPES.PROJECT_TRANSFER
+            ? toWarehouseId && Number(toWarehouseId) !== Number(warehouseId)
+              ? toWarehouseId
+              : null
+            : toWarehouseId || null,
         project_id: projectId || null,
+        to_project_id: toProjectId || null,
         supplier_id: supplierId || null,
         receiver_name: receiverName || null,
         doc_date: docDate || new Date().toISOString().slice(0, 10),
@@ -502,6 +546,7 @@ async function getDocument(id) {
       { model: db.warehouses, as: "warehouse" },
       { model: db.warehouses, as: "toWarehouse" },
       { model: db.projects, as: "project" },
+      { model: db.projects, as: "toProject" },
       { model: db.suppliers, as: "supplier" },
     ],
   });

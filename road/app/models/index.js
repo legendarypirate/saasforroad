@@ -211,6 +211,10 @@ db.inv_documents.belongsTo(db.projects, {
   foreignKey: "project_id",
   as: "project",
 });
+db.inv_documents.belongsTo(db.projects, {
+  foreignKey: "to_project_id",
+  as: "toProject",
+});
 db.inv_documents.belongsTo(db.suppliers, {
   foreignKey: "supplier_id",
   as: "supplier",

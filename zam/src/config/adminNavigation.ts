@@ -19,14 +19,24 @@ export const ADMIN_MODULES: ModuleConfig[] = [
   {
     id: 'operations',
     label: 'Төсөл / Ажил',
-    description: 'Төсөл, даалгавар, тоног төхөөрөмж, түрээс',
+    description: 'Төсөл, даалгавар, календар',
     color: '#1890ff',
     items: [
       { path: '/admin/project', label: 'Төслүүд', permission: 'project:read' },
       { path: '/admin/task', label: 'Үүрэг даалгаврууд', permission: 'task:read' },
-      { path: '/admin/equipment', label: 'Тоног төхөөрөмж' },
-      { path: '/admin/equipment-rental', label: 'Тоног төхөөрөмж түрээс' },
       { path: '/admin/calendar', label: 'Календар' },
+    ],
+  },
+  {
+    id: 'rental',
+    label: 'Түрээс',
+    description: 'Машин, тоног, барилгын хэрэгслийн түрээс',
+    color: '#0d9488',
+    items: [
+      { path: '/admin/rental', label: 'Самбар', permission: 'rental:read' },
+      { path: '/admin/rental/assets', label: 'Тоног бүртгэл', permission: 'rental:read' },
+      { path: '/admin/rental/contracts', label: 'Түрээсийн гэрээ', permission: 'rental:read' },
+      { path: '/admin/rental/payments', label: 'Төлбөр', permission: 'rental:read' },
     ],
   },
   {

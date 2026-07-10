@@ -189,8 +189,23 @@ async function ensureInventoryColumns(sequelize) {
     `ALTER TABLE "stocks" ADD COLUMN IF NOT EXISTS "last_updated" TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE "stocks" ALTER COLUMN "quantity" TYPE DECIMAL(14,3) USING quantity::decimal;`,
   ];
+  const documentCols = [
+    `ALTER TABLE "inv_documents" ADD COLUMN IF NOT EXISTS "to_project_id" INTEGER;`,
+    `ALTER TABLE "inv_documents" ADD COLUMN IF NOT EXISTS "to_warehouse_id" INTEGER;`,
+    `ALTER TABLE "inv_documents" ADD COLUMN IF NOT EXISTS "project_id" INTEGER;`,
+  ];
+  const equipmentCols = [
+    `ALTER TABLE "equipments" ADD COLUMN IF NOT EXISTS "category" VARCHAR(32) DEFAULT 'machine';`,
+    `ALTER TABLE "equipments" ADD COLUMN IF NOT EXISTS "unit" VARCHAR(64) DEFAULT 'ширхэг';`,
+    `ALTER TABLE "equipments" ADD COLUMN IF NOT EXISTS "default_daily_rate" DECIMAL(14,2) DEFAULT 0;`,
+    `ALTER TABLE "equipments" ADD COLUMN IF NOT EXISTS "is_rentable" BOOLEAN DEFAULT true;`,
+    `ALTER TABLE "equipments" ADD COLUMN IF NOT EXISTS "status" VARCHAR(32) DEFAULT 'available';`,
+  ];
+  const rentalCols = [
+    `ALTER TABLE "equipment_rentals" ADD COLUMN IF NOT EXISTS "daily_rate" DECIMAL(14,2) DEFAULT 0;`,
+  ];
 
-  for (const group of [materialCols, warehouseCols, stockCols]) {
+  for (const group of [materialCols, warehouseCols, stockCols, documentCols, equipmentCols, rentalCols]) {
     for (const sql of group) {
       try {
         await sequelize.query(sql);

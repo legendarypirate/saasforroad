@@ -17,12 +17,13 @@ export const DOC_TYPES = [
   { value: 'RECEIPT', label: 'Орлого (GRN)', color: 'green' },
   { value: 'ISSUE', label: 'Зарлага', color: 'red' },
   { value: 'RETURN', label: 'Буцаалт', color: 'blue' },
-  { value: 'TRANSFER', label: 'Шилжүүлэг', color: 'purple' },
+  { value: 'TRANSFER', label: 'Агуулах шилжүүлэг', color: 'purple' },
+  { value: 'PROJECT_TRANSFER', label: 'Төсөл шилжүүлэг', color: 'geekblue' },
   { value: 'ADJUSTMENT', label: 'Тохируулга', color: 'orange' },
   { value: 'COUNT', label: 'Тооллого', color: 'cyan' },
   { value: 'DAMAGE', label: 'Гэмтэл', color: 'magenta' },
   { value: 'LOSS', label: 'Алдагдал', color: 'volcano' },
-  { value: 'CONSUMPTION', label: 'Хэрэглээ', color: 'geekblue' },
+  { value: 'CONSUMPTION', label: 'Хэрэглээ', color: 'gold' },
 ] as const;
 
 export function docTypeLabel(type: string) {
