@@ -81,7 +81,7 @@ export default function RentalDashboardPage() {
         </div>
         <Space wrap>
           <Button icon={<ReloadOutlined />} onClick={load}>Шинэчлэх</Button>
-          <Link href="/admin/rental/assets"><Button>Тоног бүртгэл</Button></Link>
+          <Link href="/admin/equipment"><Button>Тоног төхөөрөмж</Button></Link>
           <Link href="/admin/rental/contracts"><Button type="primary">Гэрээ нэмэх</Button></Link>
         </Space>
       </div>

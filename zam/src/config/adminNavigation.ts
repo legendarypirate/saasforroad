@@ -34,9 +34,17 @@ export const ADMIN_MODULES: ModuleConfig[] = [
     color: '#0d9488',
     items: [
       { path: '/admin/rental', label: 'Самбар', permission: 'rental:read' },
-      { path: '/admin/rental/assets', label: 'Тоног бүртгэл', permission: 'rental:read' },
       { path: '/admin/rental/contracts', label: 'Түрээсийн гэрээ', permission: 'rental:read' },
       { path: '/admin/rental/payments', label: 'Төлбөр', permission: 'rental:read' },
+    ],
+  },
+  {
+    id: 'equipment',
+    label: 'Тоног төхөөрөмж',
+    description: 'Техникийн профайл, ТО, бичиг баримт, орлого',
+    color: '#1d4ed8',
+    items: [
+      { path: '/admin/equipment', label: 'Бүртгэл', permission: 'equipment:read' },
     ],
   },
   {

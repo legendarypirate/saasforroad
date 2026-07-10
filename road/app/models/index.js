@@ -52,6 +52,9 @@ db.project_phases = require("./project_phase.model.js")(sequelize, Sequelize);
 db.equipments = require("./equipment.model.js")(sequelize, Sequelize);
 db.project_equipment_links = require("./project_equipment_link.model.js")(sequelize, Sequelize);
 db.equipment_oil_changes = require("./equipment_oil_change.model.js")(sequelize, Sequelize);
+db.equipment_service_logs = require("./equipment_service_log.model.js")(sequelize, Sequelize);
+db.equipment_documents = require("./equipment_document.model.js")(sequelize, Sequelize);
+db.equipment_monthly_finances = require("./equipment_monthly_finance.model.js")(sequelize, Sequelize);
 db.accidents = require("./accident.model.js")(sequelize, Sequelize);
 db.daily_reports = require("./daily_report.model.js")(sequelize, Sequelize);
 db.hse_daily_instructions = require("./hse_daily_instruction.model.js")(sequelize, Sequelize);
@@ -369,6 +372,33 @@ db.equipment_oil_changes.belongsTo(db.equipments, { foreignKey: "equipment_id", 
 db.equipments.hasMany(db.equipment_oil_changes, {
   foreignKey: "equipment_id",
   as: "oilChanges",
+});
+
+db.equipment_service_logs.belongsTo(db.equipments, { foreignKey: "equipment_id", onDelete: "CASCADE" });
+db.equipments.hasMany(db.equipment_service_logs, {
+  foreignKey: "equipment_id",
+  as: "serviceLogs",
+});
+
+db.equipment_documents.belongsTo(db.equipments, { foreignKey: "equipment_id", onDelete: "CASCADE" });
+db.equipments.hasMany(db.equipment_documents, {
+  foreignKey: "equipment_id",
+  as: "documents",
+});
+
+db.equipment_monthly_finances.belongsTo(db.equipments, { foreignKey: "equipment_id", onDelete: "CASCADE" });
+db.equipments.hasMany(db.equipment_monthly_finances, {
+  foreignKey: "equipment_id",
+  as: "monthlyFinances",
+});
+
+db.equipments.belongsTo(db.users, {
+  foreignKey: "responsible_user_id",
+  as: "responsibleUser",
+});
+db.equipments.belongsTo(db.users, {
+  foreignKey: "operator_user_id",
+  as: "operatorUser",
 });
 
 db.equipment_rentals.belongsTo(db.equipments, { foreignKey: "equipment_id", as: "equipment" });

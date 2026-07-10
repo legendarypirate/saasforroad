@@ -1,26 +1,36 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Col, Drawer, Form, Input, InputNumber, Row, Typography, Upload } from '@/components/admin/primitives';
-type UploadFile = {
-  uid: string;
-  name: string;
-  status?: 'done' | 'uploading' | 'error' | 'removed';
-  url?: string;
-  originFileObj?: File;
-};
-import { UploadOutlined } from '@/components/admin/icons';
-import { assetUrl, EQUIPMENT_API, SIDE_LABELS, type EquipmentItem } from '@/lib/equipment';
-
-const { Title } = Typography;
+import {
+  Button,
+  Col,
+  DatePicker,
+  Drawer,
+  Form,
+  Input,
+  InputNumber,
+  Row,
+  Select,
+  Switch,
+} from '@/components/admin/primitives';
+import dayjs from 'dayjs';
+import { DATE_FORMAT, dateFormItemProps } from '@/lib/userDates';
+import {
+  EQUIPMENT_API,
+  EQUIPMENT_STATUS_LABELS,
+  type EquipmentItem,
+} from '@/lib/equipment';
+import { WorkerSelect } from '@/components/equipment/WorkerSelect';
 
 interface EquipmentFormDrawerProps {
   open: boolean;
   editing: EquipmentItem | null;
   onClose: () => void;
-  onSaved: () => void;
+  /** Called after successful save with the saved record */
+  onSaved: (item: EquipmentItem) => void;
 }
 
+/** Create / quick-edit: only Excel sheet «Ерөнхий» section A fields. */
 export default function EquipmentFormDrawer({
   open,
   editing,
@@ -29,141 +39,211 @@ export default function EquipmentFormDrawer({
 }: EquipmentFormDrawerProps) {
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
-  const [fileLists, setFileLists] = useState<Record<string, UploadFile[]>>({});
-
-  const resetFileLists = (item?: EquipmentItem | null) => {
-    const lists: Record<string, UploadFile[]> = {};
-    Object.keys(SIDE_LABELS).forEach((key) => {
-      const path = item?.[key as keyof EquipmentItem] as string | undefined;
-      lists[key] = path
-        ? [{ uid: key, name: key, status: 'done', url: assetUrl(path) }]
-        : [];
-    });
-    lists.certificate_image = item?.certificate_image
-      ? [{ uid: 'cert', name: 'cert', status: 'done', url: assetUrl(item.certificate_image) }]
-      : [];
-    setFileLists(lists);
-  };
 
   React.useEffect(() => {
     if (!open) return;
     if (editing) {
       form.setFieldsValue({
-        name: editing.name,
-        model: editing.model,
-        registration_number: editing.registration_number,
-        motor_hours: editing.motor_hours,
-        notes: editing.notes,
+        ...editing,
+        import_date: editing.import_date ? dayjs(editing.import_date) : undefined,
       });
-      resetFileLists(editing);
     } else {
       form.resetFields();
-      resetFileLists(null);
+      form.setFieldsValue({
+        status: 'in_service',
+        category: 'machine',
+        unit: 'ширхэг',
+        is_rentable: true,
+        motor_hours: 0,
+        default_daily_rate: 0,
+      });
     }
   }, [open, editing, form]);
-
-  const appendFiles = (formData: FormData, key: string) => {
-    const list = fileLists[key];
-    if (list?.[0]?.originFileObj) {
-      formData.append(key, list[0].originFileObj as File);
-    }
-  };
 
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
       setSaving(true);
-      const formData = new FormData();
-      formData.append('name', values.name);
-      if (values.model) formData.append('model', values.model);
-      if (values.registration_number) formData.append('registration_number', values.registration_number);
-      if (values.motor_hours != null) formData.append('motor_hours', String(values.motor_hours));
-      if (values.notes) formData.append('notes', values.notes);
-      Object.keys(SIDE_LABELS).forEach((k) => appendFiles(formData, k));
-      appendFiles(formData, 'certificate_image');
+      const payload: Record<string, unknown> = {
+        asset_no: values.asset_no || null,
+        name: values.name,
+        model: values.model || null,
+        registration_number: values.registration_number || null,
+        serial_number: values.serial_number || null,
+        capacity: values.capacity || null,
+        country_of_origin: values.country_of_origin || null,
+        year_manufactured: values.year_manufactured || null,
+        import_date: dayjs.isDayjs(values.import_date)
+          ? values.import_date.format(DATE_FORMAT)
+          : values.import_date || null,
+        site: values.site || null,
+        color: values.color || null,
+        responsible_user_id: values.responsible_user_id ?? null,
+        operator_user_id: values.operator_user_id ?? null,
+        phone: values.phone || null,
+        status: values.status,
+        motor_hours: values.motor_hours ?? 0,
+        category: values.category,
+        unit: values.unit || 'ширхэг',
+        default_daily_rate: values.default_daily_rate ?? 0,
+        is_rentable: values.is_rentable !== false,
+        notes: values.notes || null,
+      };
 
       const url = editing ? `${EQUIPMENT_API}/${editing.id}` : EQUIPMENT_API;
-      const method = editing ? 'PUT' : 'POST';
-      const res = await fetch(url, { method, body: formData });
+      const res = await fetch(url, {
+        method: editing ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
       const result = await res.json();
-      if (result.success) {
-        onSaved();
-        onClose();
-      }
+      if (!result.success) throw new Error(result.message || 'Алдаа');
+      onSaved(result.data);
+      onClose();
+    } catch (e) {
+      if (e && typeof e === 'object' && 'errorFields' in e) return;
+      // message shown by caller or leave silent for validation
     } finally {
       setSaving(false);
     }
   };
 
-  const uploadButton = (field: string, label: string) => (
-    <Upload
-      listType="picture-card"
-      fileList={fileLists[field] || []}
-      maxCount={1}
-      beforeUpload={() => false}
-      onChange={({ fileList }) => setFileLists((prev) => ({ ...prev, [field]: fileList }))}
-    >
-      {(fileLists[field]?.length ?? 0) < 1 && (
-        <div>
-          <UploadOutlined />
-          <div style={{ marginTop: 8, fontSize: 11 }}>{label}</div>
-        </div>
-      )}
-    </Upload>
-  );
-
   return (
     <Drawer
-      title={editing ? 'Тоног төхөөрөмж засах' : 'Тоног төхөөрөмж бүртгэх'}
+      title={editing ? 'Ерөнхий мэдээлэл засах' : 'Шинэ тоног бүртгэх'}
       width={560}
       open={open}
       onClose={onClose}
       destroyOnClose
       footer={
         <div style={{ textAlign: 'right' }}>
-          <Button onClick={onClose} style={{ marginRight: 8 }}>
-            Болих
-          </Button>
+          <Button onClick={onClose} style={{ marginRight: 8 }}>Болих</Button>
           <Button type="primary" onClick={handleSave} loading={saving}>
-            Хадгалах
+            {editing ? 'Хадгалах' : 'Бүртгээд үргэлжлүүлэх'}
           </Button>
         </div>
       }
     >
       <Form form={form} layout="vertical">
-        <Form.Item label="Нэр" name="name" rules={[{ required: true, message: 'Нэр оруулна уу' }]}>
-          <Input placeholder="Жишээ: Экскаватор CAT 320" />
-        </Form.Item>
         <Row gutter={12}>
+          <Col span={8}>
+            <Form.Item name="asset_no" label="Дотоод дугаар">
+              <Input placeholder="№ 24" />
+            </Form.Item>
+          </Col>
+          <Col span={16}>
+            <Form.Item name="name" label="Техникийн нэр" rules={[{ required: true, message: 'Нэр оруулна уу' }]}>
+              <Input placeholder="Асфальтбетон дэвсэгч" />
+            </Form.Item>
+          </Col>
           <Col span={12}>
-            <Form.Item label="Загвар" name="model">
+            <Form.Item name="model" label="Марк / Модель">
+              <Input placeholder="XCMG RP952" />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item name="registration_number" label="Улсын дугаар">
+              <Input placeholder="66-07УР" />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item name="serial_number" label="Серийн / VIN">
               <Input />
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item label="Улсын дугаар" name="registration_number">
+            <Form.Item name="capacity" label="Хүчин чадал / Жин">
+              <Input placeholder="29,500 кг" />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item name="country_of_origin" label="Үйлдвэрлэсэн улс">
               <Input />
             </Form.Item>
           </Col>
+          <Col span={8}>
+            <Form.Item name="year_manufactured" label="Үйлдвэрлэсэн он">
+              <Input />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item name="import_date" label="Монголд орсон" {...dateFormItemProps()}>
+              <DatePicker format={DATE_FORMAT} style={{ width: '100%' }} />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item name="site" label="Харьяалагдах талбай">
+              <Input placeholder="Үлэмжийн зам" />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item name="color" label="Өнгө">
+              <Input />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item name="responsible_user_id" label="Хариуцагч">
+              <WorkerSelect placeholder="Дотоод ажилтан сонгох" />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item name="operator_user_id" label="Жолооч / Оператор">
+              <WorkerSelect
+                placeholder="Дотоод ажилтан сонгох"
+                onChange={(id, worker) => {
+                  form.setFieldsValue({ operator_user_id: id });
+                  if (worker?.phone) form.setFieldsValue({ phone: worker.phone });
+                }}
+              />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item name="phone" label="Утас">
+              <Input placeholder="Оператор сонгоход автоматаар" />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item name="status" label="Одоогийн төлөв">
+              <Select
+                options={Object.entries(EQUIPMENT_STATUS_LABELS).map(([value, label]) => ({
+                  value,
+                  label,
+                }))}
+              />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item name="motor_hours" label="Мото цаг / Гүйлт">
+              <InputNumber style={{ width: '100%' }} min={0} step={0.1} />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item name="category" label="Ангилал">
+              <Select
+                options={[
+                  { value: 'machine', label: 'Машин / тоног' },
+                  { value: 'tool', label: 'Барилгын хэрэгсэл' },
+                  { value: 'material', label: 'Материал' },
+                ]}
+              />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item name="default_daily_rate" label="Өдрийн түрээс (₮)">
+              <InputNumber style={{ width: '100%' }} min={0} />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item name="is_rentable" label="Түрээслэх боломжтой" valuePropName="checked">
+              <Switch />
+            </Form.Item>
+          </Col>
+          <Col span={24}>
+            <Form.Item name="notes" label="Тэмдэглэл">
+              <Input.TextArea rows={2} />
+            </Form.Item>
+          </Col>
         </Row>
-        <Form.Item label="Одоогийн мот/цаг" name="motor_hours">
-          <InputNumber style={{ width: '100%' }} min={0} step={0.1} />
-        </Form.Item>
-        <Form.Item label="Тайлбар" name="notes">
-          <Input.TextArea rows={2} />
-        </Form.Item>
-        <Title level={5}>4 талын зураг</Title>
-        <Row gutter={8}>
-          {Object.entries(SIDE_LABELS).map(([key, label]) => (
-            <Col span={12} key={key}>
-              {uploadButton(key, label)}
-            </Col>
-          ))}
-        </Row>
-        <Title level={5} style={{ marginTop: 16 }}>
-          Гэрчилгээний зураг
-        </Title>
-        {uploadButton('certificate_image', 'Гэрчилгээ')}
       </Form>
     </Drawer>
   );

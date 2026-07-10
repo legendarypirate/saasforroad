@@ -24,6 +24,7 @@ exports.findByProject = async (req, res) => {
       include: [
         {
           model: Equipment,
+          as: "equipment",
           include: equipmentInclude,
         },
       ],
