@@ -117,25 +117,29 @@ function PasswordInput({ className, ...props }: InputProps) {
 function TextAreaInput({
   rows = 3,
   className,
-  allowClear,
-  onPressEnter,
-  onSearch,
-  enterButton,
-  prefix,
-  suffix,
-  addonAfter,
-  addonBefore,
   ...props
-}: InputProps & { rows?: number }) {
-  void allowClear;
-  void onPressEnter;
-  void onSearch;
-  void enterButton;
-  void prefix;
-  void suffix;
-  void addonAfter;
-  void addonBefore;
-  return <Textarea rows={rows} className={cn('min-h-20', className)} {...props} />;
+}: React.ComponentProps<typeof Textarea> & {
+  allowClear?: boolean;
+  onPressEnter?: unknown;
+  onSearch?: unknown;
+  enterButton?: unknown;
+  prefix?: unknown;
+  suffix?: unknown;
+  addonAfter?: unknown;
+  addonBefore?: unknown;
+}) {
+  const {
+    allowClear: _allowClear,
+    onPressEnter: _onPressEnter,
+    onSearch: _onSearch,
+    enterButton: _enterButton,
+    prefix: _prefix,
+    suffix: _suffix,
+    addonAfter: _addonAfter,
+    addonBefore: _addonBefore,
+    ...rest
+  } = props;
+  return <Textarea rows={rows} className={cn('min-h-20', className)} {...rest} />;
 }
 
 function SearchInput({
