@@ -29,7 +29,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Spinner } from '@/components/ui/spinner';
 import { DASHBOARD_PATH } from '@/config/adminNavigation';
-import { getUserPermissions, getUserRole, getUsername, loadUserPermissions } from '@/lib/auth';
+import {
+  clearAuthSession,
+  getUserPermissions,
+  getUserRole,
+  getUsername,
+  loadUserPermissions,
+} from '@/lib/auth';
 import { uiToast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 
@@ -44,13 +50,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [logoutOpen, setLogoutOpen] = useState(false);
 
   const handleLogout = () => {
+    clearAuthSession();
     uiToast.success('Logged out');
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    localStorage.removeItem('permissions');
-    localStorage.removeItem('role');
-    localStorage.removeItem('username');
-    router.push('/');
+    router.push('/login');
   };
 
   useEffect(() => {
@@ -58,10 +60,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       setUsername(getUsername());
       setUserRole(getUserRole());
       const perms = await loadUserPermissions();
+      if (!localStorage.getItem('token')) {
+        router.replace('/login');
+        return;
+      }
       setUserPermissions(perms);
       setUserRole(getUserRole());
+      setUsername(getUsername());
     })();
-  }, []);
+  }, [router]);
 
   const isDashboard = pathname === DASHBOARD_PATH;
   const isBusy = loading || isPending;

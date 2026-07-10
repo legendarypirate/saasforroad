@@ -1,5 +1,7 @@
 const API = process.env.NEXT_PUBLIC_API_URL || '';
 
+const AUTH_KEYS = ['user', 'token', 'permissions', 'role', 'username'] as const;
+
 function readStoredPermissions(): string[] {
   try {
     const fromKey = localStorage.getItem('permissions');
@@ -30,46 +32,118 @@ function readStoredRole(): string {
   }
 }
 
+/** Wipe all auth-related storage (logout / invalid token). */
+export function clearAuthSession(): void {
+  if (typeof window === 'undefined') return;
+  for (const key of AUTH_KEYS) {
+    localStorage.removeItem(key);
+    sessionStorage.removeItem(key);
+  }
+}
+
+/** Replace session entirely — never merge with a previous user. */
+export function setAuthSession(
+  token: string,
+  user: {
+    id?: number;
+    username?: string;
+    role?: string;
+    role_name?: string;
+    role_id?: number | null;
+    permissions?: string[];
+    [key: string]: unknown;
+  },
+): void {
+  if (typeof window === 'undefined') return;
+  clearAuthSession();
+
+  const role = String(user.role_name || user.role || '').trim();
+  const permissions = Array.isArray(user.permissions) ? user.permissions : [];
+  const storedUser = {
+    ...user,
+    role,
+    role_name: role,
+    permissions,
+  };
+
+  localStorage.setItem('token', token);
+  localStorage.setItem('user', JSON.stringify(storedUser));
+  localStorage.setItem('permissions', JSON.stringify(permissions));
+  localStorage.setItem('role', role);
+  if (user.username) localStorage.setItem('username', String(user.username));
+}
+
 /** Sync read of cached permissions (for first paint). */
 export function getUserPermissions(): string[] {
   if (typeof window === 'undefined') return [];
   return readStoredPermissions();
 }
 
-/** Load permissions from API (fresh), fallback to localStorage. */
-export async function loadUserPermissions(): Promise<string[]> {
+/**
+ * Validate current token and refresh role/permissions from API.
+ * Returns null if there is no valid session (storage is cleared).
+ */
+export async function refreshAuthSession(): Promise<{
+  permissions: string[];
+  role: string;
+  username: string;
+} | null> {
   const token = localStorage.getItem('token');
-  if (!token) return readStoredPermissions();
+  if (!token) {
+    clearAuthSession();
+    return null;
+  }
 
   try {
     const res = await fetch(`${API}/api/auth/me`, {
       headers: { Authorization: token },
     });
-    if (!res.ok) return readStoredPermissions();
+
+    if (res.status === 401 || res.status === 403) {
+      clearAuthSession();
+      return null;
+    }
+
+    if (!res.ok) {
+      // Network/server error — keep cache only if we still have a user blob
+      const role = readStoredRole();
+      const permissions = readStoredPermissions();
+      if (!role && permissions.length === 0 && !localStorage.getItem('user')) {
+        clearAuthSession();
+        return null;
+      }
+      return {
+        permissions,
+        role,
+        username: getUsername(),
+      };
+    }
 
     const data = await res.json();
-    if (data.success && data.user) {
-      const existing = localStorage.getItem('user');
-      const prev = existing ? JSON.parse(existing) : {};
-      const merged = {
-        ...prev,
-        ...data.user,
-        // Prefer role name from API; keep string role for nav checks
-        role: data.user.role || data.user.role_name || prev.role,
-        role_name: data.user.role_name || data.user.role || prev.role_name,
-      };
-      localStorage.setItem('user', JSON.stringify(merged));
-      if (merged.permissions) {
-        localStorage.setItem('permissions', JSON.stringify(merged.permissions));
-      }
-      if (merged.role) localStorage.setItem('role', String(merged.role));
-      return Array.isArray(merged.permissions) ? merged.permissions : [];
+    if (!data.success || !data.user) {
+      clearAuthSession();
+      return null;
     }
-  } catch {
-    /* use cache */
-  }
 
-  return readStoredPermissions();
+    // Keep the same token; replace user/permissions completely
+    setAuthSession(token, data.user);
+    return {
+      permissions: Array.isArray(data.user.permissions) ? data.user.permissions : [],
+      role: String(data.user.role || data.user.role_name || ''),
+      username: data.user.username || getUsername(),
+    };
+  } catch {
+    const role = readStoredRole();
+    const permissions = readStoredPermissions();
+    if (!localStorage.getItem('user')) return null;
+    return { permissions, role, username: getUsername() };
+  }
+}
+
+/** Load permissions from API (fresh), clear session if token is invalid. */
+export async function loadUserPermissions(): Promise<string[]> {
+  const session = await refreshAuthSession();
+  return session?.permissions ?? [];
 }
 
 export function getUserRole(): string {
@@ -85,4 +159,9 @@ export function getUsername(): string {
   } catch {
     return 'Admin';
   }
+}
+
+export function getToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('token');
 }

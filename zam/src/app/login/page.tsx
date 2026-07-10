@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { clearAuthSession, refreshAuthSession, setAuthSession } from '@/lib/auth';
 import { uiToast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 
@@ -39,12 +40,32 @@ export default function LoginPage() {
 
   useEffect(() => {
     document.title = 'Нэвтрэх | Үлэмжийн зам';
-    const token = localStorage.getItem('token');
-    if (token) {
-      router.replace('/admin');
-      return;
-    }
-    setCheckingSession(false);
+    let cancelled = false;
+
+    (async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        clearAuthSession();
+        if (!cancelled) setCheckingSession(false);
+        return;
+      }
+
+      // Validate token — do NOT trust a leftover token / stale permissions
+      const session = await refreshAuthSession();
+      if (cancelled) return;
+
+      if (session) {
+        router.replace('/admin');
+        return;
+      }
+
+      // Invalid/expired token was cleared — show login form
+      setCheckingSession(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   const validate = () => {
@@ -61,6 +82,9 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
+      // Always wipe previous session before writing a new one
+      clearAuthSession();
+
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -70,17 +94,14 @@ export default function LoginPage() {
 
       if (res.ok && data.success) {
         uiToast.success('Амжилттай нэвтэрлээ!');
-        const { token, user } = data;
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(user));
-        localStorage.setItem('permissions', JSON.stringify(user.permissions ?? []));
-        localStorage.setItem('role', user.role?.toString() ?? '');
-        localStorage.setItem('username', user.username);
+        setAuthSession(data.token, data.user);
         router.push('/admin');
       } else {
+        clearAuthSession();
         uiToast.error(data.message || 'Нэвтрэх нэр эсвэл нууц үг буруу байна!');
       }
     } catch {
+      clearAuthSession();
       uiToast.error('Сервертэй холбогдож чадсангүй!');
     } finally {
       setLoading(false);
