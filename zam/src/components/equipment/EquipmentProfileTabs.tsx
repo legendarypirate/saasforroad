@@ -179,28 +179,74 @@ export function GeneralTab({ item, onSaved }: { item: EquipmentItem; onSaved: (i
 }
 
 /* ——— 2. Зураг ——— */
+const PHOTO_SLOTS = [
+  ...Object.entries(SIDE_LABELS).map(([key, label]) => ({ key, label })),
+  { key: 'certificate_image', label: 'Гэрчилгээ' },
+] as const;
+
 export function PhotosTab({ item, onSaved }: { item: EquipmentItem; onSaved: (i: EquipmentItem) => void }) {
   const [fileLists, setFileLists] = useState<Record<string, UploadFile[]>>({});
   const [saving, setSaving] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const lists: Record<string, UploadFile[]> = {};
-    for (const key of Object.keys(SIDE_LABELS)) {
+    for (const { key } of PHOTO_SLOTS) {
       const path = item[key as keyof EquipmentItem] as string | undefined;
-      lists[key] = path ? [{ uid: key, name: key, status: 'done', url: assetUrl(path) }] : [];
+      const local = fileLists[key]?.[0]?.originFileObj;
+      if (local) {
+        lists[key] = fileLists[key];
+      } else {
+        lists[key] = path
+          ? [{ uid: key, name: key, status: 'done', url: assetUrl(path) }]
+          : [];
+      }
     }
-    lists.certificate_image = item.certificate_image
-      ? [{ uid: 'cert', name: 'cert', status: 'done', url: assetUrl(item.certificate_image) }]
-      : [];
     setFileLists(lists);
+    // only re-sync when item changes (saved photos), not on every fileLists edit
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item]);
+
+  const gallery = useMemo(() => {
+    return PHOTO_SLOTS.map(({ key, label }) => {
+      const entry = fileLists[key]?.[0];
+      const url = entry?.url || (entry?.originFileObj ? URL.createObjectURL(entry.originFileObj) : null);
+      return { key, label, url };
+    }).filter((g) => !!g.url) as { key: string; label: string; url: string }[];
+  }, [fileLists]);
+
+  useEffect(() => {
+    if (viewerIndex == null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setViewerIndex(null);
+        return;
+      }
+      if (!gallery.length) return;
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setViewerIndex((i) => (i == null ? 0 : (i - 1 + gallery.length) % gallery.length));
+      }
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        setViewerIndex((i) => (i == null ? 0 : (i + 1) % gallery.length));
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [viewerIndex, gallery.length]);
+
+  const openViewer = (slotKey: string) => {
+    const idx = gallery.findIndex((g) => g.key === slotKey);
+    if (idx >= 0) setViewerIndex(idx);
+  };
 
   const save = async () => {
     setSaving(true);
     try {
       const fd = new FormData();
       let hasNew = false;
-      for (const key of [...Object.keys(SIDE_LABELS), 'certificate_image']) {
+      for (const { key } of PHOTO_SLOTS) {
         const entry = fileLists[key]?.[0];
         const f = entry?.originFileObj instanceof File ? entry.originFileObj : null;
         if (f) {
@@ -212,7 +258,6 @@ export function PhotosTab({ item, onSaved }: { item: EquipmentItem; onSaved: (i:
         message.info('Шинэ зураг сонгоогүй байна');
         return;
       }
-      // name required by pickBody only when present; multipart update can be photos-only
       const res = await fetch(`${EQUIPMENT_API}/${item.id}`, { method: 'PUT', body: fd });
       const json = await res.json();
       if (!json.success) throw new Error(json.message || 'Алдаа');
@@ -225,41 +270,125 @@ export function PhotosTab({ item, onSaved }: { item: EquipmentItem; onSaved: (i:
     }
   };
 
-  const up = (field: string, label: string) => (
-    <Upload
-      listType="picture-card"
-      accept="image/*"
-      fileList={fileLists[field] || []}
-      maxCount={1}
-      beforeUpload={() => false}
-      onChange={({ fileList }) => setFileLists((p) => ({ ...p, [field]: fileList }))}
-    >
-      <div className="flex flex-col items-center gap-1 p-1">
-        <UploadOutlined />
-        <div style={{ fontSize: 11 }}>{label}</div>
-      </div>
-    </Upload>
-  );
+  const current = viewerIndex != null ? gallery[viewerIndex] : null;
 
   return (
     <Card size="small" title="Техникийн зураг — 4 тал + гэрчилгээ">
       <SectionSaveBar
         saving={saving}
         onSave={save}
-        hint="Зураг сонгоод «Хадгалах» дарна · зөвхөн шинээр сонгосон файлууд илгээгдэнэ"
+        hint="Зураг дээр дарж бүтэн харна · ← → гараар шилжинэ · шинэ файл сонгоод Хадгалах"
       />
-      <Row gutter={[12, 12]}>
-        {Object.entries(SIDE_LABELS).map(([key, label]) => (
-          <Col xs={12} sm={6} key={key}>
-            <Text type="secondary" style={{ fontSize: 12 }}>{label}</Text>
-            <div style={{ marginTop: 6 }}>{up(key, label)}</div>
-          </Col>
-        ))}
-        <Col span={24}>
-          <Text type="secondary" style={{ fontSize: 12 }}>Гэрчилгээ / бүртгэлийн баримт</Text>
-          <div style={{ marginTop: 6 }}>{up('certificate_image', 'Гэрчилгээ')}</div>
-        </Col>
+      <Row gutter={[16, 16]}>
+        {PHOTO_SLOTS.map(({ key, label }) => {
+          const entry = fileLists[key]?.[0];
+          const preview =
+            entry?.url ||
+            (entry?.originFileObj ? URL.createObjectURL(entry.originFileObj) : null);
+          return (
+            <Col xs={12} sm={8} md={key === 'certificate_image' ? 12 : 6} key={key}>
+              <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>
+                {label}
+              </Text>
+              {preview ? (
+                <button
+                  type="button"
+                  onClick={() => openViewer(key)}
+                  className="group relative mb-2 block w-full overflow-hidden rounded-lg border border-border bg-muted/20"
+                  style={{ aspectRatio: '4/3', cursor: 'zoom-in' }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={preview}
+                    alt={label}
+                    className="size-full object-cover transition group-hover:scale-[1.02]"
+                  />
+                  <span className="absolute inset-x-0 bottom-0 bg-black/50 px-2 py-1 text-center text-[11px] text-white opacity-0 transition group-hover:opacity-100">
+                    Бүтэн харах
+                  </span>
+                </button>
+              ) : (
+                <div
+                  className="mb-2 flex items-center justify-center rounded-lg border border-dashed border-border text-xs text-muted-foreground"
+                  style={{ aspectRatio: '4/3' }}
+                >
+                  Зураг байхгүй
+                </div>
+              )}
+              <Upload
+                listType="picture-card"
+                accept="image/*"
+                fileList={entry?.originFileObj ? [entry] : []}
+                maxCount={1}
+                beforeUpload={() => false}
+                onChange={({ fileList }) => setFileLists((p) => ({ ...p, [key]: fileList }))}
+              >
+                <div className="flex flex-col items-center gap-1 p-1">
+                  <UploadOutlined />
+                  <div style={{ fontSize: 11 }}>{preview ? 'Солих' : 'Оруулах'}</div>
+                </div>
+              </Upload>
+            </Col>
+          );
+        })}
       </Row>
+
+      {current && viewerIndex != null && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[300] flex items-center justify-center bg-black/90"
+          onClick={() => setViewerIndex(null)}
+        >
+          <button
+            type="button"
+            className="absolute right-4 top-4 rounded-full bg-white/10 px-3 py-1 text-sm text-white hover:bg-white/20"
+            onClick={() => setViewerIndex(null)}
+          >
+            Хаах ✕
+          </button>
+          <div className="absolute left-4 top-4 text-sm text-white/80">
+            {current.label} · {viewerIndex + 1}/{gallery.length}
+            <span className="ml-3 text-white/50">← → шилжих · Esc хаах</span>
+          </div>
+
+          {gallery.length > 1 && (
+            <button
+              type="button"
+              aria-label="Өмнөх"
+              className="absolute left-3 top-1/2 z-10 flex size-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-2xl text-white hover:bg-white/25"
+              onClick={(e) => {
+                e.stopPropagation();
+                setViewerIndex((i) => (i == null ? 0 : (i - 1 + gallery.length) % gallery.length));
+              }}
+            >
+              ‹
+            </button>
+          )}
+
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={current.url}
+            alt={current.label}
+            className="max-h-[90vh] max-w-[92vw] object-contain shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+
+          {gallery.length > 1 && (
+            <button
+              type="button"
+              aria-label="Дараах"
+              className="absolute right-3 top-1/2 z-10 flex size-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-2xl text-white hover:bg-white/25"
+              onClick={(e) => {
+                e.stopPropagation();
+                setViewerIndex((i) => (i == null ? 0 : (i + 1) % gallery.length));
+              }}
+            >
+              ›
+            </button>
+          )}
+        </div>
+      )}
     </Card>
   );
 }
