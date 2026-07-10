@@ -22,7 +22,6 @@ import {
   EyeOutlined,
   PlusOutlined,
   ReloadOutlined,
-  ToolOutlined,
 } from '@/components/admin/icons';
 import EquipmentFormDrawer from '@/components/EquipmentFormDrawer';
 import {
@@ -165,70 +164,49 @@ function EquipmentPageContent() {
 
   return (
     <div>
-      <Card
-        bordered={false}
-        style={{
-          marginBottom: 20,
-          background: 'linear-gradient(135deg, #1a365d 0%, #2c5282 60%, #64748b 100%)',
-          borderRadius: 16,
-        }}
-        styles={{ body: { padding: '24px 28px' } }}
+      <div
+        className="mb-4 flex flex-nowrap items-center gap-3 overflow-x-auto rounded-xl border border-border bg-card px-4 py-3 shadow-sm"
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-          <Space>
-            <ToolOutlined style={{ fontSize: 32, color: '#fff' }} />
-            <div>
-              <Title level={3} style={{ color: '#fff', margin: 0 }}>
-                Тоног төхөөрөмж
-              </Title>
-              <Text style={{ color: 'rgba(255,255,255,0.85)' }}>
-                Эхлээд ерөнхий мэдээлэл бүртгэ → Дэлгэрэнгүй дээр Excel-ийн tab-уудаар нэмнэ
-              </Text>
-            </div>
-          </Space>
+        <Title level={4} style={{ margin: 0, whiteSpace: 'nowrap', flexShrink: 0 }}>
+          Тоног төхөөрөмж
+        </Title>
+        <div className="ml-auto flex flex-nowrap items-center gap-2">
+          <div style={{ width: 200, flexShrink: 0 }}>
+            <Input
+              allowClear
+              placeholder="Нэр, дугаар, VIN..."
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onPressEnter={fetchList}
+            />
+          </div>
+          <div style={{ width: 140, flexShrink: 0 }}>
+            <Select
+              allowClear
+              placeholder="Төлөв"
+              value={status}
+              onChange={setStatus}
+              options={Object.entries(EQUIPMENT_STATUS_LABELS).map(([value, label]) => ({
+                value,
+                label,
+              }))}
+            />
+          </div>
+          <Button icon={<ReloadOutlined />} onClick={fetchList} />
           <Button
             type="primary"
-            size="large"
             icon={<PlusOutlined />}
             onClick={() => {
               setEditing(null);
               setFormOpen(true);
             }}
-            style={{ background: '#d97706', borderColor: '#d97706' }}
           >
             Шинээр бүртгэх
           </Button>
         </div>
-      </Card>
+      </div>
 
-      <Card size="small" style={{ marginBottom: 16 }}>
-        <Space wrap>
-          <Input
-            allowClear
-            placeholder="Нэр, дугаар, VIN, талбай..."
-            style={{ width: 240 }}
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            onPressEnter={fetchList}
-          />
-          <Select
-            allowClear
-            placeholder="Төлөв"
-            style={{ width: 160 }}
-            value={status}
-            onChange={setStatus}
-            options={Object.entries(EQUIPMENT_STATUS_LABELS).map(([value, label]) => ({
-              value,
-              label,
-            }))}
-          />
-          <Button icon={<ReloadOutlined />} onClick={fetchList}>
-            Шинэчлэх
-          </Button>
-        </Space>
-      </Card>
-
-      <Card>
+      <Card size="small">
         <Table
           rowKey="id"
           loading={loading}

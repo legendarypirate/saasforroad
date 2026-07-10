@@ -70,6 +70,14 @@ export default function EquipmentDetailPage() {
     load();
   }, [load]);
 
+  const refreshFrom = useCallback(
+    (equipment?: EquipmentItem) => {
+      if (equipment) setItem(equipment);
+      else load();
+    },
+    [load]
+  );
+
   if (loading && !item) {
     return <Spin style={{ display: 'block', margin: '64px auto' }} />;
   }
@@ -149,27 +157,27 @@ export default function EquipmentDetailPage() {
           {
             key: 'insurance',
             label: 'Даатгал',
-            children: <InsuranceTab item={item} onSaved={setItem} />,
+            children: <InsuranceTab item={item} onRefresh={refreshFrom} />,
           },
           {
             key: 'inspection',
             label: 'Оношилгоо',
-            children: <InspectionTab item={item} onSaved={setItem} />,
+            children: <InspectionTab item={item} onRefresh={refreshFrom} />,
           },
           {
             key: 'oil',
             label: 'Тос масло',
-            children: <OilTab item={item} onSaved={setItem} onRefresh={load} />,
+            children: <OilTab item={item} onRefresh={load} />,
           },
           {
             key: 'certificate',
             label: 'Гэрчилгээ',
-            children: <CertificateTab item={item} onSaved={setItem} />,
+            children: <CertificateTab item={item} onRefresh={refreshFrom} />,
           },
           {
             key: 'other-docs',
             label: 'Бусад баримт',
-            children: <OtherDocsTab item={item} onSaved={setItem} onRefresh={load} />,
+            children: <OtherDocsTab item={item} onRefresh={refreshFrom} />,
           },
           {
             key: 'finance',

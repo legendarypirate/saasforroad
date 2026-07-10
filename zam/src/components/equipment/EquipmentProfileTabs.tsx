@@ -6,17 +6,14 @@ import {
   Card,
   Col,
   DatePicker,
+  Drawer,
   Form,
-  Image,
   Input,
   InputNumber,
   Popconfirm,
   Row,
   Select,
-  Space,
-  Switch,
   Table,
-  Tag,
   Typography,
   Upload,
   message,
@@ -30,9 +27,7 @@ import {
   EQUIPMENT_STATUS_LABELS,
   SIDE_LABELS,
   assetUrl,
-  expiryTone,
   financeTotals,
-  type EquipmentDocRecord,
   type EquipmentItem,
   type MonthlyFinanceRecord,
   type OilChangeRecord,
@@ -206,7 +201,8 @@ export function PhotosTab({ item, onSaved }: { item: EquipmentItem; onSaved: (i:
       const fd = new FormData();
       let hasNew = false;
       for (const key of [...Object.keys(SIDE_LABELS), 'certificate_image']) {
-        const f = fileLists[key]?.[0]?.originFileObj;
+        const entry = fileLists[key]?.[0];
+        const f = entry?.originFileObj instanceof File ? entry.originFileObj : null;
         if (f) {
           fd.append(key, f);
           hasNew = true;
@@ -216,6 +212,7 @@ export function PhotosTab({ item, onSaved }: { item: EquipmentItem; onSaved: (i:
         message.info('Шинэ зураг сонгоогүй байна');
         return;
       }
+      // name required by pickBody only when present; multipart update can be photos-only
       const res = await fetch(`${EQUIPMENT_API}/${item.id}`, { method: 'PUT', body: fd });
       const json = await res.json();
       if (!json.success) throw new Error(json.message || 'Алдаа');
@@ -231,35 +228,31 @@ export function PhotosTab({ item, onSaved }: { item: EquipmentItem; onSaved: (i:
   const up = (field: string, label: string) => (
     <Upload
       listType="picture-card"
+      accept="image/*"
       fileList={fileLists[field] || []}
       maxCount={1}
       beforeUpload={() => false}
       onChange={({ fileList }) => setFileLists((p) => ({ ...p, [field]: fileList }))}
     >
-      {(fileLists[field]?.length ?? 0) < 1 && (
-        <div>
-          <UploadOutlined />
-          <div style={{ marginTop: 8, fontSize: 11 }}>{label}</div>
-        </div>
-      )}
+      <div className="flex flex-col items-center gap-1 p-1">
+        <UploadOutlined />
+        <div style={{ fontSize: 11 }}>{label}</div>
+      </div>
     </Upload>
   );
 
   return (
     <Card size="small" title="Техникийн зураг — 4 тал + гэрчилгээ">
-      <SectionSaveBar saving={saving} onSave={save} hint="Excel sheet 2 — зөвхөн шинээр сонгосон зураг илгээгдэнэ" />
+      <SectionSaveBar
+        saving={saving}
+        onSave={save}
+        hint="Зураг сонгоод «Хадгалах» дарна · зөвхөн шинээр сонгосон файлууд илгээгдэнэ"
+      />
       <Row gutter={[12, 12]}>
         {Object.entries(SIDE_LABELS).map(([key, label]) => (
           <Col xs={12} sm={6} key={key}>
             <Text type="secondary" style={{ fontSize: 12 }}>{label}</Text>
             <div style={{ marginTop: 6 }}>{up(key, label)}</div>
-            {item[key as keyof EquipmentItem] && !fileLists[key]?.[0]?.originFileObj && (
-              <Image
-                src={assetUrl(String(item[key as keyof EquipmentItem]))}
-                alt={label}
-                style={{ width: '100%', maxHeight: 100, objectFit: 'cover', marginTop: 8, borderRadius: 6 }}
-              />
-            )}
           </Col>
         ))}
         <Col span={24}>
@@ -271,14 +264,17 @@ export function PhotosTab({ item, onSaved }: { item: EquipmentItem; onSaved: (i:
   );
 }
 
+
 /* ——— 3. ТО / Засвар ——— */
 export function ServiceTab({ item, onRefresh }: { item: EquipmentItem; onRefresh: () => void }) {
   const [form] = Form.useForm();
   const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const add = async () => {
     try {
       const v = await form.validateFields();
+      setSaving(true);
       await postJson(`${EQUIPMENT_API}/${item.id}/service_logs`, {
         ...v,
         service_date: dayjs.isDayjs(v.service_date) ? v.service_date.format(DATE_FORMAT) : v.service_date,
@@ -293,6 +289,8 @@ export function ServiceTab({ item, onRefresh }: { item: EquipmentItem; onRefresh
     } catch (e) {
       if (e && typeof e === 'object' && 'errorFields' in e) return;
       message.error(e instanceof Error ? e.message : 'Алдаа');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -343,222 +341,61 @@ export function ServiceTab({ item, onRefresh }: { item: EquipmentItem; onRefresh
       }
     >
       <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
-        Excel sheet 3 — хийгдэх бүрт шинэ мөр нэмнэ
+        Түүх жагсаалтаар · шинэ бүртгэл drawer-ээр
       </Text>
-      {open && (
-        <Card size="small" style={{ marginBottom: 12, background: 'var(--muted, #f8fafc)' }}>
-          <Form form={form} layout="vertical">
-            <Row gutter={12}>
-              <Col xs={24} sm={6}>
-                <Form.Item name="service_date" label="Огноо" rules={[{ required: true }]} {...dateFormItemProps()}>
-                  <DatePicker format={DATE_FORMAT} style={{ width: '100%' }} />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={6}><Form.Item name="motor_hours" label="Мото цаг"><InputNumber style={{ width: '100%' }} min={0} /></Form.Item></Col>
-              <Col xs={24} sm={6}>
-                <Form.Item name="service_type" label="Төрөл">
-                  <Select options={[{ value: 'ТО' }, { value: 'Засвар' }, { value: 'Бусад' }].map((o) => ({ value: o.value, label: o.value }))} />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={6}><Form.Item name="cost" label="Зардал ₮"><InputNumber style={{ width: '100%' }} min={0} /></Form.Item></Col>
-              <Col xs={24} sm={12}><Form.Item name="description" label="Хийсэн ажил"><Input /></Form.Item></Col>
-              <Col xs={24} sm={12}><Form.Item name="parts_replaced" label="Орлуулсан эд анги"><Input /></Form.Item></Col>
-              <Col xs={24} sm={8}><Form.Item name="service_provider" label="Гүйцэтгэсэн газар"><Input /></Form.Item></Col>
-              <Col xs={24} sm={8}><Form.Item name="engineer" label="Инженер"><Input /></Form.Item></Col>
-              <Col xs={24} sm={8}>
-                <Form.Item name="next_service_date" label="Дараагийн ТО" {...dateFormItemProps()}>
-                  <DatePicker format={DATE_FORMAT} style={{ width: '100%' }} />
-                </Form.Item>
-              </Col>
-              <Col span={24}><Form.Item name="notes" label="Тэмдэглэл"><Input /></Form.Item></Col>
-            </Row>
-            <Space>
-              <Button type="primary" onClick={add}>Хадгалах</Button>
-              <Button onClick={() => setOpen(false)}>Болих</Button>
-            </Space>
-          </Form>
-        </Card>
-      )}
       <Table
         size="small"
         rowKey="id"
-        pagination={false}
+        pagination={{ pageSize: 10 }}
         dataSource={item.serviceLogs || []}
         columns={columns}
         scroll={{ x: 1100 }}
         locale={{ emptyText: 'Түүх байхгүй — «Шинэ мөр» дарж нэмнэ үү' }}
       />
-    </Card>
-  );
-}
-
-/* ——— Shared section save helper ——— */
-async function saveFormSection(
-  itemId: number,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  formInst: any,
-  dateKeys: string[],
-  onSaved: (i: EquipmentItem) => void
-) {
-  const v = await formInst.validateFields();
-  const body: Record<string, unknown> = { ...v };
-  for (const dk of dateKeys) {
-    if (dayjs.isDayjs(body[dk])) body[dk] = (body[dk] as dayjs.Dayjs).format(DATE_FORMAT);
-  }
-  const data = await patchJson(itemId, body);
-  message.success('Хадгалагдлаа');
-  onSaved(data);
-}
-
-/* ——— Даатгал ——— */
-export function InsuranceTab({ item, onSaved }: { item: EquipmentItem; onSaved: (i: EquipmentItem) => void }) {
-  const [form] = Form.useForm();
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    form.setFieldsValue({
-      insurance_company: item.insurance_company,
-      insurance_status: item.insurance_status,
-      insurance_expiry: item.insurance_expiry ? dayjs(item.insurance_expiry) : undefined,
-      insurance_amount: item.insurance_amount,
-      insurance_contract_no: item.insurance_contract_no,
-      insurance_notes: item.insurance_notes,
-    });
-  }, [item, form]);
-
-  return (
-    <Card
-      size="small"
-      title={
-        <Space>
-          <span>Даатгал</span>
-          <Tag color={expiryTone(item.insurance_expiry)}>
-            {item.insurance_status || item.insurance_expiry || 'хугацаа'}
-          </Tag>
-        </Space>
-      }
-    >
-      <SectionSaveBar
-        saving={saving}
-        hint="Даатгалын байгууллага, дуусах хугацаа, дүн"
-        onSave={async () => {
-          try {
-            setSaving(true);
-            await saveFormSection(item.id, form, ['insurance_expiry'], onSaved);
-          } catch (e) {
-            if (e && typeof e === 'object' && 'errorFields' in e) return;
-            message.error(e instanceof Error ? e.message : 'Алдаа');
-          } finally {
-            setSaving(false);
-          }
-        }}
-      />
-      <Form form={form} layout="vertical">
-        <Row gutter={12}>
-          <Col xs={24} sm={12}><Form.Item name="insurance_company" label="Байгууллага"><Input /></Form.Item></Col>
-          <Col xs={24} sm={12}>
-            <Form.Item name="insurance_status" label="Төлөв">
-              <Select allowClear options={['Хүчинтэй', 'Хугацаа дууссан', '90 хоногт дуусна'].map((v) => ({ value: v, label: v }))} />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={8}>
-            <Form.Item name="insurance_expiry" label="Дуусах огноо" {...dateFormItemProps()}>
-              <DatePicker format={DATE_FORMAT} style={{ width: '100%' }} />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={8}><Form.Item name="insurance_amount" label="Дүн ₮"><InputNumber style={{ width: '100%' }} min={0} /></Form.Item></Col>
-          <Col xs={24} sm={8}><Form.Item name="insurance_contract_no" label="Гэрээ №"><Input /></Form.Item></Col>
-          <Col span={24}><Form.Item name="insurance_notes" label="Тэмдэглэл"><Input.TextArea rows={2} /></Form.Item></Col>
-        </Row>
-      </Form>
-    </Card>
-  );
-}
-
-/* ——— Техникийн оношилгоо ——— */
-export function InspectionTab({ item, onSaved }: { item: EquipmentItem; onSaved: (i: EquipmentItem) => void }) {
-  const [form] = Form.useForm();
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    form.setFieldsValue({
-      inspection_result: item.inspection_result,
-      inspection_date: item.inspection_date ? dayjs(item.inspection_date) : undefined,
-      next_inspection_date: item.next_inspection_date ? dayjs(item.next_inspection_date) : undefined,
-      inspection_extra_fee: item.inspection_extra_fee,
-      inspection_notes: item.inspection_notes,
-    });
-  }, [item, form]);
-
-  return (
-    <Card
-      size="small"
-      title={
-        <Space>
-          <span>Техникийн оношилгоо</span>
-          <Tag color={expiryTone(item.next_inspection_date)}>
-            {item.inspection_result || item.next_inspection_date || 'хугацаа'}
-          </Tag>
-        </Space>
-      }
-    >
-      <SectionSaveBar
-        saving={saving}
-        hint="Үзлэгийн үр дүн, огноо, дараагийн үзлэг"
-        onSave={async () => {
-          try {
-            setSaving(true);
-            await saveFormSection(item.id, form, ['inspection_date', 'next_inspection_date'], onSaved);
-          } catch (e) {
-            if (e && typeof e === 'object' && 'errorFields' in e) return;
-            message.error(e instanceof Error ? e.message : 'Алдаа');
-          } finally {
-            setSaving(false);
-          }
-        }}
-      />
-      <Form form={form} layout="vertical">
-        <Row gutter={12}>
-          <Col xs={24} sm={8}>
-            <Form.Item name="inspection_result" label="Үр дүн">
-              <Select allowClear options={[{ value: 'Тэнцсэн' }, { value: 'Тэнцээгүй' }].map((o) => ({ value: o.value, label: o.value }))} />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={8}>
-            <Form.Item name="inspection_date" label="Үзлэгийн огноо" {...dateFormItemProps()}>
-              <DatePicker format={DATE_FORMAT} style={{ width: '100%' }} />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={8}>
-            <Form.Item name="next_inspection_date" label="Дараагийн үзлэг" {...dateFormItemProps()}>
-              <DatePicker format={DATE_FORMAT} style={{ width: '100%' }} />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={12}><Form.Item name="inspection_extra_fee" label="Нэмэлт төлбөр ₮"><InputNumber style={{ width: '100%' }} min={0} /></Form.Item></Col>
-          <Col xs={24} sm={12}><Form.Item name="inspection_notes" label="Тэмдэглэл"><Input /></Form.Item></Col>
-        </Row>
-      </Form>
+      <Drawer
+        title="ТО / Засвар нэмэх"
+        open={open}
+        onClose={() => setOpen(false)}
+        width={520}
+        destroyOnClose
+        extra={<Button type="primary" loading={saving} onClick={add}>Хадгалах</Button>}
+      >
+        <Form form={form} layout="vertical">
+          <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item name="service_date" label="Огноо" rules={[{ required: true }]} {...dateFormItemProps()}>
+                <DatePicker format={DATE_FORMAT} style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+            <Col span={12}><Form.Item name="motor_hours" label="Мото цаг"><InputNumber style={{ width: '100%' }} min={0} /></Form.Item></Col>
+            <Col span={12}>
+              <Form.Item name="service_type" label="Төрөл">
+                <Select options={['ТО', 'Засвар', 'Бусад'].map((v) => ({ value: v, label: v }))} />
+              </Form.Item>
+            </Col>
+            <Col span={12}><Form.Item name="cost" label="Зардал ₮"><InputNumber style={{ width: '100%' }} min={0} /></Form.Item></Col>
+            <Col span={24}><Form.Item name="description" label="Хийсэн ажил"><Input /></Form.Item></Col>
+            <Col span={24}><Form.Item name="parts_replaced" label="Орлуулсан эд анги"><Input /></Form.Item></Col>
+            <Col span={12}><Form.Item name="service_provider" label="Гүйцэтгэсэн газар"><Input /></Form.Item></Col>
+            <Col span={12}><Form.Item name="engineer" label="Инженер"><Input /></Form.Item></Col>
+            <Col span={12}>
+              <Form.Item name="next_service_date" label="Дараагийн ТО" {...dateFormItemProps()}>
+                <DatePicker format={DATE_FORMAT} style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+            <Col span={24}><Form.Item name="notes" label="Тэмдэглэл"><Input.TextArea rows={2} /></Form.Item></Col>
+          </Row>
+        </Form>
+      </Drawer>
     </Card>
   );
 }
 
 /* ——— Тос масло ——— */
-export function OilTab({ item, onSaved, onRefresh }: { item: EquipmentItem; onSaved: (i: EquipmentItem) => void; onRefresh: () => void }) {
+export function OilTab({ item, onRefresh }: { item: EquipmentItem; onRefresh: () => void }) {
   const [form] = Form.useForm();
-  const [histForm] = Form.useForm();
+  const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [oilOpen, setOilOpen] = useState(false);
-
-  useEffect(() => {
-    form.setFieldsValue({
-      last_oil_change_date: item.last_oil_change_date ? dayjs(item.last_oil_change_date) : undefined,
-      last_oil_motor_hours: item.last_oil_motor_hours,
-      next_oil_motor_hours: item.next_oil_motor_hours,
-      oil_type_name: item.oil_type_name,
-      oil_quantity_liters: item.oil_quantity_liters,
-      oil_notes: item.oil_notes,
-    });
-  }, [item, form]);
 
   const oilColumns: ColumnsType<OilChangeRecord> = [
     { title: 'Огноо', dataIndex: 'changed_at', width: 110 },
@@ -583,296 +420,84 @@ export function OilTab({ item, onSaved, onRefresh }: { item: EquipmentItem; onSa
     },
   ];
 
-  return (
-    <div>
-      <Card size="small" title="Тос масло — сүүлийн мэдээлэл" style={{ marginBottom: 16 }}>
-        <SectionSaveBar
-          saving={saving}
-          hint="Сүүлийн солих товч мэдээлэл"
-          onSave={async () => {
-            try {
-              setSaving(true);
-              await saveFormSection(item.id, form, ['last_oil_change_date'], onSaved);
-            } catch (e) {
-              if (e && typeof e === 'object' && 'errorFields' in e) return;
-              message.error(e instanceof Error ? e.message : 'Алдаа');
-            } finally {
-              setSaving(false);
-            }
-          }}
-        />
-        <Form form={form} layout="vertical">
-          <Row gutter={12}>
-            <Col xs={24} sm={8}>
-              <Form.Item name="last_oil_change_date" label="Сүүлийн солисон" {...dateFormItemProps()}>
-                <DatePicker format={DATE_FORMAT} style={{ width: '100%' }} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={8}><Form.Item name="last_oil_motor_hours" label="Мото цаг (солих үед)"><InputNumber style={{ width: '100%' }} min={0} /></Form.Item></Col>
-            <Col xs={24} sm={8}><Form.Item name="next_oil_motor_hours" label="Дараагийн солих мото цаг"><InputNumber style={{ width: '100%' }} min={0} /></Form.Item></Col>
-            <Col xs={24} sm={12}><Form.Item name="oil_type_name" label="Тосны нэр"><Input /></Form.Item></Col>
-            <Col xs={24} sm={12}><Form.Item name="oil_quantity_liters" label="Хэмжээ (л)"><InputNumber style={{ width: '100%' }} min={0} /></Form.Item></Col>
-            <Col span={24}><Form.Item name="oil_notes" label="Тэмдэглэл"><Input /></Form.Item></Col>
-          </Row>
-        </Form>
-      </Card>
-
-      <Card
-        size="small"
-        title="Солих түүх"
-        extra={
-          <Button
-            size="small"
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              histForm.resetFields();
-              histForm.setFieldsValue({ changed_at: dayjs() });
-              setOilOpen(true);
-            }}
-          >
-            Түүх нэмэх
-          </Button>
-        }
-      >
-        {oilOpen && (
-          <Form
-            form={histForm}
-            layout="inline"
-            style={{ marginBottom: 12, flexWrap: 'wrap', gap: 8 }}
-            onFinish={async (v) => {
-              await postJson(`${EQUIPMENT_API}/${item.id}/oil_change`, {
-                ...v,
-                changed_at: dayjs.isDayjs(v.changed_at) ? v.changed_at.format(DATE_FORMAT) : v.changed_at,
-              });
-              message.success('Нэмэгдлээ');
-              setOilOpen(false);
-              onRefresh();
-            }}
-          >
-            <Form.Item name="changed_at" rules={[{ required: true }]} {...dateFormItemProps()}>
-              <DatePicker format={DATE_FORMAT} />
-            </Form.Item>
-            <Form.Item name="motor_hours_at_change"><InputNumber placeholder="Мото цаг" min={0} /></Form.Item>
-            <Form.Item name="oil_type"><Input placeholder="Тосны нэр" /></Form.Item>
-            <Form.Item name="quantity_liters"><InputNumber placeholder="Литр" min={0} /></Form.Item>
-            <Button type="primary" htmlType="submit">Хадгалах</Button>
-            <Button onClick={() => setOilOpen(false)}>Болих</Button>
-          </Form>
-        )}
-        <Table size="small" rowKey="id" pagination={false} dataSource={item.oilChanges || []} columns={oilColumns} locale={{ emptyText: 'Түүх байхгүй' }} />
-      </Card>
-    </div>
-  );
-}
-
-/* ——— Гэрчилгээ ——— */
-export function CertificateTab({ item, onSaved }: { item: EquipmentItem; onSaved: (i: EquipmentItem) => void }) {
-  const [form] = Form.useForm();
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    form.setFieldsValue({
-      tech_certificate: item.tech_certificate,
-      certificate_number: item.certificate_number,
-      certificate_expiry: item.certificate_expiry ? dayjs(item.certificate_expiry) : undefined,
-      owner_name: item.owner_name,
-      purchase_document: item.purchase_document,
-      certificate_notes: item.certificate_notes,
-    });
-  }, [item, form]);
+  const save = async () => {
+    try {
+      const v = await form.validateFields();
+      setSaving(true);
+      await postJson(`${EQUIPMENT_API}/${item.id}/oil_change`, {
+        ...v,
+        changed_at: dayjs.isDayjs(v.changed_at) ? v.changed_at.format(DATE_FORMAT) : v.changed_at,
+      });
+      message.success('Нэмэгдлээ');
+      setOpen(false);
+      onRefresh();
+    } catch (e) {
+      if (e && typeof e === 'object' && 'errorFields' in e) return;
+      message.error(e instanceof Error ? e.message : 'Алдаа');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <Card
       size="small"
-      title={
-        <Space>
-          <span>Гэрчилгээ</span>
-          <Tag color={expiryTone(item.certificate_expiry)}>
-            {item.certificate_expiry || 'хугацаа'}
-          </Tag>
-        </Space>
+      title="Тос масло солих түүх"
+      extra={
+        <Button
+          type="primary"
+          size="small"
+          icon={<PlusOutlined />}
+          onClick={() => {
+            form.resetFields();
+            form.setFieldsValue({ changed_at: dayjs() });
+            setOpen(true);
+          }}
+        >
+          Солих бүртгэх
+        </Button>
       }
     >
-      <SectionSaveBar
-        saving={saving}
-        hint="Техникийн гэрчилгээ, эзэмшигч, дуусах огноо"
-        onSave={async () => {
-          try {
-            setSaving(true);
-            await saveFormSection(item.id, form, ['certificate_expiry'], onSaved);
-          } catch (e) {
-            if (e && typeof e === 'object' && 'errorFields' in e) return;
-            message.error(e instanceof Error ? e.message : 'Алдаа');
-          } finally {
-            setSaving(false);
-          }
-        }}
+      <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
+        Түүх жагсаалтаар · шинэ солих бүртгэл drawer-ээр
+      </Text>
+      <Table
+        size="small"
+        rowKey="id"
+        pagination={{ pageSize: 10 }}
+        dataSource={item.oilChanges || []}
+        columns={oilColumns}
+        locale={{ emptyText: 'Түүх байхгүй' }}
       />
-      <Form form={form} layout="vertical">
-        <Row gutter={12}>
-          <Col xs={24} sm={12}><Form.Item name="tech_certificate" label="Техникийн гэрчилгээ"><Input /></Form.Item></Col>
-          <Col xs={24} sm={12}><Form.Item name="certificate_number" label="Дугаар"><Input /></Form.Item></Col>
-          <Col xs={24} sm={8}>
-            <Form.Item name="certificate_expiry" label="Дуусах огноо" {...dateFormItemProps()}>
-              <DatePicker format={DATE_FORMAT} style={{ width: '100%' }} />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={8}><Form.Item name="owner_name" label="Эзэмшигч"><Input /></Form.Item></Col>
-          <Col xs={24} sm={8}><Form.Item name="purchase_document" label="Худалдан авсан баримт"><Input /></Form.Item></Col>
-          <Col span={24}><Form.Item name="certificate_notes" label="Тэмдэглэл"><Input /></Form.Item></Col>
-        </Row>
-      </Form>
+      <Drawer
+        title="Тос масло солих"
+        open={open}
+        onClose={() => setOpen(false)}
+        width={420}
+        destroyOnClose
+        extra={<Button type="primary" loading={saving} onClick={save}>Хадгалах</Button>}
+      >
+        <Form form={form} layout="vertical">
+          <Form.Item name="changed_at" label="Огноо" rules={[{ required: true }]} {...dateFormItemProps()}>
+            <DatePicker format={DATE_FORMAT} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item name="motor_hours_at_change" label="Мото цаг"><InputNumber style={{ width: '100%' }} min={0} /></Form.Item>
+          <Form.Item name="oil_type" label="Тосны нэр"><Input /></Form.Item>
+          <Form.Item name="quantity_liters" label="Хэмжээ (л)"><InputNumber style={{ width: '100%' }} min={0} /></Form.Item>
+          <Form.Item name="changed_by" label="Хэн сольсон"><Input /></Form.Item>
+          <Form.Item name="notes" label="Тэмдэглэл"><Input.TextArea rows={2} /></Form.Item>
+        </Form>
+      </Drawer>
     </Card>
   );
 }
 
-/* ——— Бусад бичиг баримт (+ татвар) ——— */
-export function OtherDocsTab({ item, onSaved, onRefresh }: { item: EquipmentItem; onSaved: (i: EquipmentItem) => void; onRefresh: () => void }) {
-  const [taxForm] = Form.useForm();
-  const [docForm] = Form.useForm();
-  const [saving, setSaving] = useState(false);
-  const [docOpen, setDocOpen] = useState(false);
-
-  useEffect(() => {
-    taxForm.setFieldsValue({
-      road_tax_amount: item.road_tax_amount,
-      atboyahat_amount: item.atboyahat_amount,
-      air_pollution_fee: item.air_pollution_fee,
-      transaction_fee: item.transaction_fee,
-      tax_period: item.tax_period,
-      tax_paid: item.tax_paid,
-    });
-  }, [item, taxForm]);
-
-  const docColumns: ColumnsType<EquipmentDocRecord> = [
-    { title: 'Төрөл', dataIndex: 'doc_type', width: 100 },
-    { title: 'Нэр', dataIndex: 'name' },
-    { title: 'Дугаар', dataIndex: 'number', width: 120 },
-    { title: 'Дүн', dataIndex: 'amount', width: 100, render: (v) => (v != null ? fmt(v) : '—') },
-    {
-      title: 'Дуусах',
-      dataIndex: 'expires_at',
-      width: 120,
-      render: (v) => (v ? <Tag color={expiryTone(v)}>{v}</Tag> : '—'),
-    },
-    { title: 'Байгууллага', dataIndex: 'issuer', ellipsis: true },
-    {
-      title: '',
-      width: 48,
-      render: (_, r) => (
-        <Popconfirm
-          title="Устгах?"
-          onConfirm={async () => {
-            await fetch(`${EQUIPMENT_API}/${item.id}/documents/${r.id}`, { method: 'DELETE' });
-            onRefresh();
-          }}
-        >
-          <Button type="text" danger size="small" icon={<DeleteOutlined />} />
-        </Popconfirm>
-      ),
-    },
-  ];
-
-  return (
-    <div>
-      <Card size="small" title="Татвар" style={{ marginBottom: 16 }}>
-        <SectionSaveBar
-          saving={saving}
-          hint="Зам ашиглалт, АТБӨЯХАТ, агаарын бохирдол…"
-          onSave={async () => {
-            try {
-              setSaving(true);
-              await saveFormSection(item.id, taxForm, [], onSaved);
-            } catch (e) {
-              if (e && typeof e === 'object' && 'errorFields' in e) return;
-              message.error(e instanceof Error ? e.message : 'Алдаа');
-            } finally {
-              setSaving(false);
-            }
-          }}
-        />
-        <Form form={taxForm} layout="vertical">
-          <Row gutter={12}>
-            <Col xs={24} sm={12}><Form.Item name="road_tax_amount" label="Зам ашиглалтын татвар ₮"><InputNumber style={{ width: '100%' }} min={0} /></Form.Item></Col>
-            <Col xs={24} sm={12}><Form.Item name="atboyahat_amount" label="АТБӨЯХАТ ₮"><InputNumber style={{ width: '100%' }} min={0} /></Form.Item></Col>
-            <Col xs={24} sm={12}><Form.Item name="air_pollution_fee" label="Агаарын бохирдлын төлбөр ₮"><InputNumber style={{ width: '100%' }} min={0} /></Form.Item></Col>
-            <Col xs={24} sm={12}><Form.Item name="transaction_fee" label="Гүйлгээний хураамж ₮"><InputNumber style={{ width: '100%' }} min={0} /></Form.Item></Col>
-            <Col xs={24} sm={12}><Form.Item name="tax_period" label="Он, сар"><Input placeholder="2026-03" /></Form.Item></Col>
-            <Col xs={24} sm={12}><Form.Item name="tax_paid" label="Төлсөн эсэх" valuePropName="checked"><Switch /></Form.Item></Col>
-          </Row>
-        </Form>
-      </Card>
-
-      <Card
-        size="small"
-        title="Бусад бичиг баримт"
-        extra={
-          <Button
-            size="small"
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              docForm.resetFields();
-              docForm.setFieldsValue({ doc_type: 'other' });
-              setDocOpen(true);
-            }}
-          >
-            Нэмэх
-          </Button>
-        }
-      >
-        <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
-          Импортын гэрчилгээ, паспорт гэх мэт — мөр бүрт нэмнэ
-        </Text>
-        {docOpen && (
-          <Form
-            form={docForm}
-            layout="vertical"
-            style={{ marginBottom: 12 }}
-            onFinish={async (v) => {
-              await postJson(`${EQUIPMENT_API}/${item.id}/documents`, {
-                ...v,
-                expires_at: dayjs.isDayjs(v.expires_at) ? v.expires_at.format(DATE_FORMAT) : v.expires_at,
-              });
-              message.success('Нэмэгдлээ');
-              setDocOpen(false);
-              onRefresh();
-            }}
-          >
-            <Row gutter={12}>
-              <Col span={8}>
-                <Form.Item name="doc_type" label="Төрөл" rules={[{ required: true }]}>
-                  <Select
-                    options={[
-                      { value: 'certificate', label: 'Гэрчилгээ' },
-                      { value: 'tax', label: 'Татвар' },
-                      { value: 'other', label: 'Бусад' },
-                    ]}
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={8}><Form.Item name="name" label="Нэр" rules={[{ required: true }]}><Input /></Form.Item></Col>
-              <Col span={8}><Form.Item name="number" label="Дугаар"><Input /></Form.Item></Col>
-              <Col span={8}><Form.Item name="amount" label="Дүн"><InputNumber style={{ width: '100%' }} min={0} /></Form.Item></Col>
-              <Col span={8}>
-                <Form.Item name="expires_at" label="Дуусах" {...dateFormItemProps()}>
-                  <DatePicker format={DATE_FORMAT} style={{ width: '100%' }} />
-                </Form.Item>
-              </Col>
-              <Col span={8}><Form.Item name="issuer" label="Байгууллага"><Input /></Form.Item></Col>
-            </Row>
-            <Space>
-              <Button type="primary" htmlType="submit">Хадгалах</Button>
-              <Button onClick={() => setDocOpen(false)}>Болих</Button>
-            </Space>
-          </Form>
-        )}
-        <Table size="small" rowKey="id" pagination={false} dataSource={item.documents || []} columns={docColumns} locale={{ emptyText: 'Баримт байхгүй' }} />
-      </Card>
-    </div>
-  );
-}
+export {
+  InsuranceTab,
+  InspectionTab,
+  CertificateTab,
+  OtherDocsTab,
+} from './DocHistoryTabs';
 
 /* ——— Орлого ——— */
 export function FinanceTab({ item, onRefresh }: { item: EquipmentItem; onRefresh: () => void }) {

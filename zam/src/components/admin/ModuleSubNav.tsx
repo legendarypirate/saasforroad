@@ -34,9 +34,10 @@ export default function ModuleSubNav({ userPermissions, userRole }: ModuleSubNav
   if (!mod) return null;
 
   const items = filterNavItems(mod.items, userPermissions, userRole);
-  // Show even a single item — previously `<= 1` hid the whole HR bar when
-  // permissions only allowed one page (common on stale Windows sessions).
+  // Single-item modules (e.g. Тоног төхөөрөмж) don't need a redundant sub-nav.
+  // Keep showing 1 item for multi-page modules when permissions filter down to one.
   if (items.length === 0) return null;
+  if (items.length === 1 && mod.items.length <= 1) return null;
 
   const selectedKey = resolveSelectedKey(pathname, mod);
   const isDenseNav =
@@ -45,7 +46,6 @@ export default function ModuleSubNav({ userPermissions, userRole }: ModuleSubNav
     mod.id === 'finance' ||
     mod.id === 'uniform-supply' ||
     mod.id === 'rental' ||
-    mod.id === 'equipment' ||
     items.length >= 10;
 
   if (isDenseNav) {

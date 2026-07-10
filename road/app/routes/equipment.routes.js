@@ -15,6 +15,7 @@ module.exports = (app) => {
 
   router.get("/:id/documents", equipment.listDocuments);
   router.post("/:id/documents", equipment.createDocument);
+  router.put("/:id/documents/:docId", equipment.updateDocument);
   router.delete("/:id/documents/:docId", equipment.deleteDocument);
 
   router.get("/:id/finances", equipment.listFinances);

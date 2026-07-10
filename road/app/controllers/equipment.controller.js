@@ -459,13 +459,74 @@ exports.deleteServiceLog = async (req, res) => {
 };
 
 // —— Documents ——
+async function syncDocSnapshot(equipmentId, docType) {
+  const equipment = await Equipment.findByPk(equipmentId);
+  if (!equipment) return;
+
+  const latest = await EquipmentDocument.findOne({
+    where: { equipment_id: equipmentId, doc_type: docType },
+    order: [
+      ["expires_at", "DESC"],
+      ["issued_at", "DESC"],
+      ["id", "DESC"],
+    ],
+  });
+
+  if (docType === "insurance") {
+    await equipment.update({
+      insurance_company: latest?.issuer || latest?.name || null,
+      insurance_status: latest?.status || null,
+      insurance_expiry: latest?.expires_at || null,
+      insurance_amount: latest?.amount ?? null,
+      insurance_contract_no: latest?.number || null,
+      insurance_notes: latest?.notes || null,
+    });
+  } else if (docType === "inspection") {
+    await equipment.update({
+      inspection_result: latest?.status || latest?.name || null,
+      inspection_date: latest?.issued_at || null,
+      next_inspection_date: latest?.expires_at || null,
+      inspection_extra_fee: latest?.amount ?? null,
+      inspection_notes: latest?.notes || null,
+    });
+  } else if (docType === "certificate") {
+    await equipment.update({
+      tech_certificate: latest?.name || null,
+      certificate_number: latest?.number || null,
+      certificate_expiry: latest?.expires_at || null,
+      owner_name: latest?.issuer || null,
+      certificate_notes: latest?.notes || null,
+    });
+  }
+}
+
+function docPayload(body) {
+  return {
+    doc_type: body.doc_type || "other",
+    name: body.name,
+    number: body.number || null,
+    amount: body.amount ?? null,
+    period: body.period || null,
+    status: body.status || null,
+    issued_at: body.issued_at || null,
+    expires_at: body.expires_at || null,
+    issuer: body.issuer || null,
+    paid: body.paid ?? null,
+    notes: body.notes || null,
+  };
+}
+
 exports.listDocuments = async (req, res) => {
   try {
     const where = { equipment_id: req.params.id };
     if (req.query.doc_type) where.doc_type = req.query.doc_type;
     const data = await EquipmentDocument.findAll({
       where,
-      order: [["expires_at", "ASC"]],
+      order: [
+        ["expires_at", "DESC"],
+        ["issued_at", "DESC"],
+        ["id", "DESC"],
+      ],
     });
     res.json({ success: true, data });
   } catch (err) {
@@ -479,37 +540,38 @@ exports.createDocument = async (req, res) => {
     if (!equipment) {
       return res.status(404).json({ success: false, message: "Equipment not found" });
     }
-    const {
-      doc_type,
-      name,
-      number,
-      amount,
-      period,
-      status,
-      issued_at,
-      expires_at,
-      issuer,
-      paid,
-      notes,
-    } = req.body;
-    if (!name) {
+    const payload = docPayload(req.body);
+    if (!payload.name) {
       return res.status(400).json({ success: false, message: "name is required" });
     }
     const record = await EquipmentDocument.create({
       equipment_id: equipment.id,
-      doc_type: doc_type || "other",
-      name,
-      number: number || null,
-      amount: amount ?? null,
-      period: period || null,
-      status: status || null,
-      issued_at: issued_at || null,
-      expires_at: expires_at || null,
-      issuer: issuer || null,
-      paid: paid ?? null,
-      notes: notes || null,
+      ...payload,
     });
-    res.json({ success: true, data: record });
+    await syncDocSnapshot(equipment.id, record.doc_type);
+    const full = await Equipment.findByPk(equipment.id, { include: equipmentInclude });
+    res.json({ success: true, data: record, equipment: full });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.updateDocument = async (req, res) => {
+  try {
+    const record = await EquipmentDocument.findOne({
+      where: { id: req.params.docId, equipment_id: req.params.id },
+    });
+    if (!record) {
+      return res.status(404).json({ success: false, message: "Not found" });
+    }
+    const payload = docPayload({ ...record.toJSON(), ...req.body });
+    if (!payload.name) {
+      return res.status(400).json({ success: false, message: "name is required" });
+    }
+    await record.update(payload);
+    await syncDocSnapshot(record.equipment_id, record.doc_type);
+    const full = await Equipment.findByPk(record.equipment_id, { include: equipmentInclude });
+    res.json({ success: true, data: record, equipment: full });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -517,9 +579,17 @@ exports.createDocument = async (req, res) => {
 
 exports.deleteDocument = async (req, res) => {
   try {
-    const num = await EquipmentDocument.destroy({ where: { id: req.params.docId } });
-    if (num === 1) return res.json({ success: true });
-    return res.status(404).json({ success: false, message: "Not found" });
+    const record = await EquipmentDocument.findOne({
+      where: { id: req.params.docId, equipment_id: req.params.id },
+    });
+    if (!record) {
+      return res.status(404).json({ success: false, message: "Not found" });
+    }
+    const { equipment_id, doc_type } = record;
+    await record.destroy();
+    await syncDocSnapshot(equipment_id, doc_type);
+    const full = await Equipment.findByPk(equipment_id, { include: equipmentInclude });
+    res.json({ success: true, equipment: full });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
