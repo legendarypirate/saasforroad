@@ -49,8 +49,8 @@ export default function SupplierPage() {
   };
 
   const save = async () => {
-    const values = await form.validateFields();
     try {
+      const values = await form.validateFields();
       if (editing) {
         await inventoryApi.suppliers.update(editing.id, values);
         message.success('Шинэчлэгдлээ');
@@ -61,6 +61,7 @@ export default function SupplierPage() {
       setOpen(false);
       load();
     } catch (e) {
+      if (e && typeof e === 'object' && 'errorFields' in e) return;
       message.error(e instanceof Error ? e.message : 'Алдаа');
     }
   };

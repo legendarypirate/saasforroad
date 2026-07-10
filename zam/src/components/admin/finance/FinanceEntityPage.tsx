@@ -13,6 +13,7 @@ import {
   message,
   DatePicker,
   Modal,
+  isFormValidationError,
 } from '@/components/admin/primitives';
 import type { ColumnsType } from '@/components/admin/primitives';
 import { DeleteOutlined, PlusOutlined, ReloadOutlined } from '@/components/admin/icons';
@@ -116,7 +117,7 @@ export default function FinanceEntityPage({
       setOpen(false);
       load();
     } catch (e) {
-      if (e && typeof e === 'object' && 'errorFields' in e) return;
+      if (isFormValidationError(e) || (e && typeof e === 'object' && 'errorFields' in e)) return;
       message.error(e instanceof Error ? e.message : 'Алдаа гарлаа');
     }
   };

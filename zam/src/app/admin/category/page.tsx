@@ -51,8 +51,8 @@ export default function CategoryPage() {
   };
 
   const save = async () => {
-    const values = await form.validateFields();
     try {
+      const values = await form.validateFields();
       if (editing) {
         await inventoryApi.categories.update(editing.id, values);
         message.success('Шинэчлэгдлээ');
@@ -63,6 +63,7 @@ export default function CategoryPage() {
       setOpen(false);
       load();
     } catch (e) {
+      if (e && typeof e === 'object' && 'errorFields' in e) return;
       message.error(e instanceof Error ? e.message : 'Алдаа');
     }
   };

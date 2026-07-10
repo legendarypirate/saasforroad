@@ -76,29 +76,34 @@ export default function HseEntityPage({ title, resource, fields, columns }: Prop
   };
 
   const handleSave = async () => {
-    const values = await form.validateFields();
-    const body: Record<string, unknown> = {};
-    fields.forEach((f) => {
-      let v = values[f.key];
-      if (f.type === 'date' && v) v = dayjs(v).format('YYYY-MM-DD');
-      body[f.key] = v;
-    });
+    try {
+      const values = await form.validateFields();
+      const body: Record<string, unknown> = {};
+      fields.forEach((f) => {
+        let v = values[f.key];
+        if (f.type === 'date' && v) v = dayjs(v).format('YYYY-MM-DD');
+        body[f.key] = v;
+      });
 
-    const userRaw = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
-    const user = userRaw ? JSON.parse(userRaw) : null;
-    body.created_by = user?.id;
-    body.updated_by = user?.id;
+      const userRaw = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+      const user = userRaw ? JSON.parse(userRaw) : null;
+      body.created_by = user?.id;
+      body.updated_by = user?.id;
 
-    const ok = editing
-      ? await updateHseRecord(resource, Number(editing.id), body)
-      : await createHseRecord(resource, body);
+      const ok = editing
+        ? await updateHseRecord(resource, Number(editing.id), body)
+        : await createHseRecord(resource, body);
 
-    if (ok) {
-      message.success(editing ? 'Шинэчлэгдлээ' : 'Нэмэгдлээ');
-      setOpen(false);
-      load();
-    } else {
-      message.error('Алдаа гарлаа');
+      if (ok) {
+        message.success(editing ? 'Шинэчлэгдлээ' : 'Нэмэгдлээ');
+        setOpen(false);
+        load();
+      } else {
+        message.error('Алдаа гарлаа');
+      }
+    } catch (e) {
+      if (e && typeof e === 'object' && 'errorFields' in e) return;
+      message.error(e instanceof Error ? e.message : 'Алдаа гарлаа');
     }
   };
 

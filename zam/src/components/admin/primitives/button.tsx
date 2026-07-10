@@ -40,7 +40,7 @@ export function Button({
   danger,
   icon,
   loading,
-  htmlType,
+  htmlType = 'button',
   block,
   className,
   children,

@@ -5,7 +5,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
-import { FormStore, pathToKey, type FormInstance, type FormRule } from './form-store';
+import { FormStore, isFormValidationError, pathToKey, type FormInstance, type FormRule } from './form-store';
 
 const FormContext = createContext<{
   store: FormStore;
@@ -54,7 +54,8 @@ function FormRoot({
     try {
       const values = await store.validateFields();
       onFinish?.(values);
-    } catch {
+    } catch (err) {
+      if (!isFormValidationError(err)) throw err;
       /* validation errors shown on fields */
     }
   };
@@ -170,7 +171,7 @@ function FormItem({
 
   const injected = React.cloneElement(child, {
           [valuePropName]: store.getFieldValue(fieldPath) ?? (valuePropName === 'checked' ? false : ''),
-          [valuePropName === 'checked' ? 'onCheckedChange' : 'onChange']: (val: unknown) => {
+          [valuePropName === 'checked' ? 'onCheckedChange' : 'onChange']: (val: unknown, ...rest: unknown[]) => {
             const next =
               valuePropName === 'checked'
                 ? val
@@ -178,12 +179,12 @@ function FormItem({
                   ? (val as React.ChangeEvent<HTMLInputElement>).target.value
                   : val;
             store.setFieldValue(fieldPath, next);
-            const onChange = child.props.onChange as ((v: unknown) => void) | undefined;
+            const onChange = child.props.onChange as ((v: unknown, ...r: unknown[]) => void) | undefined;
             const onCheckedChange = child.props.onCheckedChange as ((v: unknown) => void) | undefined;
-            onChange?.(val);
-          onCheckedChange?.(val);
-        },
-      });
+            onChange?.(val, ...rest);
+            onCheckedChange?.(val);
+          },
+        } as Partial<typeof child.props>);
 
   return (
     <div className={itemClass} style={style}>

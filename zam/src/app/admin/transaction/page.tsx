@@ -73,13 +73,13 @@ export default function TransactionPage() {
   };
 
   const save = async () => {
-    const values = await form.validateFields();
-    const lines = (values.lines || []).filter((l: any) => l?.material_id && l?.quantity);
-    if (!lines.length) {
-      message.warning('Барааны мөр нэмнэ үү');
-      return;
-    }
     try {
+      const values = await form.validateFields();
+      const lines = (values.lines || []).filter((l: any) => l?.material_id && l?.quantity);
+      if (!lines.length) {
+        message.warning('Барааны мөр нэмнэ үү');
+        return;
+      }
       await inventoryApi.documents.create({
         doc_type: values.doc_type,
         warehouse_id: values.warehouse_id,
@@ -97,6 +97,7 @@ export default function TransactionPage() {
       setOpen(false);
       load();
     } catch (e) {
+      if (e && typeof e === 'object' && 'errorFields' in e) return;
       message.error(e instanceof Error ? e.message : 'Алдаа');
     }
   };

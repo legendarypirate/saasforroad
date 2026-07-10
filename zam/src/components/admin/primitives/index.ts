@@ -1,4 +1,5 @@
 export type { FormRule, FormRule as Rule, FormInstance } from './form-store';
+export { FormValidationError, isFormValidationError } from './form-store';
 export type { ColumnsType } from './table';
 export type UploadFile = {
   uid: string;

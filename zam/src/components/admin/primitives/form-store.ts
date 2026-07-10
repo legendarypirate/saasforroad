@@ -57,6 +57,31 @@ export function setNestedValue(
   return next;
 }
 
+export class FormValidationError extends Error {
+  errors: Record<string, string>;
+  errorFields: Array<{ name: string[]; errors: string[] }>;
+
+  constructor(errors: Record<string, string>) {
+    super('validation');
+    this.name = 'FormValidationError';
+    this.errors = errors;
+    this.errorFields = Object.entries(errors).map(([name, message]) => ({
+      name: name.split('.'),
+      errors: [message],
+    }));
+  }
+}
+
+export function isFormValidationError(error: unknown): error is FormValidationError {
+  return (
+    error instanceof FormValidationError ||
+    (typeof error === 'object' &&
+      error !== null &&
+      'errorFields' in error &&
+      Array.isArray((error as { errorFields: unknown }).errorFields))
+  );
+}
+
 export class FormStore {
   values: Record<string, unknown> = {};
   errors: Record<string, string> = {};
@@ -123,7 +148,9 @@ export class FormStore {
     }
     this.errors = errors;
     this.notify();
-    if (Object.keys(errors).length > 0) throw new Error('validation');
+    if (Object.keys(errors).length > 0) {
+      throw new FormValidationError(errors);
+    }
     return { ...this.values };
   }
 }

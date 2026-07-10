@@ -66,11 +66,11 @@ export default function MaterialPage() {
   };
 
   const save = async () => {
-    const values = await form.validateFields();
-    if (!editing) {
-      delete values.code;
-    }
     try {
+      const values = await form.validateFields();
+      if (!editing) {
+        delete values.code;
+      }
       if (editing) {
         await inventoryApi.materials.update(editing.id, values);
         message.success('Шинэчлэгдлээ');
@@ -81,6 +81,7 @@ export default function MaterialPage() {
       setOpen(false);
       load();
     } catch (e) {
+      if (e && typeof e === 'object' && 'errorFields' in e) return;
       message.error(e instanceof Error ? e.message : 'Алдаа');
     }
   };

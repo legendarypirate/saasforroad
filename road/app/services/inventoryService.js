@@ -376,16 +376,22 @@ async function createDocument({
 }
 
 async function postDocumentInternal(documentId, approvedBy, transaction) {
+  // Lock only the document row — FOR UPDATE cannot target LEFT JOIN (lines).
   const doc = await InvDocument.findByPk(documentId, {
-    include: [{ model: InvDocumentLine, as: "lines" }],
     transaction,
-    lock: transaction.LOCK.UPDATE,
+    lock: { level: transaction.LOCK.UPDATE, of: InvDocument },
   });
   if (!doc) throw bizError("Баримт олдсонгүй", 404);
   if (doc.status === "POSTED") throw bizError("Баримт аль хэдийн батлагдсан");
   if (doc.status === "CANCELLED") throw bizError("Цуцлагдсан баримтыг батлах боломжгүй");
 
-  for (const line of doc.lines) {
+  const lines = await InvDocumentLine.findAll({
+    where: { document_id: documentId },
+    transaction,
+    lock: { level: transaction.LOCK.UPDATE, of: InvDocumentLine },
+  });
+
+  for (const line of lines) {
     const specs = resolveLineMovements(doc, line);
     for (const spec of specs) {
       let quantity = spec.quantity;
@@ -439,9 +445,8 @@ async function cancelDocument(documentId, reason, cancelledBy) {
   const t = await db.sequelize.transaction();
   try {
     const doc = await InvDocument.findByPk(documentId, {
-      include: [{ model: InvDocumentLine, as: "lines" }],
       transaction: t,
-      lock: t.LOCK.UPDATE,
+      lock: { level: t.LOCK.UPDATE, of: InvDocument },
     });
     if (!doc) throw bizError("Баримт олдсонгүй", 404);
     if (doc.status !== "POSTED") throw bizError("Зөвхөн батлагдсан баримтыг цуцлана");
