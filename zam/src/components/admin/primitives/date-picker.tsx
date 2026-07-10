@@ -42,10 +42,9 @@ function toDate(value?: Dayjs | string | null) {
 
 /** Prefer sheet/dialog content so the calendar stays inside the modal focus scope. */
 function resolvePortalContainer(anchor: HTMLElement | null): HTMLElement {
-  if (typeof document === 'undefined') return document.body;
   const host =
     anchor?.closest('[data-slot="sheet-content"], [data-slot="dialog-content"]') ?? null;
-  return (host as HTMLElement | null) ?? document.body;
+  return (host as HTMLElement | null) ?? globalThis.document.body;
 }
 
 function DatePickerBase({
