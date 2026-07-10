@@ -2,10 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import ModuleFolderGrid from '@/components/admin/ModuleFolderGrid';
-import { getUserRole, loadUserPermissions } from '@/lib/auth';
+import { getUserPermissions, getUserRole, loadUserPermissions } from '@/lib/auth';
 
 export default function Dashboard() {
-  const [userPermissions, setUserPermissions] = useState<string[]>([]);
+  const [userPermissions, setUserPermissions] = useState<string[]>(() => getUserPermissions());
   const [userRole, setUserRole] = useState(() => getUserRole());
 
   useEffect(() => {

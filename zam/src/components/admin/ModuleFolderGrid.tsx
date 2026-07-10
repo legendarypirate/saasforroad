@@ -66,10 +66,12 @@ interface ModuleFolderGridProps {
 function ModuleFolder({
   mod,
   userPermissions,
+  userRole,
   onOpen,
 }: {
   mod: ModuleConfig;
   userPermissions: string[];
+  userRole?: string;
   onOpen: (path: string) => void;
 }) {
   const itemCount = mod.items.length;
@@ -78,7 +80,7 @@ function ModuleFolder({
 
   const handleOpen = () => {
     if (isComingSoon) return;
-    onOpen(getDefaultModulePath(mod, userPermissions));
+    onOpen(getDefaultModulePath(mod, userPermissions, userRole));
   };
 
   return (
@@ -142,12 +144,14 @@ function FolderSection({
   description,
   folders,
   userPermissions,
+  userRole,
   onOpen,
 }: {
   title: string;
   description: string;
   folders: ModuleConfig[];
   userPermissions: string[];
+  userRole?: string;
   onOpen: (path: string) => void;
 }) {
   return (
@@ -156,7 +160,13 @@ function FolderSection({
       <p className="mb-7 text-muted-foreground">{description}</p>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
         {folders.map((mod) => (
-          <ModuleFolder key={mod.id} mod={mod} userPermissions={userPermissions} onOpen={onOpen} />
+          <ModuleFolder
+            key={mod.id}
+            mod={mod}
+            userPermissions={userPermissions}
+            userRole={userRole}
+            onOpen={onOpen}
+          />
         ))}
       </div>
     </section>
@@ -175,6 +185,7 @@ export default function ModuleFolderGrid({ userPermissions, userRole }: ModuleFo
         description="ERP системийн модулуудыг сонгон ажиллана уу"
         folders={modules}
         userPermissions={userPermissions}
+        userRole={userRole}
         onOpen={(path) => router.push(path)}
       />
       <FolderSection

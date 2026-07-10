@@ -29,7 +29,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Spinner } from '@/components/ui/spinner';
 import { DASHBOARD_PATH } from '@/config/adminNavigation';
-import { getUserRole, getUsername, loadUserPermissions } from '@/lib/auth';
+import { getUserPermissions, getUserRole, getUsername, loadUserPermissions } from '@/lib/auth';
 import { uiToast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 
@@ -38,7 +38,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [loading, setLoading] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [userPermissions, setUserPermissions] = useState<string[]>([]);
+  const [userPermissions, setUserPermissions] = useState<string[]>(() => getUserPermissions());
   const [userRole, setUserRole] = useState(() => getUserRole());
   const [username, setUsername] = useState('Admin');
   const [logoutOpen, setLogoutOpen] = useState(false);

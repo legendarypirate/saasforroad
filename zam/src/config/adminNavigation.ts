@@ -219,8 +219,23 @@ export const ADMIN_DATA_FOLDERS: ModuleConfig[] = [
   },
 ];
 
+/** Admin role name can differ by DB/locale; treat these as full access. */
+export function isAdminRole(userRole?: string | null): boolean {
+  if (!userRole) return false;
+  const normalized = userRole.trim().toLowerCase();
+  return (
+    normalized === 'админ' ||
+    normalized === 'admin' ||
+    normalized === 'administrator' ||
+    normalized === 'супер админ' ||
+    normalized === 'superadmin' ||
+    normalized === 'super admin'
+  );
+}
+
 export function hasPermission(permission: string | undefined, userPermissions: string[]): boolean {
   if (!permission) return true;
+  // Empty list = still loading / unknown — do not hide menus prematurely
   if (userPermissions.length === 0) return true;
   return userPermissions.includes(permission);
 }
@@ -230,17 +245,17 @@ export function filterNavItems(
   userPermissions: string[],
   userRole?: string
 ): NavItemConfig[] {
-  if (userRole === 'Админ') return items;
+  if (isAdminRole(userRole)) return items;
   return items.filter((item) => hasPermission(item.permission, userPermissions));
 }
 
 export function filterModules(userPermissions: string[], userRole?: string): ModuleConfig[] {
-  if (userRole === 'Админ') {
+  if (isAdminRole(userRole)) {
     return ADMIN_MODULES;
   }
   return ADMIN_MODULES.map((mod) => ({
     ...mod,
-    items: filterNavItems(mod.items, userPermissions),
+    items: filterNavItems(mod.items, userPermissions, userRole),
   })).filter((mod) => mod.comingSoon || mod.items.length > 0);
 }
 
@@ -268,7 +283,11 @@ export function getModuleForPath(pathname: string): ModuleConfig | null {
   return best;
 }
 
-export function getDefaultModulePath(mod: ModuleConfig, userPermissions: string[]): string {
-  const items = filterNavItems(mod.items, userPermissions);
+export function getDefaultModulePath(
+  mod: ModuleConfig,
+  userPermissions: string[],
+  userRole?: string,
+): string {
+  const items = filterNavItems(mod.items, userPermissions, userRole);
   return items[0]?.path ?? mod.items[0]?.path ?? DASHBOARD_PATH;
 }

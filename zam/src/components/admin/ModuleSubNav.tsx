@@ -34,10 +34,12 @@ export default function ModuleSubNav({ userPermissions, userRole }: ModuleSubNav
   if (!mod) return null;
 
   const items = filterNavItems(mod.items, userPermissions, userRole);
-  if (items.length <= 1) return null;
+  // Show even a single item — previously `<= 1` hid the whole HR bar when
+  // permissions only allowed one page (common on stale Windows sessions).
+  if (items.length === 0) return null;
 
   const selectedKey = resolveSelectedKey(pathname, mod);
-  const isDenseNav = mod.id === 'hse' || items.length >= 12;
+  const isDenseNav = mod.id === 'hse' || mod.id === 'hr' || items.length >= 10;
 
   if (isDenseNav) {
     const cols =
@@ -87,13 +89,18 @@ export default function ModuleSubNav({ userPermissions, userRole }: ModuleSubNav
     <div className="border-b border-border bg-background px-4 pb-0 pt-3 sm:px-6">
       <p className="mb-2 text-sm font-medium text-muted-foreground">{mod.label}</p>
       <Tabs value={selectedKey} onValueChange={(key) => router.push(key)}>
-        <TabsList variant="line" className="h-auto w-full justify-start rounded-none border-0 bg-transparent p-0">
-          {items.map((item) => (
-            <TabsTrigger key={item.path} value={item.path} className="px-4 py-2">
-              {item.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        <div className="w-full overflow-x-auto">
+          <TabsList
+            variant="line"
+            className="h-auto min-w-max justify-start rounded-none border-0 bg-transparent p-0"
+          >
+            {items.map((item) => (
+              <TabsTrigger key={item.path} value={item.path} className="shrink-0 px-4 py-2">
+                {item.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
       </Tabs>
     </div>
   );
