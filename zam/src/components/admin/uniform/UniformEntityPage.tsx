@@ -18,28 +18,39 @@ import type { ColumnsType } from '@/components/admin/primitives';
 import { DeleteOutlined, PlusOutlined, ReloadOutlined } from '@/components/admin/icons';
 import dayjs from 'dayjs';
 import {
-  createHseRecord,
-  deleteHseRecord,
-  fetchHseList,
-  updateHseRecord,
-} from '@/lib/hse';
+  createUniformRecord,
+  deleteUniformRecord,
+  fetchUniformList,
+  updateUniformRecord,
+} from '@/lib/uniform';
 
-type FieldDef = {
+export type UniformFieldDef = {
   key: string;
   label: string;
   type?: 'text' | 'textarea' | 'select' | 'number' | 'date';
-  options?: Array<{ value: string; label: string }>;
+  options?: Array<{ value: string | number; label: string }>;
   required?: boolean;
 };
 
 type Props = {
   title: string;
   resource: string;
-  fields: FieldDef[];
+  fields: UniformFieldDef[];
   columns: ColumnsType<Record<string, unknown>>;
+  query?: Record<string, string>;
+  defaults?: Record<string, unknown>;
+  beforeSave?: (body: Record<string, unknown>) => Record<string, unknown>;
 };
 
-export default function HseEntityPage({ title, resource, fields, columns }: Props) {
+export default function UniformEntityPage({
+  title,
+  resource,
+  fields,
+  columns,
+  query,
+  defaults,
+  beforeSave,
+}: Props) {
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -48,10 +59,15 @@ export default function HseEntityPage({ title, resource, fields, columns }: Prop
 
   const load = useCallback(async () => {
     setLoading(true);
-    const data = await fetchHseList<Record<string, unknown>>(resource);
-    setRows(data);
-    setLoading(false);
-  }, [resource]);
+    try {
+      const data = await fetchUniformList<Record<string, unknown>>(resource, query);
+      setRows(data);
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : 'Алдаа');
+    } finally {
+      setLoading(false);
+    }
+  }, [resource, query]);
 
   useEffect(() => {
     document.title = title;
@@ -61,6 +77,7 @@ export default function HseEntityPage({ title, resource, fields, columns }: Prop
   const openCreate = () => {
     setEditing(null);
     form.resetFields();
+    if (defaults) form.setFieldsValue(defaults);
     setOpen(true);
   };
 
@@ -76,29 +93,31 @@ export default function HseEntityPage({ title, resource, fields, columns }: Prop
   };
 
   const handleSave = async () => {
-    const values = await form.validateFields();
-    const body: Record<string, unknown> = {};
-    fields.forEach((f) => {
-      let v = values[f.key];
-      if (f.type === 'date' && v) v = dayjs(v).format('YYYY-MM-DD');
-      body[f.key] = v;
-    });
+    try {
+      const values = await form.validateFields();
+      let body: Record<string, unknown> = {};
+      fields.forEach((f) => {
+        let v = values[f.key];
+        if (f.type === 'date' && v) v = dayjs(v).format('YYYY-MM-DD');
+        if (f.type === 'number' && v !== undefined && v !== null && v !== '') v = Number(v);
+        body[f.key] = v;
+      });
 
-    const userRaw = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
-    const user = userRaw ? JSON.parse(userRaw) : null;
-    body.created_by = user?.id;
-    body.updated_by = user?.id;
+      const userRaw = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+      const user = userRaw ? JSON.parse(userRaw) : null;
+      body.created_by = user?.id;
+      body.updated_by = user?.id;
+      if (beforeSave) body = beforeSave(body);
 
-    const ok = editing
-      ? await updateHseRecord(resource, Number(editing.id), body)
-      : await createHseRecord(resource, body);
+      if (editing) await updateUniformRecord(resource, Number(editing.id), body);
+      else await createUniformRecord(resource, body);
 
-    if (ok) {
       message.success(editing ? 'Шинэчлэгдлээ' : 'Нэмэгдлээ');
       setOpen(false);
       load();
-    } else {
-      message.error('Алдаа гарлаа');
+    } catch (e) {
+      if (e && typeof e === 'object' && 'errorFields' in e) return;
+      message.error(e instanceof Error ? e.message : 'Алдаа гарлаа');
     }
   };
 
@@ -106,9 +125,12 @@ export default function HseEntityPage({ title, resource, fields, columns }: Prop
     Modal.confirm({
       title: 'Устгах уу?',
       onOk: async () => {
-        if (await deleteHseRecord(resource, id)) {
+        try {
+          await deleteUniformRecord(resource, id);
           message.success('Устгагдлаа');
           load();
+        } catch (e) {
+          message.error(e instanceof Error ? e.message : 'Алдаа');
         }
       },
     });
@@ -131,7 +153,7 @@ export default function HseEntityPage({ title, resource, fields, columns }: Prop
 
   return (
     <div>
-      <Space style={{ marginBottom: 16 }}>
+      <Space style={{ marginBottom: 16 }} wrap>
         <h2 style={{ margin: 0 }}>{title}</h2>
         <Button icon={<ReloadOutlined />} onClick={load}>
           Шинэчлэх
@@ -141,7 +163,14 @@ export default function HseEntityPage({ title, resource, fields, columns }: Prop
         </Button>
       </Space>
 
-      <Table rowKey="id" loading={loading} dataSource={rows} columns={[...columns, ...actionCol]} pagination={{ pageSize: 15 }} />
+      <Table
+        rowKey="id"
+        loading={loading}
+        dataSource={rows}
+        columns={[...columns, ...actionCol]}
+        pagination={{ pageSize: 15 }}
+        scroll={{ x: 900 }}
+      />
 
       <Drawer
         title={editing ? 'Засах' : 'Шинэ бүртгэл'}
@@ -160,11 +189,16 @@ export default function HseEntityPage({ title, resource, fields, columns }: Prop
       >
         <Form form={form} layout="vertical">
           {fields.map((f) => (
-            <Form.Item key={f.key} name={f.key} label={f.label} rules={f.required ? [{ required: true }] : undefined}>
+            <Form.Item
+              key={f.key}
+              name={f.key}
+              label={f.label}
+              rules={f.required ? [{ required: true }] : undefined}
+            >
               {f.type === 'textarea' ? (
-                <Input.TextArea rows={4} />
+                <Input.TextArea rows={3} />
               ) : f.type === 'select' ? (
-                <Select options={f.options} allowClear />
+                <Select options={f.options} allowClear showSearch optionFilterProp="label" />
               ) : f.type === 'date' ? (
                 <DatePicker style={{ width: '100%' }} />
               ) : f.type === 'number' ? (

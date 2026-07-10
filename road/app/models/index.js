@@ -74,6 +74,23 @@ db.hse_equipment_inspections = require("./hse_equipment_inspection.model.js")(se
 db.hse_environmental_records = require("./hse_environmental_record.model.js")(sequelize, Sequelize);
 db.hse_capas = require("./hse_capa.model.js")(sequelize, Sequelize);
 db.hse_documents = require("./hse_document.model.js")(sequelize, Sequelize);
+
+db.fin_accounts = require("./fin_account.model.js")(sequelize, Sequelize);
+db.fin_contracts = require("./fin_contract.model.js")(sequelize, Sequelize);
+db.fin_invoices = require("./fin_invoice.model.js")(sequelize, Sequelize);
+db.fin_invoice_lines = require("./fin_invoice_line.model.js")(sequelize, Sequelize);
+db.fin_payments = require("./fin_payment.model.js")(sequelize, Sequelize);
+db.fin_budgets = require("./fin_budget.model.js")(sequelize, Sequelize);
+db.fin_expenses = require("./fin_expense.model.js")(sequelize, Sequelize);
+db.fin_vat_entries = require("./fin_vat_entry.model.js")(sequelize, Sequelize);
+
+db.uni_items = require("./uni_item.model.js")(sequelize, Sequelize);
+db.uni_stock_movements = require("./uni_stock_movement.model.js")(sequelize, Sequelize);
+db.uni_issues = require("./uni_issue.model.js")(sequelize, Sequelize);
+db.uni_issue_lines = require("./uni_issue_line.model.js")(sequelize, Sequelize);
+db.uni_returns = require("./uni_return.model.js")(sequelize, Sequelize);
+db.uni_requests = require("./uni_request.model.js")(sequelize, Sequelize);
+
 db.angilals = require("./angilal.model.js")(sequelize, Sequelize);
 db.materials = require("./material.model.js")(sequelize, Sequelize);
 
@@ -433,6 +450,55 @@ db.hse_equipment_inspections.belongsTo(db.projects, { foreignKey: "project_id", 
 
 db.hse_environmental_records.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
 db.hse_capas.belongsTo(db.users, { foreignKey: "responsible_user_id", as: "responsible" });
+
+// Finance
+db.fin_contracts.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
+db.fin_contracts.belongsTo(db.suppliers, { foreignKey: "supplier_id", as: "supplier" });
+
+db.fin_invoices.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
+db.fin_invoices.belongsTo(db.suppliers, { foreignKey: "supplier_id", as: "supplier" });
+db.fin_invoices.belongsTo(db.fin_contracts, { foreignKey: "contract_id", as: "contract" });
+db.fin_invoices.belongsTo(db.users, { foreignKey: "created_by", as: "creator" });
+db.fin_invoices.hasMany(db.fin_invoice_lines, { foreignKey: "invoice_id", as: "lines" });
+db.fin_invoice_lines.belongsTo(db.fin_invoices, { foreignKey: "invoice_id", as: "invoice" });
+
+db.fin_payments.belongsTo(db.fin_accounts, { foreignKey: "account_id", as: "account" });
+db.fin_payments.belongsTo(db.fin_invoices, { foreignKey: "invoice_id", as: "invoice" });
+db.fin_payments.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
+db.fin_payments.belongsTo(db.suppliers, { foreignKey: "supplier_id", as: "supplier" });
+db.fin_payments.belongsTo(db.users, { foreignKey: "created_by", as: "creator" });
+
+db.fin_budgets.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
+
+db.fin_expenses.belongsTo(db.fin_accounts, { foreignKey: "account_id", as: "account" });
+db.fin_expenses.belongsTo(db.users, { foreignKey: "user_id", as: "user" });
+db.fin_expenses.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
+db.fin_expenses.belongsTo(db.users, { foreignKey: "created_by", as: "creator" });
+db.fin_expenses.belongsTo(db.users, { foreignKey: "approved_by", as: "approver" });
+
+db.fin_vat_entries.belongsTo(db.fin_invoices, { foreignKey: "invoice_id", as: "invoice" });
+db.fin_vat_entries.belongsTo(db.fin_expenses, { foreignKey: "expense_id", as: "expense" });
+
+// Uniform / workwear supply
+db.uni_stock_movements.belongsTo(db.uni_items, { foreignKey: "item_id", as: "item" });
+db.uni_stock_movements.belongsTo(db.users, { foreignKey: "created_by", as: "creator" });
+
+db.uni_issues.belongsTo(db.users, { foreignKey: "user_id", as: "receiver" });
+db.uni_issues.belongsTo(db.users, { foreignKey: "issued_by", as: "issuer" });
+db.uni_issues.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
+db.uni_issues.hasMany(db.uni_issue_lines, { foreignKey: "issue_id", as: "lines" });
+
+db.uni_issue_lines.belongsTo(db.uni_issues, { foreignKey: "issue_id", as: "issue" });
+db.uni_issue_lines.belongsTo(db.uni_items, { foreignKey: "item_id", as: "item" });
+db.uni_issue_lines.hasMany(db.uni_returns, { foreignKey: "issue_line_id", as: "returns" });
+
+db.uni_returns.belongsTo(db.uni_issue_lines, { foreignKey: "issue_line_id", as: "issueLine" });
+db.uni_returns.belongsTo(db.users, { foreignKey: "received_by", as: "receiver" });
+
+db.uni_requests.belongsTo(db.users, { foreignKey: "user_id", as: "requester" });
+db.uni_requests.belongsTo(db.users, { foreignKey: "approved_by", as: "approver" });
+db.uni_requests.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
+db.uni_requests.belongsTo(db.uni_items, { foreignKey: "item_id", as: "item" });
 
 // Export the db object for easy access throughout the app
 module.exports = db;

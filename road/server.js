@@ -43,6 +43,8 @@ function registerRoutes() {
   require("./app/routes/accident.routes")(app);
   require("./app/routes/daily_report.routes")(app);
   require("./app/routes/hse.routes")(app);
+  require("./app/routes/finance.routes")(app);
+  require("./app/routes/uniform.routes")(app);
   require("./app/routes/notification.routes")(app);
   require("./app/routes/document.routes")(app);
   require("./app/routes/angilal.routes")(app);

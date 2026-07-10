@@ -39,6 +39,12 @@ const DEFAULT_PERMISSIONS = [
   { module: "hse", action: "audit", key: "hse:audit" },
   { module: "hse", action: "mobile", key: "hse:mobile" },
   { module: "accident", action: "write", key: "accident:write" },
+  { module: "finance", action: "read", key: "finance:read" },
+  { module: "finance", action: "write", key: "finance:write" },
+  { module: "finance", action: "approve", key: "finance:approve" },
+  { module: "uniform", action: "read", key: "uniform:read" },
+  { module: "uniform", action: "write", key: "uniform:write" },
+  { module: "uniform", action: "approve", key: "uniform:approve" },
 ];
 
 const DEFAULT_ROLES = [
@@ -80,6 +86,10 @@ const DEFAULT_ROLES = [
       "hse:write",
       "hse:approve",
       "accident:write",
+      "finance:read",
+      "finance:write",
+      "uniform:read",
+      "uniform:write",
     ],
   },
   {
@@ -94,6 +104,8 @@ const DEFAULT_ROLES = [
       "accident:read",
       "attendance:read",
       "hse:read",
+      "finance:read",
+      "uniform:read",
     ],
   },
   {

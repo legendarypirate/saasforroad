@@ -6,6 +6,7 @@ import {
   Card,
   Form,
   Input,
+  Drawer,
   Modal,
   Select,
   Space,
@@ -201,7 +202,21 @@ export default function DailySafetyPage() {
         ]}
       />
 
-      <Modal title={editing ? 'Заавар засах' : 'Шинэ заавар'} open={open} onCancel={() => setOpen(false)} onOk={handleSave} width={720}>
+      <Drawer
+        title={editing ? 'Заавар засах' : 'Шинэ заавар'}
+        open={open}
+        onClose={() => setOpen(false)}
+        width={560}
+        destroyOnClose
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button onClick={() => setOpen(false)}>Болих</Button>
+            <Button type="primary" onClick={handleSave}>
+              Хадгалах
+            </Button>
+          </div>
+        }
+      >
         <Form form={form} layout="vertical">
           <Form.Item name="title" label="Гарчиг" rules={[{ required: true }]}>
             <Input />
@@ -215,25 +230,23 @@ export default function DailySafetyPage() {
           <Form.Item name="department" label="Хэлтэс">
             <Input />
           </Form.Item>
-          <Space wrap>
-            <Form.Item name="publish_date" label="Нийтлэх огноо" rules={[{ required: true }]}>
-              <DatePicker />
-            </Form.Item>
-            <Form.Item name="expiry_date" label="Дуусах огноо">
-              <DatePicker />
-            </Form.Item>
-            <Form.Item name="status" label="Төлөв" rules={[{ required: true }]}>
-              <Select
-                options={[
-                  { value: 'draft', label: 'Ноорог' },
-                  { value: 'published', label: 'Нийтлэгдсэн' },
-                  { value: 'archived', label: 'Архив' },
-                ]}
-              />
-            </Form.Item>
-          </Space>
+          <Form.Item name="publish_date" label="Нийтлэх огноо" rules={[{ required: true }]}>
+            <DatePicker style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item name="expiry_date" label="Дуусах огноо">
+            <DatePicker style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item name="status" label="Төлөв" rules={[{ required: true }]}>
+            <Select
+              options={[
+                { value: 'draft', label: 'Ноорог' },
+                { value: 'published', label: 'Нийтлэгдсэн' },
+                { value: 'archived', label: 'Архив' },
+              ]}
+            />
+          </Form.Item>
         </Form>
-      </Modal>
+      </Drawer>
     </div>
   );
 }

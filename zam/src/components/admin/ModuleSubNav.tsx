@@ -39,7 +39,12 @@ export default function ModuleSubNav({ userPermissions, userRole }: ModuleSubNav
   if (items.length === 0) return null;
 
   const selectedKey = resolveSelectedKey(pathname, mod);
-  const isDenseNav = mod.id === 'hse' || mod.id === 'hr' || items.length >= 10;
+  const isDenseNav =
+    mod.id === 'hse' ||
+    mod.id === 'hr' ||
+    mod.id === 'finance' ||
+    mod.id === 'uniform-supply' ||
+    items.length >= 10;
 
   if (isDenseNav) {
     const cols =
