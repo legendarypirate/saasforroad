@@ -241,17 +241,57 @@ optgroup {
   background-color: var(--muted);
 }
 
-/* Homepage editor — keep public-site preview light */
+/* Homepage editor — keep public-site preview (header/footer) light */
 .dark .admin-shell .keep-light-surface.bg-white,
-.dark .admin-shell .keep-light-surface .bg-white {
+.dark .admin-shell .keep-light-surface .bg-white,
+.dark .admin-shell .keep-light-surface .bg-white\/90,
+.dark .admin-shell .keep-light-surface .bg-white\/95 {
   background-color: #fff;
   color: #0f172a;
 }
 
-.dark .admin-shell .keep-light-surface .text-slate-900,
-.dark .admin-shell .keep-light-surface .text-slate-600,
+.dark .admin-shell .keep-light-surface .bg-white\/90,
+.dark .admin-shell .keep-light-surface .bg-white\/95 {
+  background-color: rgb(255 255 255 / 0.9);
+}
+
+.dark .admin-shell .keep-light-surface .text-slate-900 {
+  color: #0f172a;
+}
+
+.dark .admin-shell .keep-light-surface .text-slate-800 {
+  color: #1e293b;
+}
+
 .dark .admin-shell .keep-light-surface .text-slate-700 {
-  color: inherit;
+  color: #334155;
+}
+
+.dark .admin-shell .keep-light-surface .text-slate-600 {
+  color: #475569;
+}
+
+.dark .admin-shell .keep-light-surface .text-slate-500 {
+  color: #64748b;
+}
+
+.dark .admin-shell .keep-light-surface .text-slate-400 {
+  color: #94a3b8;
+}
+
+.dark .admin-shell .keep-light-surface .border-slate-200,
+.dark .admin-shell .keep-light-surface .border-slate-200\/80,
+.dark .admin-shell .keep-light-surface .border-slate-100 {
+  border-color: #e2e8f0;
+}
+
+/* Footer preview keeps intentional dark surface */
+.dark .admin-shell .keep-light-surface footer {
+  color: #94a3b8;
+}
+
+.dark .admin-shell .keep-light-surface footer .text-white {
+  color: #fff;
 }
 
 /* Login form stays on a white panel — force readable typed text in dark mode */

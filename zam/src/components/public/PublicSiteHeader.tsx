@@ -13,18 +13,27 @@ export default function PublicSiteHeader({
   logo,
   activeHref,
   navItems,
+  sticky = true,
 }: {
   companyName: string;
   logo?: string;
   activeHref?: string;
   navItems?: SiteNavItem[];
+  /** Disable sticky when embedded in admin visual preview (avoids covering admin chrome). */
+  sticky?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const logoSrc = logo ? resolveImageUrl(logo) : '';
   const NAV = resolveNavItems(navItems).filter((item) => item.visible);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
+    <header
+      className={
+        sticky
+          ? 'sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl'
+          : 'relative z-10 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl'
+      }
+    >
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 lg:px-8">
         <Link href="/" className="group flex min-w-0 shrink-0 items-center gap-2.5">
           {logoSrc ? (

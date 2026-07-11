@@ -514,6 +514,14 @@ export default function HomeSectionEditor({
                   onChange={(e) => patch('address', e.target.value)}
                 />
               </Field>
+              <Field label="Footer үйлчилгээ (мөр бүрт нэг)">
+                <Textarea
+                  rows={5}
+                  placeholder="Замын барилга&#10;..."
+                  value={arrayToLines(draft.footer_services)}
+                  onChange={(e) => patch('footer_services', linesToArray(e.target.value))}
+                />
+              </Field>
               <Field label="Footer текст">
                 <Input
                   value={draft.footer_copyright}

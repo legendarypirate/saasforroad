@@ -145,7 +145,7 @@ export default function HomepageAdminPage() {
 
   return (
     <div className="-m-4 space-y-0">
-      <div className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
+      <div className="sticky top-16 z-40 border-b border-border bg-background/95 backdrop-blur">
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div>
             <h2 className="text-lg font-semibold text-foreground">Landing — визуал засвар</h2>
@@ -195,7 +195,7 @@ export default function HomepageAdminPage() {
       </div>
 
       <div className={cn(
-        'overflow-hidden border-b border-border shadow-sm',
+        'overflow-x-hidden border-b border-border shadow-sm',
         page === 'menu' ? 'bg-background p-4 text-foreground' : 'keep-light-surface bg-white text-slate-900',
       )}>
         {page === 'menu' && (
@@ -215,6 +215,7 @@ export default function HomepageAdminPage() {
                 companyName={content.company_name || 'Үлэмжийн зам'}
                 logo={content.logo}
                 navItems={content.nav_menu}
+                sticky={false}
               />
             </EditableSection>
             <EditableSection title="Hero" onEdit={() => openEdit('hero')}>
@@ -246,6 +247,7 @@ export default function HomepageAdminPage() {
                 logo={content.logo}
                 activeHref="/about"
                 navItems={content.nav_menu}
+                sticky={false}
               />
             </EditableSection>
             <EditableSection title="Hero" onEdit={() => openEdit('about-hero')}>
@@ -332,6 +334,7 @@ export default function HomepageAdminPage() {
                 logo={content.logo}
                 activeHref="/technology"
                 navItems={content.nav_menu}
+                sticky={false}
               />
             </EditableSection>
             <EditableSection title="Hero" onEdit={() => openEdit('tech-hero')}>
@@ -406,6 +409,7 @@ export default function HomepageAdminPage() {
                 logo={content.logo}
                 activeHref="/projects"
                 navItems={content.nav_menu}
+                sticky={false}
               />
             </EditableSection>
             <EditableSection title="Hero" onEdit={() => openEdit('projects-hero')}>
@@ -450,6 +454,7 @@ export default function HomepageAdminPage() {
                 logo={content.logo}
                 activeHref="/hr"
                 navItems={content.nav_menu}
+                sticky={false}
               />
             </EditableSection>
             <EditableSection title="Hero" onEdit={() => openEdit('hr-hero')}>
@@ -524,6 +529,7 @@ export default function HomepageAdminPage() {
                 logo={content.logo}
                 activeHref="/news"
                 navItems={content.nav_menu}
+                sticky={false}
               />
             </EditableSection>
             <EditableSection title="Hero" onEdit={() => openEdit('news-hero')}>
@@ -566,6 +572,7 @@ export default function HomepageAdminPage() {
                 logo={content.logo}
                 activeHref="/standart"
                 navItems={content.nav_menu}
+                sticky={false}
               />
             </EditableSection>
             <EditableSection title="Hero" onEdit={() => openEdit('standart-hero')}>

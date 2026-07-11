@@ -84,7 +84,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="admin-shell min-h-screen bg-muted/30">
-      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-border bg-background/95 px-6 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <header className="sticky top-0 z-[60] flex items-center justify-between border-b border-border bg-background/95 px-6 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="flex items-center gap-4">
           <button
             type="button"
