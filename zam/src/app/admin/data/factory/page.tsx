@@ -10,7 +10,6 @@ import {
 } from '@/components/admin/icons';
 import {
   Button,
-  Drawer,
   Input,
   InputNumber,
   Select,
@@ -99,6 +98,8 @@ type FormState = {
   products: ProductDraft[];
 };
 
+type PanelMode = 'list' | 'detail' | 'create';
+
 const emptyForm = (): FormState => ({
   code: '',
   name: '',
@@ -163,7 +164,7 @@ export default function FactoryMapPage() {
   const [loading, setLoading] = useState(false);
   const [mapsReady, setMapsReady] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [mode, setMode] = useState<PanelMode>('list');
   const [selected, setSelected] = useState<FactorySite | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm());
   const [q, setQ] = useState('');
@@ -204,6 +205,7 @@ export default function FactoryMapPage() {
         draggable: true,
         zIndex: 999,
         title: 'Шинэ байршил',
+        animation: window.google.maps.Animation?.DROP,
       });
       pinRef.current.addListener('dragend', () => {
         const pos = pinRef.current?.getPosition();
@@ -213,18 +215,27 @@ export default function FactoryMapPage() {
     }
     pinRef.current.setPosition({ lat, lng });
     pinRef.current.setMap(mapInstance.current);
+    pinRef.current.setDraggable(true);
   }, []);
 
   const clearPin = useCallback(() => {
     if (pinRef.current) pinRef.current.setMap(null);
   }, []);
 
+  const backToList = useCallback(() => {
+    placingRef.current = false;
+    clearPin();
+    setMode('list');
+    setSelected(null);
+    setForm(emptyForm());
+  }, [clearPin]);
+
   const selectSite = useCallback(
     (site: FactorySite) => {
-      setSelected(site);
-      setDrawerOpen(false);
       placingRef.current = false;
       clearPin();
+      setSelected(site);
+      setMode('detail');
       if (hasCoords(site) && mapInstance.current) {
         const lat = Number(site.latitude);
         const lng = Number(site.longitude);
@@ -241,26 +252,18 @@ export default function FactoryMapPage() {
 
   const openCreate = useCallback(() => {
     setSelected(null);
-    const lat = MONGOLIA_CENTER.lat;
-    const lng = MONGOLIA_CENTER.lng;
     setForm({
       ...emptyForm(),
-      latitude: lat,
-      longitude: lng,
+      latitude: null,
+      longitude: null,
       products: [newProductDraft()],
     });
     placingRef.current = true;
-    setPin(lat, lng);
-    setDrawerOpen(true);
-    mapInstance.current?.panTo({ lat, lng });
-    mapInstance.current?.setZoom(6);
-  }, [setPin]);
-
-  const closeCreate = useCallback(() => {
-    setDrawerOpen(false);
-    placingRef.current = false;
     clearPin();
-    setForm(emptyForm());
+    setMode('create');
+    mapInstance.current?.panTo(MONGOLIA_CENTER);
+    mapInstance.current?.setZoom(5.6);
+    message.info('Газрын зураг дээр дарж байршил сонгоно уу');
   }, [clearPin]);
 
   const renderMarkers = useCallback((items: FactorySite[]) => {
@@ -283,7 +286,10 @@ export default function FactoryMapPage() {
           strokeColor: '#fff',
         },
       });
-      marker.addListener('click', () => selectRef.current(site));
+      marker.addListener('click', () => {
+        if (placingRef.current) return;
+        selectRef.current(site);
+      });
       return marker;
     });
   }, []);
@@ -336,7 +342,7 @@ export default function FactoryMapPage() {
       return;
     }
     if (form.latitude == null || form.longitude == null) {
-      message.warning('Газрын зураг дээр байршил сонгоно уу');
+      message.warning('Газрын зураг дээр дарж байршил сонгоно уу');
       return;
     }
 
@@ -371,10 +377,14 @@ export default function FactoryMapPage() {
     try {
       const created = await createPlantRecord('sites', body);
       message.success('Үйлдвэр нэмэгдлээ');
-      closeCreate();
+      placingRef.current = false;
+      clearPin();
+      setForm(emptyForm());
       await loadSites();
       if (created && typeof created === 'object' && 'id' in created) {
         selectSite(created as FactorySite);
+      } else {
+        setMode('list');
       }
     } catch (err) {
       message.error(err instanceof Error ? err.message : 'Хадгалахад алдаа');
@@ -388,13 +398,14 @@ export default function FactoryMapPage() {
     deletePlantRecord('sites', site.id)
       .then(() => {
         message.success('Устгагдлаа');
-        setSelected(null);
+        backToList();
         loadSites();
       })
       .catch((err) => message.error(err instanceof Error ? err.message : 'Устгахад алдаа'));
   };
 
   const mappedCount = sites.filter(hasCoords).length;
+  const pinReady = form.latitude != null && form.longitude != null;
 
   return (
     <div className="flex h-[calc(100vh-7rem)] min-h-[560px] flex-col gap-3 p-4 sm:p-6">
@@ -407,7 +418,7 @@ export default function FactoryMapPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Үйлдвэр — Газрын зураг</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Бүртгэлтэй үйлдвэр дээр дарж мэдээлэл харна · нэмэх товчоор шинэ үйлдвэр бүртгэнэ
+            Бүртгэлтэй үйлдвэр дээр дарж мэдээлэл харна · нэмэхэд зураг дээр дарж байршил сонгоно
           </p>
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -415,23 +426,249 @@ export default function FactoryMapPage() {
           <span>
             {mappedCount}/{sites.length} байршилтай
           </span>
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-            Үйлдвэр нэмэх
-          </Button>
+          {mode !== 'create' && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+              Үйлдвэр нэмэх
+            </Button>
+          )}
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[340px_1fr]">
+      <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[360px_1fr]">
         <aside className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card">
-          {selected ? (
+          {mode === 'create' ? (
             <div className="flex min-h-0 flex-1 flex-col">
               <div className="flex items-center gap-2 border-b border-border p-3">
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<ArrowLeftOutlined />}
-                  onClick={() => setSelected(null)}
+                <Button type="text" size="small" icon={<ArrowLeftOutlined />} onClick={backToList}>
+                  Болих
+                </Button>
+                <span className="text-sm font-semibold">Шинэ үйлдвэр</span>
+              </div>
+
+              <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+                <div
+                  className={cn(
+                    'rounded-lg border px-3 py-2 text-xs',
+                    pinReady
+                      ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300'
+                      : 'border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-300',
+                  )}
                 >
+                  {pinReady
+                    ? `Байршил: ${form.latitude!.toFixed(5)}, ${form.longitude!.toFixed(5)} — чирж засна`
+                    : 'Газрын зураг дээр дарж байршил сонгоно уу'}
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs text-muted-foreground">Нэр *</label>
+                  <Input
+                    value={form.name}
+                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                    placeholder="Жишээ: Дархан асфальт үйлдвэр"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="mb-1 block text-xs text-muted-foreground">Код</label>
+                    <Input
+                      value={form.code}
+                      onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-muted-foreground">Төрөл</label>
+                    <Select
+                      className="w-full"
+                      value={form.plant_type}
+                      onChange={(v) => setForm((f) => ({ ...f, plant_type: v }))}
+                      options={PLANT_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="mb-1 block text-xs text-muted-foreground">Аймаг / хот</label>
+                    <Input
+                      value={form.aimag}
+                      onChange={(e) => setForm((f) => ({ ...f, aimag: e.target.value }))}
+                      placeholder="Дархан-Уул"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-muted-foreground">Төлөв</label>
+                    <Select
+                      className="w-full"
+                      value={form.status}
+                      onChange={(v) => setForm((f) => ({ ...f, status: v }))}
+                      options={PLANT_STATUSES.map((s) => ({ value: s.value, label: s.label }))}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs text-muted-foreground">Хаяг</label>
+                  <Input
+                    value={form.location}
+                    onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="mb-1 block text-xs text-muted-foreground">Чадал / цаг</label>
+                    <Input
+                      value={form.capacity_per_hour}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, capacity_per_hour: e.target.value }))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-muted-foreground">Нэгж</label>
+                    <Input
+                      value={form.capacity_unit}
+                      onChange={(e) => setForm((f) => ({ ...f, capacity_unit: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="mb-1 block text-xs text-muted-foreground">Менежер</label>
+                    <Input
+                      value={form.manager_name}
+                      onChange={(e) => setForm((f) => ({ ...f, manager_name: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-muted-foreground">Утас</label>
+                    <Input
+                      value={form.phone}
+                      onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs text-muted-foreground">Тэмдэглэл</label>
+                  <Input.TextArea
+                    rows={2}
+                    value={form.notes}
+                    onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                  />
+                </div>
+
+                <div className="border-t border-border pt-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <h3 className="text-sm font-semibold">Бүтээгдэхүүн</h3>
+                    <Button
+                      size="small"
+                      icon={<PlusOutlined />}
+                      onClick={() =>
+                        setForm((f) => ({
+                          ...f,
+                          products: [...f.products, newProductDraft()],
+                        }))
+                      }
+                    >
+                      Нэмэх
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {form.products.map((p, idx) => (
+                      <div key={p.key} className="rounded-lg border border-border p-2.5">
+                        <div className="mb-1.5 flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">#{idx + 1}</span>
+                          <Button
+                            type="text"
+                            danger
+                            size="small"
+                            icon={<DeleteOutlined />}
+                            onClick={() =>
+                              setForm((f) => ({
+                                ...f,
+                                products: f.products.filter((x) => x.key !== p.key),
+                              }))
+                            }
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Input
+                            placeholder="Нэр"
+                            value={p.name}
+                            onChange={(e) =>
+                              setForm((f) => ({
+                                ...f,
+                                products: f.products.map((x) =>
+                                  x.key === p.key ? { ...x, name: e.target.value } : x,
+                                ),
+                              }))
+                            }
+                          />
+                          <Select
+                            className="w-full"
+                            value={p.product_type}
+                            onChange={(v) =>
+                              setForm((f) => ({
+                                ...f,
+                                products: f.products.map((x) =>
+                                  x.key === p.key ? { ...x, product_type: v } : x,
+                                ),
+                              }))
+                            }
+                            options={PRODUCT_TYPES.map((t) => ({
+                              value: t.value,
+                              label: t.label,
+                            }))}
+                          />
+                          <div className="grid grid-cols-2 gap-2">
+                            <Input
+                              placeholder="Зэрэг"
+                              value={p.grade}
+                              onChange={(e) =>
+                                setForm((f) => ({
+                                  ...f,
+                                  products: f.products.map((x) =>
+                                    x.key === p.key ? { ...x, grade: e.target.value } : x,
+                                  ),
+                                }))
+                              }
+                            />
+                            <InputNumber
+                              className="w-full"
+                              placeholder="Үнэ"
+                              value={p.unit_price_default}
+                              onChange={(v) =>
+                                setForm((f) => ({
+                                  ...f,
+                                  products: f.products.map((x) =>
+                                    x.key === p.key
+                                      ? { ...x, unit_price_default: v ?? 0 }
+                                      : x,
+                                  ),
+                                }))
+                              }
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-border p-3">
+                <Button type="primary" block loading={saving} onClick={save}>
+                  Хадгалах
+                </Button>
+              </div>
+            </div>
+          ) : mode === 'detail' && selected ? (
+            <div className="flex min-h-0 flex-1 flex-col">
+              <div className="flex items-center gap-2 border-b border-border p-3">
+                <Button type="text" size="small" icon={<ArrowLeftOutlined />} onClick={backToList}>
                   Жагсаалт
                 </Button>
               </div>
@@ -506,12 +743,7 @@ export default function FactoryMapPage() {
                 </div>
               </div>
               <div className="border-t border-border p-3">
-                <Button
-                  danger
-                  block
-                  icon={<DeleteOutlined />}
-                  onClick={() => remove(selected)}
-                >
+                <Button danger block icon={<DeleteOutlined />} onClick={() => remove(selected)}>
                   Устгах
                 </Button>
               </div>
@@ -588,251 +820,20 @@ export default function FactoryMapPage() {
               Газрын зураг ачаалж байна…
             </div>
           )}
-          <div className="pointer-events-none absolute bottom-3 left-3 rounded-lg bg-background/90 px-3 py-2 text-xs shadow-sm backdrop-blur">
-            {drawerOpen
-              ? 'Зураг дээр дарж / тэмдэглэгээ чирж байршил сонгоно'
+          <div
+            className={cn(
+              'pointer-events-none absolute bottom-3 left-3 rounded-lg px-3 py-2 text-xs shadow-sm backdrop-blur',
+              mode === 'create'
+                ? 'bg-amber-500/95 text-white'
+                : 'bg-background/90 text-foreground',
+            )}
+          >
+            {mode === 'create'
+              ? 'Зураг дээр дарж байршил сонгоно · тэмдэглэгээг чирж засна'
               : 'Тэмдэглэгээ дээр дарж үйлдвэрийн мэдээлэл харна'}
           </div>
         </div>
       </div>
-
-      <Drawer
-        title="Шинэ үйлдвэр"
-        open={drawerOpen}
-        onClose={closeCreate}
-        width={480}
-        footer={
-          <div className="flex justify-end gap-2">
-            <Button onClick={closeCreate}>Болих</Button>
-            <Button type="primary" loading={saving} onClick={save}>
-              Хадгалах
-            </Button>
-          </div>
-        }
-      >
-        <div className="space-y-3">
-          <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-            Байршил:{' '}
-            {form.latitude != null && form.longitude != null
-              ? `${form.latitude.toFixed(5)}, ${form.longitude.toFixed(5)}`
-              : 'сонгоогүй'}{' '}
-            · зураг дээр дарж солино
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Нэр *</label>
-            <Input
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder="Жишээ: Дархан асфальт үйлдвэр"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Код</label>
-              <Input
-                value={form.code}
-                onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Төрөл</label>
-              <Select
-                className="w-full"
-                value={form.plant_type}
-                onChange={(v) => setForm((f) => ({ ...f, plant_type: v }))}
-                options={PLANT_TYPES.map((t) => ({ value: t.value, label: t.label }))}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Аймаг / хот</label>
-              <Input
-                value={form.aimag}
-                onChange={(e) => setForm((f) => ({ ...f, aimag: e.target.value }))}
-                placeholder="Дархан-Уул"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Төлөв</label>
-              <Select
-                className="w-full"
-                value={form.status}
-                onChange={(v) => setForm((f) => ({ ...f, status: v }))}
-                options={PLANT_STATUSES.map((s) => ({ value: s.value, label: s.label }))}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Хаяг / байршил</label>
-            <Input
-              value={form.location}
-              onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Чадал / цаг</label>
-              <Input
-                value={form.capacity_per_hour}
-                onChange={(e) => setForm((f) => ({ ...f, capacity_per_hour: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Нэгж</label>
-              <Input
-                value={form.capacity_unit}
-                onChange={(e) => setForm((f) => ({ ...f, capacity_unit: e.target.value }))}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Менежер</label>
-              <Input
-                value={form.manager_name}
-                onChange={(e) => setForm((f) => ({ ...f, manager_name: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Утас</label>
-              <Input
-                value={form.phone}
-                onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Тэмдэглэл</label>
-            <Input.TextArea
-              rows={2}
-              value={form.notes}
-              onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-            />
-          </div>
-
-          <div className="border-t border-border pt-3">
-            <div className="mb-2 flex items-center justify-between">
-              <h3 className="text-sm font-semibold">Бүтээгдэхүүн</h3>
-              <Button
-                size="small"
-                icon={<PlusOutlined />}
-                onClick={() =>
-                  setForm((f) => ({ ...f, products: [...f.products, newProductDraft()] }))
-                }
-              >
-                Нэмэх
-              </Button>
-            </div>
-
-            {form.products.length === 0 && (
-              <p className="text-xs text-muted-foreground">Бүтээгдэхүүн нэмээгүй</p>
-            )}
-
-            <div className="space-y-3">
-              {form.products.map((p, idx) => (
-                <div key={p.key} className="rounded-lg border border-border p-3">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">#{idx + 1}</span>
-                    <Button
-                      type="text"
-                      danger
-                      size="small"
-                      icon={<DeleteOutlined />}
-                      onClick={() =>
-                        setForm((f) => ({
-                          ...f,
-                          products: f.products.filter((x) => x.key !== p.key),
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Input
-                      placeholder="Бүтээгдэхүүний нэр"
-                      value={p.name}
-                      onChange={(e) =>
-                        setForm((f) => ({
-                          ...f,
-                          products: f.products.map((x) =>
-                            x.key === p.key ? { ...x, name: e.target.value } : x,
-                          ),
-                        }))
-                      }
-                    />
-                    <div className="grid grid-cols-2 gap-2">
-                      <Select
-                        className="w-full"
-                        value={p.product_type}
-                        onChange={(v) =>
-                          setForm((f) => ({
-                            ...f,
-                            products: f.products.map((x) =>
-                              x.key === p.key ? { ...x, product_type: v } : x,
-                            ),
-                          }))
-                        }
-                        options={PRODUCT_TYPES.map((t) => ({
-                          value: t.value,
-                          label: t.label,
-                        }))}
-                      />
-                      <Input
-                        placeholder="Зэрэг / марк"
-                        value={p.grade}
-                        onChange={(e) =>
-                          setForm((f) => ({
-                            ...f,
-                            products: f.products.map((x) =>
-                              x.key === p.key ? { ...x, grade: e.target.value } : x,
-                            ),
-                          }))
-                        }
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input
-                        placeholder="Нэгж"
-                        value={p.unit}
-                        onChange={(e) =>
-                          setForm((f) => ({
-                            ...f,
-                            products: f.products.map((x) =>
-                              x.key === p.key ? { ...x, unit: e.target.value } : x,
-                            ),
-                          }))
-                        }
-                      />
-                      <InputNumber
-                        className="w-full"
-                        placeholder="Үнэ"
-                        value={p.unit_price_default}
-                        onChange={(v) =>
-                          setForm((f) => ({
-                            ...f,
-                            products: f.products.map((x) =>
-                              x.key === p.key
-                                ? { ...x, unit_price_default: v ?? 0 }
-                                : x,
-                            ),
-                          }))
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </Drawer>
     </div>
   );
 }
