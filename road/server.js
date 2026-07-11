@@ -43,6 +43,7 @@ function registerRoutes() {
   require("./app/routes/accident.routes")(app);
   require("./app/routes/daily_report.routes")(app);
   require("./app/routes/hse.routes")(app);
+  require("./app/routes/road_engineering.routes")(app);
   require("./app/routes/finance.routes")(app);
   require("./app/routes/plant.routes")(app);
   require("./app/routes/uniform.routes")(app);
@@ -104,6 +105,18 @@ async function start() {
     await seedPermissionsAndRoles();
     await seedDocumentFolders();
     await seedEquipmentCategories();
+    const { seedRoadEngineering } = require("./app/utils/seedRoadEngineering");
+    const roadSeed = await seedRoadEngineering();
+    if (roadSeed?.skipped) {
+      console.log(`Road engineering seed skipped (${roadSeed.count} projects).`);
+    } else {
+      console.log("Road engineering seed completed.");
+    }
+    const { seedRoadBudget } = require("./app/utils/seedRoadBudget");
+    const budgetSeed = await seedRoadBudget(db);
+    console.log(
+      `Road budget seed: rates+${budgetSeed.createdRates}, budget=${budgetSeed.skipped ? "exists" : "created"}, estimate=${budgetSeed.estimateOk ?? "n/a"}`,
+    );
     console.log("Synced db.");
 
     registerRoutes();

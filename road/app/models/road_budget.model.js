@@ -1,0 +1,28 @@
+module.exports = (sequelize, Sequelize) => {
+  return sequelize.define("road_budget", {
+    project_id: { type: Sequelize.INTEGER, allowNull: false },
+    code: { type: Sequelize.STRING(50), allowNull: false },
+    name: { type: Sequelize.STRING(255), allowNull: false },
+    version: { type: Sequelize.INTEGER, allowNull: false, defaultValue: 1 },
+    status: { type: Sequelize.STRING(30), allowNull: false, defaultValue: "draft" },
+    currency: { type: Sequelize.STRING(10), allowNull: false, defaultValue: "MNT" },
+    base_amount: { type: Sequelize.DECIMAL(18, 2), allowNull: false, defaultValue: 0 },
+    contingency_pct: { type: Sequelize.DECIMAL(6, 2), allowNull: false, defaultValue: 10 },
+    contingency_amount: { type: Sequelize.DECIMAL(18, 2), allowNull: false, defaultValue: 0 },
+    overhead_pct: { type: Sequelize.DECIMAL(6, 2), allowNull: false, defaultValue: 8 },
+    overhead_amount: { type: Sequelize.DECIMAL(18, 2), allowNull: false, defaultValue: 0 },
+    profit_pct: { type: Sequelize.DECIMAL(6, 2), allowNull: false, defaultValue: 5 },
+    profit_amount: { type: Sequelize.DECIMAL(18, 2), allowNull: false, defaultValue: 0 },
+    vat_pct: { type: Sequelize.DECIMAL(6, 2), allowNull: false, defaultValue: 10 },
+    vat_amount: { type: Sequelize.DECIMAL(18, 2), allowNull: false, defaultValue: 0 },
+    total_amount: { type: Sequelize.DECIMAL(18, 2), allowNull: false, defaultValue: 0 },
+    cost_per_km: { type: Sequelize.DECIMAL(18, 2), allowNull: true },
+    road_length_m: { type: Sequelize.DECIMAL(12, 3), allowNull: true },
+    estimate_method: { type: Sequelize.STRING(40), allowNull: true, defaultValue: "hybrid" },
+    notes: { type: Sequelize.TEXT, allowNull: true },
+    prepared_by: { type: Sequelize.STRING(120), allowNull: true },
+    approved_by: { type: Sequelize.STRING(120), allowNull: true },
+    approved_at: { type: Sequelize.DATE, allowNull: true },
+    created_by: { type: Sequelize.INTEGER, allowNull: true },
+  });
+};

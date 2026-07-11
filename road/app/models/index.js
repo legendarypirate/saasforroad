@@ -88,6 +88,29 @@ db.fin_budgets = require("./fin_budget.model.js")(sequelize, Sequelize);
 db.fin_expenses = require("./fin_expense.model.js")(sequelize, Sequelize);
 db.fin_vat_entries = require("./fin_vat_entry.model.js")(sequelize, Sequelize);
 
+// Road Engineering (Замын инженеринг)
+db.road_projects = require("./road_project.model.js")(sequelize, Sequelize);
+db.alignments = require("./alignment.model.js")(sequelize, Sequelize);
+db.survey_points = require("./survey_point.model.js")(sequelize, Sequelize);
+db.ground_profiles = require("./ground_profile.model.js")(sequelize, Sequelize);
+db.vertical_alignments = require("./vertical_alignment.model.js")(sequelize, Sequelize);
+db.vertical_pis = require("./vertical_pi.model.js")(sequelize, Sequelize);
+db.design_profile_points = require("./design_profile_point.model.js")(sequelize, Sequelize);
+db.cross_sections = require("./cross_section.model.js")(sequelize, Sequelize);
+db.earthworks = require("./earthwork.model.js")(sequelize, Sequelize);
+db.typical_sections = require("./typical_section.model.js")(sequelize, Sequelize);
+db.drainages = require("./drainage.model.js")(sequelize, Sequelize);
+db.road_structures = require("./road_structure.model.js")(sequelize, Sequelize);
+db.horizontal_elements = require("./horizontal_element.model.js")(sequelize, Sequelize);
+db.pavements = require("./pavement.model.js")(sequelize, Sequelize);
+db.quantity_items = require("./quantity_item.model.js")(sequelize, Sequelize);
+db.road_drawings = require("./road_drawing.model.js")(sequelize, Sequelize);
+db.road_settings = require("./road_setting.model.js")(sequelize, Sequelize);
+db.road_budget_rates = require("./road_budget_rate.model.js")(sequelize, Sequelize);
+db.road_budgets = require("./road_budget.model.js")(sequelize, Sequelize);
+db.road_budget_items = require("./road_budget_item.model.js")(sequelize, Sequelize);
+db.road_budget_assumptions = require("./road_budget_assumption.model.js")(sequelize, Sequelize);
+
 db.plant_sites = require("./plant_site.model.js")(sequelize, Sequelize);
 db.plant_products = require("./plant_product.model.js")(sequelize, Sequelize);
 db.plant_materials = require("./plant_material.model.js")(sequelize, Sequelize);
@@ -749,6 +772,63 @@ db.plant_sites.hasMany(db.plant_expenses, { foreignKey: "plant_id", as: "expense
 
 db.plant_daily_reports.belongsTo(db.plant_sites, { foreignKey: "plant_id", as: "plant" });
 db.plant_sites.hasMany(db.plant_daily_reports, { foreignKey: "plant_id", as: "dailyReports" });
+
+// Road Engineering associations
+db.road_projects.hasMany(db.alignments, { foreignKey: "project_id", as: "alignments", onDelete: "CASCADE" });
+db.alignments.belongsTo(db.road_projects, { foreignKey: "project_id", as: "project" });
+
+db.alignments.hasMany(db.survey_points, { foreignKey: "alignment_id", as: "surveyPoints", onDelete: "CASCADE" });
+db.survey_points.belongsTo(db.alignments, { foreignKey: "alignment_id", as: "alignment" });
+
+db.alignments.hasMany(db.ground_profiles, { foreignKey: "alignment_id", as: "groundProfiles", onDelete: "CASCADE" });
+db.ground_profiles.belongsTo(db.alignments, { foreignKey: "alignment_id", as: "alignment" });
+
+db.alignments.hasMany(db.vertical_alignments, { foreignKey: "alignment_id", as: "verticalAlignments", onDelete: "CASCADE" });
+db.vertical_alignments.belongsTo(db.alignments, { foreignKey: "alignment_id", as: "alignment" });
+
+db.vertical_alignments.hasMany(db.vertical_pis, { foreignKey: "vertical_alignment_id", as: "pis", onDelete: "CASCADE" });
+db.vertical_pis.belongsTo(db.vertical_alignments, { foreignKey: "vertical_alignment_id", as: "verticalAlignment" });
+
+db.vertical_alignments.hasMany(db.design_profile_points, { foreignKey: "vertical_alignment_id", as: "designPoints", onDelete: "CASCADE" });
+db.design_profile_points.belongsTo(db.vertical_alignments, { foreignKey: "vertical_alignment_id", as: "verticalAlignment" });
+
+db.alignments.hasMany(db.cross_sections, { foreignKey: "alignment_id", as: "crossSections", onDelete: "CASCADE" });
+db.cross_sections.belongsTo(db.alignments, { foreignKey: "alignment_id", as: "alignment" });
+
+db.alignments.hasMany(db.earthworks, { foreignKey: "alignment_id", as: "earthworks", onDelete: "CASCADE" });
+db.earthworks.belongsTo(db.alignments, { foreignKey: "alignment_id", as: "alignment" });
+
+db.alignments.hasMany(db.horizontal_elements, { foreignKey: "alignment_id", as: "horizontalElements", onDelete: "CASCADE" });
+db.horizontal_elements.belongsTo(db.alignments, { foreignKey: "alignment_id", as: "alignment" });
+
+db.road_projects.hasMany(db.typical_sections, { foreignKey: "project_id", as: "typicalSections", onDelete: "CASCADE" });
+db.typical_sections.belongsTo(db.road_projects, { foreignKey: "project_id", as: "project" });
+
+db.road_projects.hasMany(db.drainages, { foreignKey: "project_id", as: "drainages", onDelete: "CASCADE" });
+db.drainages.belongsTo(db.road_projects, { foreignKey: "project_id", as: "project" });
+
+db.road_projects.hasMany(db.road_structures, { foreignKey: "project_id", as: "structures", onDelete: "CASCADE" });
+db.road_structures.belongsTo(db.road_projects, { foreignKey: "project_id", as: "project" });
+
+db.road_projects.hasMany(db.pavements, { foreignKey: "project_id", as: "pavements", onDelete: "CASCADE" });
+db.pavements.belongsTo(db.road_projects, { foreignKey: "project_id", as: "project" });
+
+db.road_projects.hasMany(db.quantity_items, { foreignKey: "project_id", as: "quantityItems", onDelete: "CASCADE" });
+db.quantity_items.belongsTo(db.road_projects, { foreignKey: "project_id", as: "project" });
+
+db.road_projects.hasMany(db.road_drawings, { foreignKey: "project_id", as: "drawings", onDelete: "CASCADE" });
+db.road_drawings.belongsTo(db.road_projects, { foreignKey: "project_id", as: "project" });
+
+db.road_projects.hasMany(db.road_settings, { foreignKey: "project_id", as: "settings", onDelete: "CASCADE" });
+db.road_settings.belongsTo(db.road_projects, { foreignKey: "project_id", as: "project" });
+
+db.road_projects.hasMany(db.road_budgets, { foreignKey: "project_id", as: "budgets", onDelete: "CASCADE" });
+db.road_budgets.belongsTo(db.road_projects, { foreignKey: "project_id", as: "project" });
+db.road_budgets.hasMany(db.road_budget_items, { foreignKey: "budget_id", as: "items", onDelete: "CASCADE" });
+db.road_budget_items.belongsTo(db.road_budgets, { foreignKey: "budget_id", as: "budget" });
+db.road_budget_items.belongsTo(db.road_budget_rates, { foreignKey: "rate_id", as: "rate" });
+db.road_budgets.hasMany(db.road_budget_assumptions, { foreignKey: "budget_id", as: "assumptions", onDelete: "CASCADE" });
+db.road_budget_assumptions.belongsTo(db.road_budgets, { foreignKey: "budget_id", as: "budget" });
 
 // Export the db object for easy access throughout the app
 module.exports = db;

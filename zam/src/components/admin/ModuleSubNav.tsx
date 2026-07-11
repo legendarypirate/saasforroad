@@ -47,6 +47,8 @@ export default function ModuleSubNav({ userPermissions, userRole }: ModuleSubNav
     mod.id === 'uniform-supply' ||
     mod.id === 'rental' ||
     mod.id === 'plant' ||
+    mod.id === 'road-engineering' ||
+    mod.id === 'budget' ||
     items.length >= 10;
 
   if (isDenseNav) {

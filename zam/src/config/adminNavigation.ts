@@ -17,6 +17,30 @@ export const DASHBOARD_PATH = '/admin';
 
 export const ADMIN_MODULES: ModuleConfig[] = [
   {
+    id: 'road-engineering',
+    label: 'Замын инженеринг',
+    description: 'Тэнхлэг, профиль, шороо, хөндлөн огтлол',
+    color: '#0f766e',
+    items: [
+      { path: '/admin/road-engineering', label: 'Самбар', permission: 'road:view' },
+      { path: '/admin/road-engineering/projects', label: 'Төслүүд', permission: 'road:view' },
+      { path: '/admin/road-engineering/survey', label: 'Хэмжилт', permission: 'road:view' },
+      { path: '/admin/road-engineering/alignment/horizontal', label: 'Хэвтээ тэнхлэг', permission: 'road:view' },
+      { path: '/admin/road-engineering/alignment/vertical', label: 'Босоо тэнхлэг', permission: 'road:view' },
+      { path: '/admin/road-engineering/alignment/stationing', label: 'Станцлал', permission: 'road:view' },
+      { path: '/admin/road-engineering/cross-sections', label: 'Хөндлөн огтлол', permission: 'road:view' },
+      { path: '/admin/road-engineering/typical-sections', label: 'Ердийн огтлол', permission: 'road:view' },
+      { path: '/admin/road-engineering/earthwork', label: 'Шорооны ажил', permission: 'road:view' },
+      { path: '/admin/road-engineering/pavement', label: 'Хучилт', permission: 'road:view' },
+      { path: '/admin/road-engineering/drainage', label: 'Ус зайлуулалт', permission: 'road:view' },
+      { path: '/admin/road-engineering/structures', label: 'Байгууламж', permission: 'road:view' },
+      { path: '/admin/road-engineering/quantity', label: 'Хэмжээ тооцоо', permission: 'road:view' },
+      { path: '/admin/road-engineering/drawings', label: 'Зураг төсөл', permission: 'road:view' },
+      { path: '/admin/road-engineering/reports', label: 'Тайлан', permission: 'road:view' },
+      { path: '/admin/road-engineering/settings', label: 'Тохиргоо', permission: 'road:view' },
+    ],
+  },
+  {
     id: 'operations',
     label: 'Төсөл / Ажил',
     description: 'Төсөл, даалгавар, календар',
@@ -218,6 +242,19 @@ export const ADMIN_MODULES: ModuleConfig[] = [
       { path: '/admin/plant/sales', label: 'Борлуулалт', permission: 'plant:read' },
       { path: '/admin/plant/expenses', label: 'Зардал', permission: 'plant:read' },
       { path: '/admin/plant/daily-reports', label: 'Өдрийн тайлан', permission: 'plant:read' },
+    ],
+  },
+  {
+    id: 'budget',
+    label: 'Төсөв',
+    description: 'Замын төсөв, нэгж үнэ, автомат тооцоо, харьцуулалт',
+    color: '#ea580c',
+    items: [
+      { path: '/admin/budget', label: 'Самбар', permission: 'budget:view' },
+      { path: '/admin/budget/estimator', label: 'Тооцоолуур', permission: 'budget:create' },
+      { path: '/admin/budget/rates', label: 'Нэгж үнэ', permission: 'budget:view' },
+      { path: '/admin/budget/compare', label: 'Харьцуулалт', permission: 'budget:view' },
+      { path: '/admin/budget/reports', label: 'Тайлан', permission: 'budget:export' },
     ],
   },
 ];

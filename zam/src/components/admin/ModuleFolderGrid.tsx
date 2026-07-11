@@ -2,6 +2,8 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  Calculator,
+  Construction,
   Banknote,
   Beaker,
   Bell,
@@ -62,6 +64,8 @@ import {
 import { cn } from '@/lib/utils';
 
 const MODULE_ICONS: Record<string, LucideIcon> = {
+  'road-engineering': Construction,
+  budget: Calculator,
   operations: Briefcase,
   inventory: Layers,
   hr: Briefcase,
