@@ -29,9 +29,6 @@ import {
   type StudentStatus,
 } from '@/lib/student';
 
-type ProjectOption = { id: number; name: string };
-type UserOption = { id: number; username: string };
-
 export default function StudentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -41,8 +38,6 @@ export default function StudentDetailPage() {
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
   const [student, setStudent] = useState<StudentRecord | null>(null);
-  const [projects, setProjects] = useState<ProjectOption[]>([]);
-  const [users, setUsers] = useState<UserOption[]>([]);
   const [form] = Form.useForm();
 
   const display = (v?: string | number | null) =>
@@ -58,24 +53,14 @@ export default function StudentDetailPage() {
     if (!Number.isFinite(studentId)) return;
     setLoading(true);
     try {
-      const [data, projRes, userRes] = await Promise.all([
-        studentApi.get(studentId),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/project`).then((r) => r.json()),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user`).then((r) => r.json()),
-      ]);
+      const data = await studentApi.get(studentId);
       if (!data) {
         message.error('Оюутан олдсонгүй');
         router.push('/admin/data/student');
         return;
       }
       setStudent(data);
-      if (projRes.success) setProjects(projRes.data || []);
-      if (userRes.success) setUsers(userRes.data || []);
-      form.setFieldsValue({
-        ...data,
-        project_id: data.project_id ?? undefined,
-        mentor_user_id: data.mentor_user_id ?? undefined,
-      });
+      form.setFieldsValue(data);
     } catch (err) {
       console.error(err);
       message.error('Ачаалахад алдаа');
@@ -163,11 +148,7 @@ export default function StudentDetailPage() {
               <Button
                 onClick={() => {
                   setEditing(false);
-                  form.setFieldsValue({
-                    ...student,
-                    project_id: student.project_id ?? undefined,
-                    mentor_user_id: student.mentor_user_id ?? undefined,
-                  });
+                  form.setFieldsValue(student);
                 }}
               >
                 Болих
@@ -224,8 +205,6 @@ export default function StudentDetailPage() {
             </Descriptions.Item>
             <Descriptions.Item label="Эхлэх">{formatDate(student.start_date)}</Descriptions.Item>
             <Descriptions.Item label="Дуусах">{formatDate(student.end_date)}</Descriptions.Item>
-            <Descriptions.Item label="Төсөл">{display(student.project?.name)}</Descriptions.Item>
-            <Descriptions.Item label="Ментор">{display(student.mentor?.username)}</Descriptions.Item>
             <Descriptions.Item label="Хэлтэс">{display(student.department)}</Descriptions.Item>
           </Descriptions>
 
@@ -309,22 +288,6 @@ export default function StudentDetailPage() {
             </Form.Item>
             <Form.Item name="end_date" label="Дуусах" {...dateFormItemProps()}>
               <DatePicker className="w-full" />
-            </Form.Item>
-            <Form.Item name="project_id" label="Төсөл">
-              <Select
-                allowClear
-                showSearch
-                optionFilterProp="label"
-                options={projects.map((p) => ({ value: p.id, label: p.name }))}
-              />
-            </Form.Item>
-            <Form.Item name="mentor_user_id" label="Ментор">
-              <Select
-                allowClear
-                showSearch
-                optionFilterProp="label"
-                options={users.map((u) => ({ value: u.id, label: u.username }))}
-              />
             </Form.Item>
             <Form.Item name="department" label="Хэлтэс / нэгж">
               <Input />

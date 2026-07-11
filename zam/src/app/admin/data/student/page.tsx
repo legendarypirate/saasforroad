@@ -31,36 +31,17 @@ import {
   type StudentStatus,
 } from '@/lib/student';
 
-type ProjectOption = { id: number; name: string };
-type UserOption = { id: number; username: string };
-
 export default function StudentListPage() {
   const router = useRouter();
   const [rows, setRows] = useState<StudentRecord[]>([]);
   const [stats, setStats] = useState<StudentStats | null>(null);
-  const [projects, setProjects] = useState<ProjectOption[]>([]);
-  const [users, setUsers] = useState<UserOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<StudentStatus | undefined>();
   const [internshipType, setInternshipType] = useState<InternshipType | undefined>();
-  const [projectId, setProjectId] = useState<number | undefined>();
   const [form] = Form.useForm();
-
-  const loadMeta = async () => {
-    try {
-      const [projRes, userRes] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/project`).then((r) => r.json()),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user`).then((r) => r.json()),
-      ]);
-      if (projRes.success) setProjects(projRes.data || []);
-      if (userRes.success) setUsers(userRes.data || []);
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
   const load = async () => {
     setLoading(true);
@@ -70,7 +51,6 @@ export default function StudentListPage() {
           q: q.trim() || undefined,
           status,
           internship_type: internshipType,
-          project_id: projectId,
         }),
         studentApi.stats(),
       ]);
@@ -86,13 +66,12 @@ export default function StudentListPage() {
 
   useEffect(() => {
     document.title = 'Оюутан';
-    loadMeta();
   }, []);
 
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, internshipType, projectId]);
+  }, [status, internshipType]);
 
   const openCreate = () => {
     form.resetFields();
@@ -181,16 +160,6 @@ export default function StudentListPage() {
       ),
     },
     {
-      title: 'Төсөл',
-      key: 'project',
-      render: (_, r) => r.project?.name || '—',
-    },
-    {
-      title: 'Ментор',
-      key: 'mentor',
-      render: (_, r) => r.mentor?.username || '—',
-    },
-    {
       title: 'Утас',
       dataIndex: 'phone',
       width: 110,
@@ -277,16 +246,6 @@ export default function StudentListPage() {
             label,
           }))}
         />
-        <Select
-          allowClear
-          showSearch
-          optionFilterProp="label"
-          placeholder="Төсөл"
-          className="w-[200px]"
-          value={projectId}
-          onChange={(v) => setProjectId(v)}
-          options={projects.map((p) => ({ value: p.id, label: p.name }))}
-        />
         <Button icon={<ReloadOutlined />} onClick={() => load()}>
           Шинэчлэх
         </Button>
@@ -297,7 +256,7 @@ export default function StudentListPage() {
         dataSource={rows}
         rowKey="id"
         loading={loading}
-        scroll={{ x: 1100 }}
+        scroll={{ x: 900 }}
         pagination={{ pageSize: 20, showSizeChanger: true }}
       />
 
@@ -377,24 +336,6 @@ export default function StudentListPage() {
               <DatePicker className="w-full" />
             </Form.Item>
           </div>
-          <Form.Item name="project_id" label="Төсөл">
-            <Select
-              allowClear
-              showSearch
-              optionFilterProp="label"
-              placeholder="Төсөл сонгох"
-              options={projects.map((p) => ({ value: p.id, label: p.name }))}
-            />
-          </Form.Item>
-          <Form.Item name="mentor_user_id" label="Ментор">
-            <Select
-              allowClear
-              showSearch
-              optionFilterProp="label"
-              placeholder="Ажилтан сонгох"
-              options={users.map((u) => ({ value: u.id, label: u.username }))}
-            />
-          </Form.Item>
           <Form.Item name="department" label="Хэлтэс / нэгж">
             <Input placeholder="Жишээ: Лаборатори, Барилга…" />
           </Form.Item>
