@@ -4,13 +4,31 @@ module.exports = (sequelize, Sequelize) => {
       type: Sequelize.STRING,
       allowNull: false,
     },
+    /** PRJ-2026-001 */
+    code: {
+      type: Sequelize.STRING(40),
+      allowNull: true,
+    },
     location: {
       type: Sequelize.STRING,
+      allowNull: true,
+    },
+    province: {
+      type: Sequelize.STRING(80),
+      allowNull: true,
+    },
+    aimag_soum: {
+      type: Sequelize.STRING(120),
       allowNull: true,
     },
     /** Road section e.g. УБ–Дархан */
     road_name: {
       type: Sequelize.STRING,
+      allowNull: true,
+    },
+    /** I / II / III / IV */
+    road_class: {
+      type: Sequelize.STRING(10),
       allowNull: true,
     },
     km_from: {
@@ -21,16 +39,72 @@ module.exports = (sequelize, Sequelize) => {
       type: Sequelize.DECIMAL(10, 3),
       allowNull: true,
     },
+    length_km: {
+      type: Sequelize.DECIMAL(10, 3),
+      allowNull: true,
+    },
     purpose: {
       type: Sequelize.TEXT,
       allowNull: true,
     },
-    /** Захиалагч */
+    /** Захиалагч / Employer (legacy alias) */
     client_name: {
       type: Sequelize.STRING,
       allowNull: true,
     },
+    employer_name: {
+      type: Sequelize.STRING,
+      allowNull: true,
+    },
+    contractor_name: {
+      type: Sequelize.STRING,
+      allowNull: true,
+    },
+    engineer_org: {
+      type: Sequelize.STRING,
+      allowNull: true,
+    },
+    employer_rep: {
+      type: Sequelize.STRING,
+      allowNull: true,
+    },
+    contractor_rep: {
+      type: Sequelize.STRING,
+      allowNull: true,
+    },
     contract_number: {
+      type: Sequelize.STRING(80),
+      allowNull: true,
+    },
+    /** FIDIC_Red | FIDIC_Yellow | FIDIC_Silver | Domestic | Other */
+    contract_type: {
+      type: Sequelize.STRING(40),
+      allowNull: true,
+      defaultValue: "Domestic",
+    },
+    contract_date: {
+      type: Sequelize.DATEONLY,
+      allowNull: true,
+    },
+    currency: {
+      type: Sequelize.STRING(8),
+      allowNull: true,
+      defaultValue: "MNT",
+    },
+    retention_pct: {
+      type: Sequelize.DECIMAL(5, 2),
+      allowNull: true,
+      defaultValue: 5,
+    },
+    liquidated_damages_per_day: {
+      type: Sequelize.DECIMAL(18, 2),
+      allowNull: true,
+    },
+    funding_source: {
+      type: Sequelize.STRING(120),
+      allowNull: true,
+    },
+    tender_ref: {
       type: Sequelize.STRING(80),
       allowNull: true,
     },
@@ -41,6 +115,16 @@ module.exports = (sequelize, Sequelize) => {
     budget: {
       type: Sequelize.DECIMAL(18, 2),
       defaultValue: 0.0,
+    },
+    contingency_pct: {
+      type: Sequelize.DECIMAL(5, 2),
+      allowNull: true,
+      defaultValue: 10,
+    },
+    committed_amount: {
+      type: Sequelize.DECIMAL(18, 2),
+      allowNull: true,
+      defaultValue: 0,
     },
     equipment: {
       type: Sequelize.STRING,
@@ -55,6 +139,14 @@ module.exports = (sequelize, Sequelize) => {
     status: {
       type: Sequelize.INTEGER,
       defaultValue: 1,
+    },
+    /**
+     * mobilization | earthworks | structures | drainage | pavement | finishing | handover | defects
+     */
+    stage: {
+      type: Sequelize.STRING(40),
+      allowNull: true,
+      defaultValue: "mobilization",
     },
     staff: {
       type: Sequelize.STRING,
@@ -73,6 +165,14 @@ module.exports = (sequelize, Sequelize) => {
       allowNull: true,
     },
     actual_end: {
+      type: Sequelize.DATEONLY,
+      allowNull: true,
+    },
+    baseline_start: {
+      type: Sequelize.DATEONLY,
+      allowNull: true,
+    },
+    baseline_end: {
       type: Sequelize.DATEONLY,
       allowNull: true,
     },
@@ -99,6 +199,11 @@ module.exports = (sequelize, Sequelize) => {
     },
     notes: {
       type: Sequelize.TEXT,
+      allowNull: true,
+    },
+    /** Optional link to road engineering design project */
+    road_project_id: {
+      type: Sequelize.INTEGER,
       allowNull: true,
     },
   });

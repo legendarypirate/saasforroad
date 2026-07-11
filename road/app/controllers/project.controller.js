@@ -2,49 +2,104 @@ const db = require("../models");
 const Project = db.projects;
 const Task = db.tasks;
 const Op = db.Sequelize.Op;
+const { seedProjectPhases } = require("../utils/projectPhaseTemplate");
 
 const PROJECT_FIELDS = [
   "name",
+  "code",
   "location",
+  "province",
+  "aimag_soum",
   "road_name",
+  "road_class",
   "km_from",
   "km_to",
+  "length_km",
   "purpose",
   "client_name",
+  "employer_name",
+  "contractor_name",
+  "engineer_org",
+  "employer_rep",
+  "contractor_rep",
   "contract_number",
+  "contract_type",
+  "contract_date",
+  "currency",
+  "retention_pct",
+  "liquidated_damages_per_day",
+  "funding_source",
+  "tender_ref",
   "engineer",
   "budget",
+  "contingency_pct",
+  "committed_amount",
   "equipment",
   "status",
+  "stage",
   "staff",
   "planned_start",
   "planned_end",
   "actual_start",
   "actual_end",
+  "baseline_start",
+  "baseline_end",
   "progress_percent",
   "progress_unit",
   "progress_planned",
   "progress_actual",
   "season_note",
   "notes",
+  "road_project_id",
 ];
+
+const NUM_FIELDS = [
+  "budget",
+  "km_from",
+  "km_to",
+  "length_km",
+  "progress_percent",
+  "progress_planned",
+  "progress_actual",
+  "retention_pct",
+  "liquidated_damages_per_day",
+  "contingency_pct",
+  "committed_amount",
+  "road_project_id",
+  "status",
+];
+
+function computeLengthKm(from, to) {
+  if (from == null || to == null || from === "" || to === "") return null;
+  const a = Number(from);
+  const b = Number(to);
+  if (Number.isNaN(a) || Number.isNaN(b)) return null;
+  return Math.abs(b - a);
+}
 
 function pickProjectBody(body) {
   const data = {};
   PROJECT_FIELDS.forEach((key) => {
     if (body[key] !== undefined) data[key] = body[key];
   });
-  if (data.status != null) data.status = Number(data.status);
-  if (data.budget != null) data.budget = Number(data.budget);
-  if (data.km_from != null && data.km_from !== "") data.km_from = Number(data.km_from);
-  if (data.km_to != null && data.km_to !== "") data.km_to = Number(data.km_to);
-  if (data.progress_percent != null) data.progress_percent = Number(data.progress_percent);
-  if (data.progress_planned != null && data.progress_planned !== "") {
-    data.progress_planned = Number(data.progress_planned);
+  NUM_FIELDS.forEach((key) => {
+    if (data[key] != null && data[key] !== "") data[key] = Number(data[key]);
+    else if (data[key] === "") data[key] = null;
+  });
+
+  // Sync employer alias with legacy client_name
+  if (data.employer_name != null && data.client_name == null) {
+    data.client_name = data.employer_name;
   }
-  if (data.progress_actual != null && data.progress_actual !== "") {
-    data.progress_actual = Number(data.progress_actual);
+  if (data.client_name != null && data.employer_name == null) {
+    data.employer_name = data.client_name;
   }
+
+  if (data.length_km == null && (data.km_from != null || data.km_to != null)) {
+    const len = computeLengthKm(data.km_from, data.km_to);
+    if (len != null) data.length_km = len;
+  }
+
   return data;
 }
 
@@ -52,6 +107,61 @@ function phaseProgress(phases) {
   if (!phases?.length) return null;
   const sum = phases.reduce((s, p) => s + Number(p.completion_percent || 0), 0);
   return Math.round(sum / phases.length);
+}
+
+function daysBetween(a, b) {
+  if (!a || !b) return null;
+  const d1 = new Date(a + "T00:00:00");
+  const d2 = new Date(b + "T00:00:00");
+  if (Number.isNaN(d1.getTime()) || Number.isNaN(d2.getTime())) return null;
+  return Math.max(0, Math.round((d2 - d1) / 86400000));
+}
+
+/** Earned value lite from budget, dates, progress, and actual cost. */
+function calcEarnedValue({ budget, planned_start, planned_end, progress, spent, today }) {
+  const B = Number(budget) || 0;
+  const prog = Math.min(100, Math.max(0, Number(progress) || 0));
+  const AC = Number(spent) || 0;
+  const EV = B * (prog / 100);
+
+  const start = planned_start;
+  const end = planned_end;
+  const now = today || new Date().toISOString().slice(0, 10);
+  const totalDays = daysBetween(start, end);
+  let PV = 0;
+  if (B > 0 && totalDays != null && totalDays > 0 && start) {
+    const elapsed = daysBetween(start, now);
+    const ratio = Math.min(1, Math.max(0, (elapsed ?? 0) / totalDays));
+    PV = B * ratio;
+  } else if (B > 0) {
+    PV = B * (prog / 100);
+  }
+
+  const SPI = PV > 0 ? EV / PV : null;
+  const CPI = AC > 0 ? EV / AC : null;
+
+  return {
+    PV: Math.round(PV * 100) / 100,
+    EV: Math.round(EV * 100) / 100,
+    AC: Math.round(AC * 100) / 100,
+    SPI: SPI != null ? Math.round(SPI * 100) / 100 : null,
+    CPI: CPI != null ? Math.round(CPI * 100) / 100 : null,
+    progress: prog,
+  };
+}
+
+async function nextProjectCode() {
+  const year = new Date().getFullYear();
+  const prefix = `PRJ-${year}-`;
+  const count = await Project.count();
+  return `${prefix}${String(count + 1).padStart(3, "0")}`;
+}
+
+function isDelayed(json) {
+  if (!json.planned_end) return false;
+  if (json.status === 3 || json.status === 4) return false;
+  const today = new Date().toISOString().slice(0, 10);
+  return json.planned_end < today;
 }
 
 exports.create = async (req, res) => {
@@ -62,8 +172,25 @@ exports.create = async (req, res) => {
   try {
     const project = pickProjectBody(req.body);
     if (project.status == null) project.status = 1;
+    if (!project.stage) project.stage = "mobilization";
+    if (!project.currency) project.currency = "MNT";
+    if (!project.contract_type) project.contract_type = "Domestic";
+    if (!project.code) project.code = await nextProjectCode();
+    if (!project.baseline_start && project.planned_start) {
+      project.baseline_start = project.planned_start;
+    }
+    if (!project.baseline_end && project.planned_end) {
+      project.baseline_end = project.planned_end;
+    }
+
     const data = await Project.create(project);
-    res.json({ success: true, data });
+    const seedPhases = req.body.seed_phases !== false;
+    let phasesCreated = 0;
+    if (seedPhases) {
+      phasesCreated = await seedProjectPhases(db, data);
+    }
+
+    res.json({ success: true, data, phases_created: phasesCreated });
   } catch (err) {
     res.status(500).json({
       success: false,
@@ -94,19 +221,102 @@ exports.getProjectsWithUsers = async (req, res) => {
   }
 };
 
+exports.portfolio = async (_req, res) => {
+  try {
+    const projects = await Project.findAll({
+      include: [
+        {
+          model: db.project_phases,
+          as: "phases",
+          attributes: ["id", "completion_percent"],
+          required: false,
+        },
+        {
+          model: db.project_risks,
+          as: "risks",
+          attributes: ["id", "score", "status"],
+          required: false,
+        },
+      ],
+    });
+
+    let totalBudget = 0;
+    let totalSpent = 0;
+    let progressSum = 0;
+    let delayed = 0;
+    let atRisk = 0;
+    const byStatus = { 1: 0, 2: 0, 3: 0, 4: 0 };
+    const byStage = {};
+
+    const expenseMap = {};
+    if (db.fin_expenses) {
+      const expenses = await db.fin_expenses.findAll({ attributes: ["project_id", "amount"] });
+      expenses.forEach((e) => {
+        const pid = e.project_id;
+        if (!pid) return;
+        expenseMap[pid] = (expenseMap[pid] || 0) + Number(e.amount || 0);
+      });
+    }
+
+    projects.forEach((p) => {
+      const json = p.toJSON();
+      const fromPhases = phaseProgress(json.phases);
+      const progress =
+        json.progress_percent > 0 ? json.progress_percent : fromPhases ?? 0;
+      totalBudget += Number(json.budget || 0);
+      totalSpent += expenseMap[json.id] || 0;
+      progressSum += progress;
+      byStatus[json.status] = (byStatus[json.status] || 0) + 1;
+      const stage = json.stage || "mobilization";
+      byStage[stage] = (byStage[stage] || 0) + 1;
+      if (isDelayed(json)) delayed += 1;
+      const openHigh = (json.risks || []).filter(
+        (r) => r.status !== "closed" && Number(r.score || 0) >= 15,
+      );
+      if (openHigh.length) atRisk += 1;
+    });
+
+    const n = projects.length || 1;
+    res.json({
+      success: true,
+      data: {
+        cards: {
+          total: projects.length,
+          active: byStatus[2] || 0,
+          planned: byStatus[1] || 0,
+          done: byStatus[3] || 0,
+          archived: byStatus[4] || 0,
+          delayed,
+          at_risk: atRisk,
+          total_budget: totalBudget,
+          total_spent: totalSpent,
+          avg_progress: Math.round(progressSum / n),
+        },
+        by_status: byStatus,
+        by_stage: byStage,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 exports.findAll = async (req, res) => {
-  const { name, status, client, q } = req.query;
+  const { name, status, client, q, stage, province, contract_type } = req.query;
   const where = {};
 
   const search = q || name;
   if (search) {
     where[Op.or] = [
       { name: { [Op.iLike]: `%${search}%` } },
+      { code: { [Op.iLike]: `%${search}%` } },
       { location: { [Op.iLike]: `%${search}%` } },
       { client_name: { [Op.iLike]: `%${search}%` } },
+      { employer_name: { [Op.iLike]: `%${search}%` } },
       { contract_number: { [Op.iLike]: `%${search}%` } },
       { road_name: { [Op.iLike]: `%${search}%` } },
       { engineer: { [Op.iLike]: `%${search}%` } },
+      { province: { [Op.iLike]: `%${search}%` } },
     ];
   }
   if (status !== undefined && status !== "" && status !== "all") {
@@ -115,6 +325,9 @@ exports.findAll = async (req, res) => {
   if (client) {
     where.client_name = { [Op.iLike]: `%${client}%` };
   }
+  if (stage) where.stage = stage;
+  if (province) where.province = { [Op.iLike]: `%${province}%` };
+  if (contract_type) where.contract_type = contract_type;
 
   try {
     const data = await Project.findAll({
@@ -132,18 +345,55 @@ exports.findAll = async (req, res) => {
           attributes: ["id", "completion_percent"],
           required: false,
         },
+        {
+          model: db.project_risks,
+          as: "risks",
+          attributes: ["id", "score", "status"],
+          required: false,
+        },
       ],
       order: [["createdAt", "DESC"]],
     });
 
+    const expenseMap = {};
+    if (db.fin_expenses) {
+      const expenses = await db.fin_expenses.findAll({ attributes: ["project_id", "amount"] });
+      expenses.forEach((e) => {
+        const pid = e.project_id;
+        if (!pid) return;
+        expenseMap[pid] = (expenseMap[pid] || 0) + Number(e.amount || 0);
+      });
+    }
+
     const enriched = data.map((p) => {
       const json = p.toJSON();
       const fromPhases = phaseProgress(json.phases);
+      const progress =
+        json.progress_percent > 0 ? json.progress_percent : fromPhases ?? 0;
+      const spent = expenseMap[json.id] || 0;
+      const ev = calcEarnedValue({
+        budget: json.budget,
+        planned_start: json.planned_start || json.baseline_start,
+        planned_end: json.planned_end || json.baseline_end,
+        progress,
+        spent,
+      });
+      const openHighRisks = (json.risks || []).filter(
+        (r) => r.status !== "closed" && Number(r.score || 0) >= 15,
+      ).length;
       return {
         ...json,
         phase_progress: fromPhases,
-        effective_progress:
-          json.progress_percent > 0 ? json.progress_percent : fromPhases ?? 0,
+        effective_progress: progress,
+        delayed: isDelayed(json),
+        at_risk: openHighRisks > 0,
+        high_risk_count: openHighRisks,
+        finance: {
+          budget: Number(json.budget || 0),
+          spent,
+          remaining: Number(json.budget || 0) - spent,
+        },
+        earned_value: ev,
       };
     });
 
@@ -178,6 +428,32 @@ exports.findOne = async (req, res) => {
             ["start_date", "ASC"],
           ],
         },
+        {
+          model: db.project_milestones,
+          as: "milestones",
+          required: false,
+          separate: true,
+          order: [
+            ["sort_order", "ASC"],
+            ["due_date", "ASC"],
+          ],
+        },
+        {
+          model: db.project_risks,
+          as: "risks",
+          required: false,
+          separate: true,
+          order: [
+            ["score", "DESC"],
+            ["createdAt", "DESC"],
+          ],
+        },
+        {
+          model: db.road_projects,
+          as: "roadProject",
+          required: false,
+          attributes: ["id", "code", "name", "status", "length", "road_class"],
+        },
       ],
     });
     if (!project) {
@@ -209,7 +485,6 @@ exports.findOne = async (req, res) => {
     const physicalPercent =
       json.progress_percent > 0 ? json.progress_percent : fromPhases ?? taskPercent;
 
-    // Related module hub (best-effort)
     const related = {
       daily_reports: 0,
       expenses_total: 0,
@@ -257,6 +532,13 @@ exports.findOne = async (req, res) => {
     const budget = Number(json.budget || 0);
     const spent = related.expenses_total;
     const budgetRemaining = budget - spent;
+    const earned_value = calcEarnedValue({
+      budget,
+      planned_start: json.planned_start || json.baseline_start,
+      planned_end: json.planned_end || json.baseline_end,
+      progress: physicalPercent,
+      spent,
+    });
 
     res.json({
       success: true,
@@ -264,6 +546,7 @@ exports.findOne = async (req, res) => {
         ...json,
         phase_progress: fromPhases,
         effective_progress: physicalPercent,
+        delayed: isDelayed(json),
         tasks: tasks.map((t) => ({
           ...t.toJSON(),
           milestone: t.milestone ? t.milestone.name : null,
@@ -283,7 +566,10 @@ exports.findOne = async (req, res) => {
           spent,
           remaining: budgetRemaining,
           utilization: budget > 0 ? Math.round((spent / budget) * 100) : 0,
+          contingency_pct: Number(json.contingency_pct || 0),
+          committed_amount: Number(json.committed_amount || 0),
         },
+        earned_value,
       },
     });
   } catch (err) {
@@ -428,14 +714,30 @@ exports.duplicate = async (req, res) => {
     delete json.createdAt;
     delete json.updatedAt;
     json.name = `${json.name} (хуулбар)`;
+    json.code = await nextProjectCode();
     json.status = 1;
     json.actual_start = null;
     json.actual_end = null;
     json.progress_percent = 0;
     json.progress_actual = null;
     const data = await Project.create(json);
-    res.json({ success: true, data });
+    const phasesCreated = await seedProjectPhases(db, data);
+    res.json({ success: true, data, phases_created: phasesCreated });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+/** Backfill stage-gate phases for an existing project */
+exports.seedPhases = async (req, res) => {
+  try {
+    const project = await Project.findByPk(req.params.id);
+    if (!project) return res.status(404).json({ success: false, message: "Not found" });
+    const n = await seedProjectPhases(db, project, { force: !!req.body?.force });
+    res.json({ success: true, phases_created: n });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.calcEarnedValue = calcEarnedValue;

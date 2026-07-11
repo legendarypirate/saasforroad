@@ -5,11 +5,13 @@ module.exports = (app) => {
   router.post("/", project.create);
   router.get("/with-users", project.getProjectsWithUsers);
   router.get("/total", project.total);
+  router.get("/portfolio", project.portfolio);
   router.get("/published", project.findAllPublished);
   router.get("/", project.findAll);
 
   router.post("/:id/archive", project.archive);
   router.post("/:id/duplicate", project.duplicate);
+  router.post("/:id/seed-phases", project.seedPhases);
 
   router.get("/:id", project.findOne);
   router.put("/:id", project.update);

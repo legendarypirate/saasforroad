@@ -49,6 +49,8 @@ db.words = require("./word.model.js")(sequelize, Sequelize);
 db.tasks = require("./task.model.js")(sequelize, Sequelize);
 db.milestones = require("./milestone.model.js")(sequelize, Sequelize);
 db.project_phases = require("./project_phase.model.js")(sequelize, Sequelize);
+db.project_milestones = require("./project_milestone.model.js")(sequelize, Sequelize);
+db.project_risks = require("./project_risk.model.js")(sequelize, Sequelize);
 db.equipments = require("./equipment.model.js")(sequelize, Sequelize);
 db.equipment_categories = require("./equipment_category.model.js")(sequelize, Sequelize);
 db.project_equipment_links = require("./project_equipment_link.model.js")(sequelize, Sequelize);
@@ -551,6 +553,23 @@ db.projects.hasMany(db.tasks, { foreignKey: "project_id" });
 
 db.project_phases.belongsTo(db.projects, { foreignKey: "project_id" });
 db.projects.hasMany(db.project_phases, { foreignKey: "project_id", as: "phases" });
+
+db.project_milestones.belongsTo(db.projects, { foreignKey: "project_id", onDelete: "CASCADE" });
+db.projects.hasMany(db.project_milestones, { foreignKey: "project_id", as: "milestones" });
+
+db.project_risks.belongsTo(db.projects, { foreignKey: "project_id", onDelete: "CASCADE" });
+db.projects.hasMany(db.project_risks, { foreignKey: "project_id", as: "risks" });
+
+db.projects.belongsTo(db.road_projects, {
+  foreignKey: "road_project_id",
+  as: "roadProject",
+  constraints: false,
+});
+db.road_projects.hasMany(db.projects, {
+  foreignKey: "road_project_id",
+  as: "operationalProjects",
+  constraints: false,
+});
 
 db.project_equipment_links.belongsTo(db.projects, { foreignKey: "project_id" });
 db.project_equipment_links.belongsTo(db.equipments, { foreignKey: "equipment_id", as: "equipment" });

@@ -48,11 +48,21 @@ import StaffAvatarGroup, {
 } from '@/components/StaffAvatarGroup';
 import {
   PROJECT_STATUS_META,
+  contractTypeLabel,
   formatBudget,
   formatKmRange,
   normalizeProjectStatus,
+  stageLabel,
+  type EarnedValue,
+  type ProjectMilestone,
+  type ProjectRisk,
 } from '@/lib/project';
 import Link from 'next/link';
+import ProjectContractTab from '@/components/project/ProjectContractTab';
+import ProjectPartiesTab from '@/components/project/ProjectPartiesTab';
+import ProjectMilestonesTab from '@/components/project/ProjectMilestonesTab';
+import ProjectProgressTab from '@/components/project/ProjectProgressTab';
+import ProjectRiskTab from '@/components/project/ProjectRiskTab';
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -71,29 +81,53 @@ interface ProjectStats {
 interface ProjectDetail {
   id: number;
   name: string;
+  code?: string;
   location?: string;
+  province?: string;
+  aimag_soum?: string;
   road_name?: string;
+  road_class?: string;
   km_from?: number | string | null;
   km_to?: number | string | null;
+  length_km?: number | string | null;
   purpose?: string;
   client_name?: string;
+  employer_name?: string;
+  contractor_name?: string;
+  engineer_org?: string;
+  employer_rep?: string;
+  contractor_rep?: string;
   contract_number?: string;
+  contract_type?: string;
+  contract_date?: string | null;
+  currency?: string;
+  retention_pct?: number | string | null;
+  liquidated_damages_per_day?: number | string | null;
+  funding_source?: string;
+  tender_ref?: string;
   engineer?: string;
   budget: number;
+  contingency_pct?: number | string | null;
+  committed_amount?: number | string | null;
   equipment?: string;
   status: number;
+  stage?: string;
   staff?: string;
   planned_start?: string | null;
   planned_end?: string | null;
   actual_start?: string | null;
   actual_end?: string | null;
+  baseline_start?: string | null;
+  baseline_end?: string | null;
   progress_percent?: number;
   progress_unit?: string;
   progress_planned?: number | string | null;
   progress_actual?: number | string | null;
   season_note?: string;
   notes?: string;
+  road_project_id?: number | null;
   createdAt: string;
+  delayed?: boolean;
   stats: ProjectStats;
   effective_progress?: number;
   phase_progress?: number | null;
@@ -111,7 +145,13 @@ interface ProjectDetail {
     spent: number;
     remaining: number;
     utilization: number;
+    contingency_pct?: number;
+    committed_amount?: number;
   };
+  earned_value?: EarnedValue;
+  milestones?: ProjectMilestone[];
+  risks?: ProjectRisk[];
+  roadProject?: { id: number; code?: string; name?: string } | null;
   users?: Array<{
     id: number;
     username?: string;
@@ -374,13 +414,16 @@ export default function ProjectDetailPage() {
   if (!project) return null;
 
   const km = formatKmRange(project.km_from, project.km_to);
+  const employer = project.employer_name || project.client_name;
   const metaItems = [
     {
       icon: <EnvironmentOutlined className="size-3.5" />,
-      label: [project.road_name, project.location, km].filter(Boolean).join(' · ') || '—',
+      label:
+        [project.road_name, project.province || project.location, km].filter(Boolean).join(' · ') ||
+        '—',
     },
-    project.client_name
-      ? { icon: <FileTextOutlined className="size-3.5" />, label: `Захиалагч: ${project.client_name}` }
+    employer
+      ? { icon: <FileTextOutlined className="size-3.5" />, label: `Захиалагч: ${employer}` }
       : null,
     project.contract_number
       ? { icon: <FileTextOutlined className="size-3.5" />, label: `Гэрээ: ${project.contract_number}` }
@@ -398,6 +441,8 @@ export default function ProjectDetailPage() {
       label: formatBudget(Number(project.budget || 0)),
     },
   ].filter(Boolean) as Array<{ icon: React.ReactNode; label: string }>;
+
+  const ev = project.earned_value;
 
   const statItems = [
     { label: 'Нийт', value: stats?.total ?? 0, color: 'text-foreground' },
@@ -467,9 +512,23 @@ export default function ProjectDetailPage() {
             <div className="min-w-0 flex-1 space-y-4">
               <div className="flex flex-wrap items-center gap-2">
                 <Tag color={statusInfo.color}>{statusInfo.label}</Tag>
+                {project.code ? (
+                  <span className="rounded-full border border-border bg-muted/50 px-2.5 py-0.5 font-mono text-xs text-muted-foreground">
+                    {project.code}
+                  </span>
+                ) : null}
                 <span className="rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-xs text-muted-foreground">
-                  Зам барилгын төсөл
+                  {stageLabel(project.stage).split(' / ')[0]}
                 </span>
+                <span className="rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-xs text-muted-foreground">
+                  {contractTypeLabel(project.contract_type)}
+                </span>
+                {project.road_class ? (
+                  <span className="rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground">
+                    Анги {project.road_class}
+                  </span>
+                ) : null}
+                {project.delayed ? <Tag color="orange">Хоцорсон</Tag> : null}
                 {project.season_note ? (
                   <span className="rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground">
                     {project.season_note}
@@ -519,6 +578,22 @@ export default function ProjectDetailPage() {
                       {formatBudget(project.finance.remaining)}
                     </strong>
                   </span>
+                  {ev?.SPI != null ? (
+                    <span className="rounded-lg border border-border px-2.5 py-1.5">
+                      SPI:{' '}
+                      <strong className={ev.SPI >= 1 ? 'text-emerald-500' : 'text-amber-500'}>
+                        {ev.SPI.toFixed(2)}
+                      </strong>
+                    </span>
+                  ) : null}
+                  {ev?.CPI != null ? (
+                    <span className="rounded-lg border border-border px-2.5 py-1.5">
+                      CPI:{' '}
+                      <strong className={ev.CPI >= 1 ? 'text-emerald-500' : 'text-amber-500'}>
+                        {ev.CPI.toFixed(2)}
+                      </strong>
+                    </span>
+                  ) : null}
                 </div>
               )}
 
@@ -593,13 +668,196 @@ export default function ProjectDetailPage() {
       {/* Main content */}
       <div className="px-6 pb-10 pt-6 sm:px-8 lg:px-10">
         <Tabs
-          defaultActiveKey="tasks"
+          defaultActiveKey="overview"
           tabBarExtraContent={
             <Button type="primary" icon={<PlusOutlined />} onClick={() => setTaskDrawerOpen(true)}>
               Шинэ даалгавар
             </Button>
           }
           items={[
+            {
+              key: 'overview',
+              label: 'Тойм',
+              children: (
+                <div className="space-y-4">
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    {[
+                      { label: 'Үе шат', value: stageLabel(project.stage).split(' / ')[0] },
+                      {
+                        label: 'Гэрээ',
+                        value: contractTypeLabel(project.contract_type).replace('FIDIC ', ''),
+                      },
+                      {
+                        label: 'Урт',
+                        value: project.length_km
+                          ? `${Number(project.length_km)} км`
+                          : km || '—',
+                      },
+                      {
+                        label: 'Эрсдэл (нээлттэй өндөр)',
+                        value: String(
+                          (project.risks || []).filter(
+                            (r) => r.status !== 'closed' && Number(r.score || 0) >= 15,
+                          ).length,
+                        ),
+                      },
+                    ].map((c) => (
+                      <div key={c.label} className="rounded-xl border border-border bg-card p-4">
+                        <p className="text-xs text-muted-foreground">{c.label}</p>
+                        <p className="mt-1 text-lg font-semibold">{c.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="rounded-xl border border-border bg-card p-6">
+                    <Title level={5} style={{ marginTop: 0 }}>
+                      Stage-gate ахиц
+                    </Title>
+                    <div className="space-y-3">
+                      {(project.phases || []).map((ph) => (
+                        <div key={ph.id}>
+                          <div className="mb-1 flex justify-between text-xs">
+                            <span>{ph.name}</span>
+                            <span>{ph.completion_percent ?? 0}%</span>
+                          </div>
+                          <Progress
+                            percent={Number(ph.completion_percent || 0)}
+                            showInfo={false}
+                            strokeColor={ph.color || progressColor}
+                            size="small"
+                          />
+                        </div>
+                      ))}
+                      {!project.phases?.length ? (
+                        <Text type="secondary">Үе шат байхгүй — төсөл үүсгэхэд автоматаар нэмэгдэнэ</Text>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-border bg-card p-6">
+                    <Title level={5} style={{ marginTop: 0 }}>
+                      Даалгаврын график
+                    </Title>
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: 8,
+                        alignItems: 'flex-end',
+                        height: 160,
+                        paddingTop: 16,
+                      }}
+                    >
+                      {[
+                        { label: 'Хүлээгдэж буй', value: stats?.todo ?? 0, color: '#1890ff' },
+                        { label: 'Явагдаж буй', value: stats?.inProgress ?? 0, color: '#fa8c16' },
+                        { label: 'Дууссан', value: stats?.completed ?? 0, color: '#52c41a' },
+                      ].map((bar) => {
+                        const max = Math.max(stats?.total ?? 1, 1);
+                        const height = Math.max(8, (bar.value / max) * 120);
+                        return (
+                          <div key={bar.label} style={{ flex: 1, textAlign: 'center' }}>
+                            <div
+                              style={{
+                                height,
+                                background: bar.color,
+                                borderRadius: '6px 6px 0 0',
+                                margin: '0 auto',
+                                width: '70%',
+                              }}
+                            />
+                            <Text strong style={{ display: 'block', marginTop: 8 }}>
+                              {bar.value}
+                            </Text>
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              {bar.label}
+                            </Text>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ),
+            },
+            {
+              key: 'contract',
+              label: 'Гэрээ',
+              children: (
+                <ProjectContractTab project={project} onSaved={fetchProject} />
+              ),
+            },
+            {
+              key: 'parties',
+              label: 'Талууд',
+              children: (
+                <ProjectPartiesTab
+                  project={project}
+                  onSaved={fetchProject}
+                  brigadeSlot={
+                    <>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          marginBottom: 16,
+                        }}
+                      >
+                        <Text type="secondary">Талбайгийн бригад</Text>
+                        <Button type="primary" icon={<UserAddOutlined />} onClick={openMemberDrawer}>
+                          Хүн нэмэх
+                        </Button>
+                      </div>
+                      <Row gutter={[16, 16]}>
+                        {brigadeMembers.length === 0 ? (
+                          <Col span={24}>
+                            <div className="rounded-xl border border-dashed border-border bg-muted/30 px-6 py-10 text-center">
+                              <Text type="secondary">Бригадын гишүүн байхгүй</Text>
+                            </div>
+                          </Col>
+                        ) : (
+                          brigadeMembers.map((member) => (
+                            <Col xs={24} sm={12} md={8} lg={6} key={member.id}>
+                              <TeamMemberCard member={member} onRemove={handleRemoveMember} />
+                            </Col>
+                          ))
+                        )}
+                      </Row>
+                    </>
+                  }
+                />
+              ),
+            },
+            {
+              key: 'schedule',
+              label: 'Хуваарь',
+              children: (
+                <ProjectMilestonesTab
+                  projectId={Number(projectId)}
+                  phasesSlot={
+                    <ProjectPhasesTab
+                      projectId={projectId}
+                      initialPhases={project.phases}
+                      onPhasesChange={fetchProject}
+                    />
+                  }
+                />
+              ),
+            },
+            {
+              key: 'progress',
+              label: 'Ахиц / EV',
+              children: (
+                <ProjectProgressTab
+                  project={project}
+                  earnedValue={project.earned_value}
+                  onSaved={fetchProject}
+                />
+              ),
+            },
+            {
+              key: 'risks',
+              label: 'Эрсдэл',
+              children: <ProjectRiskTab projectId={Number(projectId)} />,
+            },
             {
               key: 'tasks',
               label: 'Даалгаврууд',
@@ -609,68 +867,6 @@ export default function ProjectDetailPage() {
                   projectId={projectId}
                   onTasksChange={fetchProject}
                 />
-              ),
-            },
-            {
-              key: 'phases',
-              label: 'Үе шатууд',
-              children: (
-                <ProjectPhasesTab
-                  projectId={projectId}
-                  initialPhases={project.phases}
-                  onPhasesChange={fetchProject}
-                />
-              ),
-            },
-            {
-              key: 'overview',
-              label: 'Тойм',
-              children: (
-                <Row gutter={[24, 24]}>
-                  <Col xs={24}>
-                    <div className="h-full rounded-xl border border-border bg-card p-6">
-                      <Title level={5} style={{ marginTop: 0 }}>
-                        Гүйцэтгэлийн график
-                      </Title>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', height: 180, paddingTop: 24 }}>
-                        {[
-                          { label: 'Хүлээгдэж буй', value: stats?.todo ?? 0, color: '#1890ff' },
-                          { label: 'Явагдаж буй', value: stats?.inProgress ?? 0, color: '#fa8c16' },
-                          { label: 'Дууссан', value: stats?.completed ?? 0, color: '#52c41a' },
-                        ].map((bar) => {
-                          const max = Math.max(stats?.total ?? 1, 1);
-                          const height = Math.max(8, (bar.value / max) * 140);
-                          return (
-                            <div key={bar.label} style={{ flex: 1, textAlign: 'center' }}>
-                              <div
-                                style={{
-                                  height,
-                                  background: bar.color,
-                                  borderRadius: '6px 6px 0 0',
-                                  margin: '0 auto',
-                                  width: '70%',
-                                  transition: 'height 0.4s ease',
-                                }}
-                              />
-                              <Text strong style={{ display: 'block', marginTop: 8 }}>
-                                {bar.value}
-                              </Text>
-                              <Text type="secondary" style={{ fontSize: 12 }}>
-                                {bar.label}
-                              </Text>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <Progress
-                        percent={stats?.completionPercent ?? 0}
-                        strokeColor={progressColor}
-                        style={{ marginTop: 24 }}
-                        format={(p) => `Нийт ${p}%`}
-                      />
-                    </div>
-                  </Col>
-                </Row>
               ),
             },
             {
@@ -684,8 +880,19 @@ export default function ProjectDetailPage() {
               children: (
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">
-                    Энэ төсөлтэй холбоотой модулиудын тойм. Дэлгэрэнгүйг тухайн модуль руу орж харна.
+                    Энэ төсөлтэй холбоотой модулиудын тойм.
                   </p>
+                  {project.roadProject ? (
+                    <div className="rounded-xl border border-border bg-muted/30 p-4 text-sm">
+                      Замын инженеринг:{' '}
+                      <Link
+                        href={`/admin/road-engineering/projects`}
+                        className="font-medium text-primary"
+                      >
+                        {project.roadProject.code} — {project.roadProject.name}
+                      </Link>
+                    </div>
+                  ) : null}
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {relatedCards.map((card) => (
                       <Link
@@ -704,49 +911,7 @@ export default function ProjectDetailPage() {
                       </Link>
                     ))}
                   </div>
-                  <div className="rounded-xl border border-border bg-muted/30 p-4 text-sm">
-                    <p className="font-medium">Төсөв vs зардал</p>
-                    <p className="mt-1 text-muted-foreground">
-                      Төсөв {formatBudget(project.finance?.budget ?? project.budget)} · Зарцуулсан{' '}
-                      {formatBudget(project.finance?.spent ?? 0)} · Ашиглалт{' '}
-                      {project.finance?.utilization ?? 0}%
-                    </p>
-                  </div>
                 </div>
-              ),
-            },
-            {
-              key: 'team',
-              label: `Бригад (${brigadeMembers.length})`,
-              children: (
-                <>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                    <Text type="secondary">Төсөл дээр ажиллаж буй бригадын гишүүд</Text>
-                    <Button type="primary" icon={<UserAddOutlined />} onClick={openMemberDrawer}>
-                      Хүн нэмэх
-                    </Button>
-                  </div>
-                  <Row gutter={[16, 16]}>
-                    {brigadeMembers.length === 0 ? (
-                      <Col span={24}>
-                        <div className="rounded-xl border border-dashed border-border bg-muted/30 px-6 py-10 text-center">
-                          <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
-                            Бригадын гишүүн байхгүй байна
-                          </Text>
-                          <Button type="primary" icon={<UserAddOutlined />} onClick={openMemberDrawer}>
-                            Эхний гишүүн нэмэх
-                          </Button>
-                        </div>
-                      </Col>
-                    ) : (
-                      brigadeMembers.map((member) => (
-                        <Col xs={24} sm={12} md={8} lg={6} key={member.id}>
-                          <TeamMemberCard member={member} onRemove={handleRemoveMember} />
-                        </Col>
-                      ))
-                    )}
-                  </Row>
-                </>
               ),
             },
             {
@@ -755,22 +920,31 @@ export default function ProjectDetailPage() {
               children: (
                 <Row gutter={[24, 16]}>
                   {[
+                    { icon: <EnvironmentOutlined />, label: 'Код', value: project.code },
                     { icon: <EnvironmentOutlined />, label: 'Байршил', value: project.location },
+                    { icon: <EnvironmentOutlined />, label: 'Аймаг', value: project.province },
                     { icon: <EnvironmentOutlined />, label: 'Замын нэр', value: project.road_name },
                     {
                       icon: <EnvironmentOutlined />,
                       label: 'Км хэсэг',
                       value: formatKmRange(project.km_from, project.km_to),
                     },
-                    { icon: <FileTextOutlined />, label: 'Захиалагч', value: project.client_name },
+                    {
+                      icon: <FileTextOutlined />,
+                      label: 'Захиалагч',
+                      value: project.employer_name || project.client_name,
+                    },
+                    {
+                      icon: <FileTextOutlined />,
+                      label: 'Гүйцэтгэгч',
+                      value: project.contractor_name,
+                    },
                     {
                       icon: <FileTextOutlined />,
                       label: 'Гэрээ №',
                       value: project.contract_number,
                     },
                     { icon: <UserOutlined />, label: 'Инженер', value: project.engineer },
-                    { icon: <TeamOutlined />, label: 'Ажилтан', value: project.staff },
-                    { icon: <ToolOutlined />, label: 'Тоног (текст)', value: project.equipment },
                     {
                       icon: <DollarOutlined />,
                       label: 'Төсөв',
@@ -782,14 +956,6 @@ export default function ProjectDetailPage() {
                       value:
                         project.planned_start || project.planned_end
                           ? `${project.planned_start || '—'} → ${project.planned_end || '—'}`
-                          : null,
-                    },
-                    {
-                      icon: <CalendarOutlined />,
-                      label: 'Бодит хугацаа',
-                      value:
-                        project.actual_start || project.actual_end
-                          ? `${project.actual_start || '—'} → ${project.actual_end || '—'}`
                           : null,
                     },
                     {

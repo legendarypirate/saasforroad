@@ -29,6 +29,8 @@ function registerRoutes() {
   require("./app/routes/supplier.routes")(app);
   require("./app/routes/milestone.routes")(app);
   require("./app/routes/project_phase.routes")(app);
+  require("./app/routes/project_milestone.routes")(app);
+  require("./app/routes/project_risk.routes")(app);
   require("./app/routes/equipment.routes")(app);
   require("./app/routes/project_equipment.routes")(app);
   require("./app/routes/age.routes")(app);
@@ -100,6 +102,8 @@ async function start() {
     await ensureSchema(db.sequelize, db.users);
     const { migrateBrigadeSeparation } = require("./app/utils/migrateBrigadeSeparation");
     await migrateBrigadeSeparation(db);
+    const { migrateProjectFidic } = require("./app/utils/migrateProjectFidic");
+    await migrateProjectFidic(db);
     const { migrateLegacyEquipment } = require("./app/utils/migrateEquipment");
     await migrateLegacyEquipment(db.sequelize, db);
     await seedPermissionsAndRoles();
@@ -117,6 +121,18 @@ async function start() {
     console.log(
       `Road budget seed: rates+${budgetSeed.createdRates}, budget=${budgetSeed.skipped ? "exists" : "created"}, estimate=${budgetSeed.estimateOk ?? "n/a"}`,
     );
+    // Backfill FIDIC stage-gate phases for projects missing them
+    try {
+      const { seedProjectPhases } = require("./app/utils/projectPhaseTemplate");
+      const allProjects = await db.projects.findAll({ attributes: ["id", "planned_start", "baseline_start"] });
+      let phasesBackfilled = 0;
+      for (const p of allProjects) {
+        phasesBackfilled += await seedProjectPhases(db, p);
+      }
+      if (phasesBackfilled) console.log(`Project stage-gates seeded: ${phasesBackfilled} phases.`);
+    } catch (e) {
+      console.warn("Project phase seed skipped:", e.message);
+    }
     console.log("Synced db.");
 
     registerRoutes();
