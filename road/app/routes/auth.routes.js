@@ -20,6 +20,8 @@ module.exports = app => {
 
     router.get("/me", auth.verifyToken, auth.getMe);
     router.post("/refresh", auth.verifyToken, auth.refresh);
+    router.patch("/preferences", auth.verifyToken, auth.updatePreferences);
+    router.put("/preferences", auth.verifyToken, auth.updatePreferences);
 
     router.post("/verifyOtp", auth.verifyOtp);
     router.post("/verifyOtpForgot", auth.verifyOtpForgot);

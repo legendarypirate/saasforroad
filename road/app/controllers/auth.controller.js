@@ -131,6 +131,7 @@ exports.login = async (req, res) => {
         role: roleInfo.role,
         role_id: roleInfo.role_id,
         permissions: roleInfo.permissions,
+        ui_preferences: user.ui_preferences || {},
       },
     });
   } catch (err) {
@@ -236,8 +237,49 @@ exports.getMe = async (req, res) => {
         role: roleInfo.role,
         role_id: roleInfo.role_id,
         permissions: roleInfo.permissions,
+        ui_preferences: user.ui_preferences || {},
       },
     });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+/** Merge/update current user's UI preferences (folder order, etc.). */
+exports.updatePreferences = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const current =
+      user.ui_preferences && typeof user.ui_preferences === "object"
+        ? { ...user.ui_preferences }
+        : {};
+    const incoming =
+      req.body && typeof req.body === "object" && !Array.isArray(req.body) ? req.body : {};
+
+    if (incoming.folderOrder && typeof incoming.folderOrder === "object") {
+      const prev =
+        current.folderOrder && typeof current.folderOrder === "object"
+          ? current.folderOrder
+          : {};
+      current.folderOrder = {
+        ...prev,
+        ...incoming.folderOrder,
+      };
+    }
+
+    // Allow other top-level preference keys later
+    for (const [key, value] of Object.entries(incoming)) {
+      if (key === "folderOrder") continue;
+      current[key] = value;
+    }
+
+    await user.update({ ui_preferences: current });
+    res.json({ success: true, ui_preferences: current });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Internal server error" });

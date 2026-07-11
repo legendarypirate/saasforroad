@@ -127,6 +127,20 @@ export async function refreshAuthSession(): Promise<{
 
     // Keep the same token; replace user/permissions completely
     setAuthSession(token, data.user);
+
+    // Sync folder order cache from server preferences
+    try {
+      const folderOrder = data.user?.ui_preferences?.folderOrder;
+      if (folderOrder && typeof folderOrder === 'object' && data.user?.id != null) {
+        localStorage.setItem(
+          `admin_folder_order_${data.user.id}`,
+          JSON.stringify(folderOrder),
+        );
+      }
+    } catch {
+      // ignore
+    }
+
     return {
       permissions: Array.isArray(data.user.permissions) ? data.user.permissions : [],
       role: String(data.user.role || data.user.role_name || ''),

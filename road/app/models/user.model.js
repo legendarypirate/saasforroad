@@ -148,6 +148,12 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.DECIMAL(12, 2),
         defaultValue: 0,
       },
+      /** Admin UI prefs, e.g. { folderOrder: { modules: [], data: [] } } */
+      ui_preferences: {
+        type: Sequelize.JSONB,
+        allowNull: false,
+        defaultValue: {},
+      },
     });
   
     return User;

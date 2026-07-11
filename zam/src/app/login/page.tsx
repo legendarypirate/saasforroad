@@ -95,6 +95,17 @@ export default function LoginPage() {
       if (res.ok && data.success) {
         uiToast.success('Амжилттай нэвтэрлээ!');
         setAuthSession(data.token, data.user);
+        try {
+          const folderOrder = data.user?.ui_preferences?.folderOrder;
+          if (folderOrder && typeof folderOrder === 'object' && data.user?.id != null) {
+            localStorage.setItem(
+              `admin_folder_order_${data.user.id}`,
+              JSON.stringify(folderOrder),
+            );
+          }
+        } catch {
+          // ignore
+        }
         router.push('/admin');
       } else {
         clearAuthSession();
