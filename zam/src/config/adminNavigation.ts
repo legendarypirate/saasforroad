@@ -99,12 +99,20 @@ export const ADMIN_MODULES: ModuleConfig[] = [
     ],
   },
   {
-    id: 'documents',
-    label: 'Баримт / Мэдэгдэл',
-    description: 'Баримт бичиг, мэдэгдэл',
+    id: 'document',
+    label: 'Баримт бичиг',
+    description: 'DMS — гэрээ, зураг, зөвшөөрөл, чанар',
     color: '#13c2c2',
     items: [
       { path: '/admin/document', label: 'Баримт бичиг', permission: 'document:read' },
+    ],
+  },
+  {
+    id: 'notification',
+    label: 'Мэдэгдэл',
+    description: 'Зарлал, мэдэгдэл нийтлэх',
+    color: '#fa8c16',
+    items: [
       { path: '/admin/notification', label: 'Мэдэгдэл', permission: 'notification:read' },
     ],
   },
@@ -214,6 +222,15 @@ export const ADMIN_MODULES: ModuleConfig[] = [
 ];
 
 export const ADMIN_DATA_FOLDERS: ModuleConfig[] = [
+  {
+    id: 'data-factory',
+    label: 'Үйлдвэр',
+    description: 'Үйлдвэрийн байршил, бүтээгдэхүүн — газрын зураг',
+    color: '#b45309',
+    items: [
+      { path: '/admin/data/factory', label: 'Газрын зураг', permission: 'plant:read' },
+    ],
+  },
   {
     id: 'data-technique',
     label: 'Техник',

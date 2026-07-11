@@ -134,29 +134,113 @@ exports.dashboard = async (req, res) => {
 
 /* ── Sites ─────────────────────────────────────────────── */
 
-const siteCrud = makeCrud(Plant, {
-  order: [["name", "ASC"]],
-  buildPayload: (body) => ({
-    code: body.code,
+const siteProductInc = [
+  {
+    model: Product,
+    as: "products",
+    required: false,
+  },
+];
+
+function buildSitePayload(body) {
+  return {
+    code: body.code || null,
     name: body.name,
     plant_type: body.plant_type || "asphalt",
-    location: body.location,
-    aimag: body.aimag,
-    capacity_per_hour: body.capacity_per_hour,
+    location: body.location || null,
+    aimag: body.aimag || null,
+    latitude: body.latitude != null && body.latitude !== "" ? Number(body.latitude) : null,
+    longitude: body.longitude != null && body.longitude !== "" ? Number(body.longitude) : null,
+    capacity_per_hour: body.capacity_per_hour ?? null,
     capacity_unit: body.capacity_unit || "тн",
     status: body.status || "active",
-    manager_name: body.manager_name,
-    phone: body.phone,
-    opened_date: body.opened_date,
-    notes: body.notes,
-  }),
+    manager_name: body.manager_name || null,
+    phone: body.phone || null,
+    opened_date: body.opened_date || null,
+    notes: body.notes || null,
+  };
+}
+
+async function syncProducts(plantId, products, { replace = false } = {}) {
+  if (!Array.isArray(products)) return;
+  const keptIds = [];
+  for (const p of products) {
+    if (!p?.name) continue;
+    if (p.id) {
+      const row = await Product.findByPk(p.id);
+      if (row && row.plant_id === plantId) {
+        await row.update({
+          name: p.name,
+          product_type: p.product_type || row.product_type,
+          grade: p.grade ?? row.grade,
+          unit: p.unit || row.unit || "тн",
+          unit_price_default: p.unit_price_default ?? row.unit_price_default ?? 0,
+          is_active: p.is_active !== false && p.is_active !== "false",
+          notes: p.notes ?? row.notes,
+        });
+        keptIds.push(row.id);
+      }
+    } else {
+      const created = await Product.create({
+        plant_id: plantId,
+        name: p.name,
+        product_type: p.product_type || "asphalt_mix",
+        grade: p.grade || null,
+        unit: p.unit || "тн",
+        unit_price_default: p.unit_price_default ?? 0,
+        is_active: p.is_active !== false && p.is_active !== "false",
+        notes: p.notes || null,
+      });
+      keptIds.push(created.id);
+    }
+  }
+  if (replace) {
+    const where = { plant_id: plantId };
+    if (keptIds.length > 0) {
+      where.id = { [Op.notIn]: keptIds };
+    }
+    await Product.destroy({ where });
+  }
+}
+
+const siteCrud = makeCrud(Plant, {
+  include: siteProductInc,
+  order: [["name", "ASC"]],
+  buildPayload: buildSitePayload,
 });
 
 exports.listSites = siteCrud.findAll;
-exports.createSite = siteCrud.create;
 exports.getSite = siteCrud.findOne;
-exports.updateSite = siteCrud.update;
 exports.deleteSite = siteCrud.delete;
+
+exports.createSite = async (req, res) => {
+  try {
+    if (!req.body.name) {
+      return res.status(400).json({ success: false, message: "Нэр заавал" });
+    }
+    const row = await Plant.create(buildSitePayload(req.body));
+    await syncProducts(row.id, req.body.products);
+    const full = await Plant.findByPk(row.id, { include: siteProductInc });
+    res.json({ success: true, data: full });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.updateSite = async (req, res) => {
+  try {
+    const row = await Plant.findByPk(req.params.id);
+    if (!row) return res.status(404).json({ success: false, message: "Олдсонгүй" });
+    await row.update(buildSitePayload({ ...row.toJSON(), ...req.body }));
+    if (Array.isArray(req.body.products)) {
+      await syncProducts(row.id, req.body.products, { replace: true });
+    }
+    const full = await Plant.findByPk(row.id, { include: siteProductInc });
+    res.json({ success: true, data: full });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
 
 /* ── Products ──────────────────────────────────────────── */
 

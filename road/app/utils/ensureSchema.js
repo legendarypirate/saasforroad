@@ -296,6 +296,23 @@ async function ensureSchema(sequelize, UserModel) {
   await ensureInventoryColumns(sequelize);
   await ensureLeaveRequestColumns(sequelize);
   await ensureProjectColumns(sequelize);
+  await ensureDmsColumns(sequelize);
+  await ensureNotificationColumns(sequelize);
+  await ensurePlantSiteColumns(sequelize);
+}
+
+async function ensurePlantSiteColumns(sequelize) {
+  const columns = [
+    `ALTER TABLE "plant_sites" ADD COLUMN IF NOT EXISTS "latitude" DECIMAL(10,7);`,
+    `ALTER TABLE "plant_sites" ADD COLUMN IF NOT EXISTS "longitude" DECIMAL(10,7);`,
+  ];
+  for (const sql of columns) {
+    try {
+      await sequelize.query(sql);
+    } catch (err) {
+      console.warn("ensurePlantSiteColumns:", err.message);
+    }
+  }
 }
 
 async function ensureProjectColumns(sequelize) {
@@ -325,6 +342,60 @@ async function ensureProjectColumns(sequelize) {
   }
 }
 
+async function ensureDmsColumns(sequelize) {
+  const columns = [
+    `ALTER TABLE "documents" ADD COLUMN IF NOT EXISTS "description" TEXT;`,
+    `ALTER TABLE "documents" ADD COLUMN IF NOT EXISTS "doc_type" VARCHAR(40) DEFAULT 'other';`,
+    `ALTER TABLE "documents" ADD COLUMN IF NOT EXISTS "doc_number" VARCHAR(120);`,
+    `ALTER TABLE "documents" ADD COLUMN IF NOT EXISTS "version" INTEGER DEFAULT 1;`,
+    `ALTER TABLE "documents" ADD COLUMN IF NOT EXISTS "status" VARCHAR(20) DEFAULT 'active';`,
+    `ALTER TABLE "documents" ADD COLUMN IF NOT EXISTS "project_id" INTEGER;`,
+    `ALTER TABLE "documents" ADD COLUMN IF NOT EXISTS "tags" VARCHAR(500);`,
+    `ALTER TABLE "documents" ADD COLUMN IF NOT EXISTS "mime_type" VARCHAR(120);`,
+    `ALTER TABLE "documents" ADD COLUMN IF NOT EXISTS "file_size" INTEGER;`,
+    `ALTER TABLE "documents" ADD COLUMN IF NOT EXISTS "original_name" VARCHAR(255);`,
+    `ALTER TABLE "documents" ADD COLUMN IF NOT EXISTS "issue_date" DATE;`,
+    `ALTER TABLE "documents" ADD COLUMN IF NOT EXISTS "expiry_date" DATE;`,
+    `ALTER TABLE "documents" ADD COLUMN IF NOT EXISTS "issuer" VARCHAR(255);`,
+    `ALTER TABLE "documents" ADD COLUMN IF NOT EXISTS "notes" TEXT;`,
+    `ALTER TABLE "documents" ADD COLUMN IF NOT EXISTS "created_by" INTEGER;`,
+    `ALTER TABLE "documents" ADD COLUMN IF NOT EXISTS "updated_by" INTEGER;`,
+  ];
+  for (const sql of columns) {
+    try {
+      await sequelize.query(sql);
+    } catch (err) {
+      console.warn("ensureDmsColumns:", err.message);
+    }
+  }
+}
+
+async function ensureNotificationColumns(sequelize) {
+  const columns = [
+    `ALTER TABLE "notifications" ADD COLUMN IF NOT EXISTS "status" VARCHAR(20) DEFAULT 'draft';`,
+    `ALTER TABLE "notifications" ADD COLUMN IF NOT EXISTS "audience" VARCHAR(20) DEFAULT 'all';`,
+    `ALTER TABLE "notifications" ADD COLUMN IF NOT EXISTS "priority" VARCHAR(20) DEFAULT 'normal';`,
+    `ALTER TABLE "notifications" ADD COLUMN IF NOT EXISTS "project_id" INTEGER;`,
+    `ALTER TABLE "notifications" ADD COLUMN IF NOT EXISTS "published_at" TIMESTAMP WITH TIME ZONE;`,
+    `ALTER TABLE "notifications" ADD COLUMN IF NOT EXISTS "expires_at" TIMESTAMP WITH TIME ZONE;`,
+  ];
+  for (const sql of columns) {
+    try {
+      await sequelize.query(sql);
+    } catch (err) {
+      console.warn("ensureNotificationColumns:", err.message);
+    }
+  }
+  // Widen description if still VARCHAR
+  try {
+    await sequelize.query(
+      `ALTER TABLE "notifications" ALTER COLUMN "description" TYPE TEXT;`
+    );
+  } catch (err) {
+    console.warn("ensureNotificationColumns description:", err.message);
+  }
+}
+
 module.exports = {
   ensureSchema,
   ensureUserProfileColumns,
@@ -335,6 +406,9 @@ module.exports = {
   ensureInventoryColumns,
   ensureLeaveRequestColumns,
   ensureProjectColumns,
+  ensureDmsColumns,
+  ensureNotificationColumns,
+  ensurePlantSiteColumns,
   resolveTableName,
   resolveExistingUserTable,
 };

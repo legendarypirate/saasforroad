@@ -6,6 +6,8 @@ module.exports = (sequelize, Sequelize) => {
     plant_type: { type: Sequelize.STRING(40), defaultValue: "asphalt" },
     location: { type: Sequelize.STRING, allowNull: true },
     aimag: { type: Sequelize.STRING(80), allowNull: true },
+    latitude: { type: Sequelize.DECIMAL(10, 7), allowNull: true },
+    longitude: { type: Sequelize.DECIMAL(10, 7), allowNull: true },
     capacity_per_hour: { type: Sequelize.DECIMAL(12, 2), allowNull: true },
     capacity_unit: { type: Sequelize.STRING(20), defaultValue: "тн" },
     /** active | seasonal | mothballed */

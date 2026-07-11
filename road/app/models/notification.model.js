@@ -1,20 +1,29 @@
-// models/item.js
-
 module.exports = (sequelize, Sequelize) => {
-    const Notification = sequelize.define("notification", {
-      user_id: {
-        type: Sequelize.INTEGER,
+  return sequelize.define(
+    "notification",
+    {
+      user_id: { type: Sequelize.INTEGER, allowNull: true },
+      title: { type: Sequelize.STRING(255), allowNull: false },
+      description: { type: Sequelize.TEXT, allowNull: true },
+      status: {
+        type: Sequelize.STRING(20),
         allowNull: false,
+        defaultValue: "draft",
       },
-      title: {
-        type: Sequelize.STRING,
+      audience: {
+        type: Sequelize.STRING(20),
         allowNull: false,
+        defaultValue: "all",
       },
-      description: {
-        type: Sequelize.STRING,
-        allowNull: true,
+      priority: {
+        type: Sequelize.STRING(20),
+        allowNull: false,
+        defaultValue: "normal",
       },
-    });
-    return Notification;
+      project_id: { type: Sequelize.INTEGER, allowNull: true },
+      published_at: { type: Sequelize.DATE, allowNull: true },
+      expires_at: { type: Sequelize.DATE, allowNull: true },
+    },
+    { tableName: "notifications" }
+  );
 };
-  

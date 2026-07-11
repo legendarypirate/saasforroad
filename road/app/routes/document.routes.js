@@ -1,28 +1,24 @@
-// routes/item.routes.js
+module.exports = (app) => {
+  const document = require("../controllers/document.controller.js");
+  const router = require("express").Router();
 
-module.exports = app => {
-    const document = require("../controllers/document.controller.js");
-  
-    var router = require("express").Router();
-  
-    // Create a new Item
-    router.post("/", document.create);
-  
-    // Retrieve all Items
-    router.get("/", document.findAll);
-  
-    // Retrieve a single Item with id
-    router.get("/:id", document.findOne);
-  
-    // Update an Item with id
-    router.put("/:id", document.update);
-  
-    // Delete an Item with id
-    router.delete("/:id", document.delete);
-  
-    // Delete all Items
-    router.delete("/", document.deleteAll);
-  
-    app.use('/api/document', router);
-  };
-  
+  // Folders
+  router.get("/folders", document.listFolders);
+  router.post("/folders", document.createFolder);
+  router.patch("/folders/:id", document.updateFolder);
+  router.delete("/folders/:id", document.deleteFolder);
+
+  // Stats
+  router.get("/stats", document.stats);
+
+  // Files
+  router.post("/", document.create);
+  router.get("/", document.findAll);
+  router.get("/:id", document.findOne);
+  router.put("/:id", document.update);
+  router.post("/:id/replace", document.replaceFile);
+  router.delete("/:id", document.delete);
+  router.delete("/", document.deleteAll);
+
+  app.use("/api/document", router);
+};

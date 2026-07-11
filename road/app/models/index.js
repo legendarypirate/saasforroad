@@ -120,6 +120,7 @@ db.invites = require("./invite.model.js")(sequelize, Sequelize);
 db.items = require("./item.model.js")(sequelize, Sequelize);
 db.notifications = require("./notification.model.js")(sequelize, Sequelize);
 db.documents = require("./document.model.js")(sequelize, Sequelize);
+db.document_folders = require("./document_folder.model.js")(sequelize, Sequelize);
 db.warehouses = require("./warehouse.model.js")(sequelize, Sequelize);
 db.stocks = require("./stock.model.js")(sequelize, Sequelize);
 db.transactions = require("./transaction.model.js")(sequelize, Sequelize);
@@ -147,6 +148,53 @@ db.tender_packages.hasMany(db.tender_documents, {
 });
 db.tender_documents.belongsTo(db.tender_packages, {
   foreignKey: "tender_package_id",
+});
+
+// DMS folders + documents
+db.document_folders.hasMany(db.document_folders, {
+  foreignKey: "parent_id",
+  as: "children",
+});
+db.document_folders.belongsTo(db.document_folders, {
+  foreignKey: "parent_id",
+  as: "parent",
+});
+db.documents.belongsTo(db.document_folders, {
+  foreignKey: "parent_id",
+  as: "folder",
+});
+db.document_folders.hasMany(db.documents, {
+  foreignKey: "parent_id",
+  as: "files",
+});
+db.documents.belongsTo(db.projects, {
+  foreignKey: "project_id",
+  as: "project",
+});
+db.projects.hasMany(db.documents, {
+  foreignKey: "project_id",
+  as: "dmsDocuments",
+});
+db.documents.belongsTo(db.users, {
+  foreignKey: "created_by",
+  as: "creator",
+});
+db.documents.belongsTo(db.users, {
+  foreignKey: "updated_by",
+  as: "updater",
+});
+
+db.notifications.belongsTo(db.projects, {
+  foreignKey: "project_id",
+  as: "project",
+});
+db.projects.hasMany(db.notifications, {
+  foreignKey: "project_id",
+  as: "notifications",
+});
+db.notifications.belongsTo(db.users, {
+  foreignKey: "user_id",
+  as: "author",
 });
 
 db.district = require("./district.model.js")(sequelize, Sequelize);

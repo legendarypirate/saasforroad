@@ -19,7 +19,9 @@ const DEFAULT_PERMISSIONS = [
   { module: "feedback", action: "read", key: "feedback:read" },
   { module: "accident", action: "read", key: "accident:read" },
   { module: "notification", action: "read", key: "notification:read" },
+  { module: "notification", action: "write", key: "notification:write" },
   { module: "document", action: "read", key: "document:read" },
+  { module: "document", action: "write", key: "document:write" },
   { module: "inventory", action: "read", key: "inventory:read" },
   { module: "inventory", action: "write", key: "inventory:write" },
   { module: "inventory", action: "approve", key: "inventory:approve" },
@@ -83,6 +85,9 @@ const DEFAULT_ROLES = [
       "feedback:read",
       "accident:read",
       "notification:read",
+      "notification:write",
+      "document:read",
+      "document:write",
       "equipment:read",
       "equipment:write",
       "rental:read",
@@ -254,8 +259,44 @@ async function seedPermissionsAndRoles() {
   );
 }
 
+const DEFAULT_DMS_FOLDERS = [
+  { name: "Гэрээ", description: "Гэрээ, хавсралт, нэмэлт гэрээ", sort_order: 1 },
+  { name: "Зураг төсөл", description: "Ажлын зураг, төсөл, өөрчлөлт", sort_order: 2 },
+  { name: "Зөвшөөрөл", description: "Барилга, замын зөвшөөрөл, лиценз", sort_order: 3 },
+  { name: "Чанар", description: "Чанарын баталгаа, туршилт, акт", sort_order: 4 },
+  { name: "Гүйцэтгэл", description: "Гүйцэтгэлийн зураг, акт, хүлээлгэн өгөх", sort_order: 5 },
+  { name: "Албан бичиг", description: "Албан захидал, мэдэгдэл, протокол", sort_order: 6 },
+  { name: "Техникийн баримт", description: "Техникийн нөхцөл, стандарт, заавар", sort_order: 7 },
+  { name: "Санхүү", description: "Нэхэмжлэх, төлбөр, төсөв баримт", sort_order: 8 },
+  { name: "ХАБЭА", description: "Аюулгүй ажиллагааны баримт, сургалт", sort_order: 9 },
+  { name: "Геодези", description: "Хэмжилт, координат, судалгаа", sort_order: 10 },
+];
+
+async function seedDocumentFolders() {
+  if (!db.document_folders) return;
+  let created = 0;
+  for (const folder of DEFAULT_DMS_FOLDERS) {
+    const [row, wasCreated] = await db.document_folders.findOrCreate({
+      where: { name: folder.name, parent_id: null },
+      defaults: {
+        ...folder,
+        parent_id: null,
+        is_system: true,
+      },
+    });
+    if (wasCreated) created += 1;
+    else if (!row.is_system) {
+      await row.update({ is_system: true, description: folder.description, sort_order: folder.sort_order });
+    }
+  }
+  if (created > 0) {
+    console.log(`DMS: seeded ${created} default folder(s).`);
+  }
+}
+
 module.exports = {
   seedPermissionsAndRoles,
+  seedDocumentFolders,
   isAdminRoleName,
   DEFAULT_PERMISSIONS,
   DEFAULT_ROLES,

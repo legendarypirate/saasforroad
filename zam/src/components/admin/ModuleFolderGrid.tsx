@@ -4,9 +4,9 @@ import React from 'react';
 import {
   Banknote,
   Beaker,
+  Bell,
   Briefcase,
   Building2,
-  ClipboardList,
   Factory,
   FileText,
   FolderOpen,
@@ -42,7 +42,8 @@ const MODULE_ICONS: Record<string, LucideIcon> = {
   hr: Briefcase,
   homepage: Home,
   tender: FileText,
-  documents: ClipboardList,
+  document: FolderOpen,
+  notification: Bell,
   finance: Banknote,
   gps: MapPin,
   'ai-tender': Sparkles,
@@ -57,6 +58,7 @@ const MODULE_ICONS: Record<string, LucideIcon> = {
   'data-laboratory': Beaker,
   'data-job-seeker': UserSearch,
   'data-production': Factory,
+  'data-factory': Factory,
   'data-student': GraduationCap,
   'data-road-sign': Signpost,
 };

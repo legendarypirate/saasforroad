@@ -182,7 +182,7 @@ function SelectBase({
 
   return (
     <>
-      <div ref={triggerWrapRef} className="relative w-full">
+      <div ref={triggerWrapRef} className={cn('relative inline-block min-w-0', className)} style={style}>
         <button
           type="button"
           disabled={disabled}
@@ -193,9 +193,7 @@ function SelectBase({
             'focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50',
             'disabled:cursor-not-allowed disabled:opacity-50',
             'dark:bg-input/30',
-            className,
           )}
-          style={style}
           onClick={() => !disabled && setOpen((v) => !v)}
         >
           <span className={cn('truncate text-left', !selected && 'text-muted-foreground')}>

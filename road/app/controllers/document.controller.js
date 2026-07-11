@@ -1,5 +1,6 @@
 const db = require("../models");
 const Document = db.documents;
+const Folder = db.document_folders;
 const Op = db.Sequelize.Op;
 const { memoryUpload } = require("../utils/multerMemory");
 const { uploadMulterFile } = require("../utils/cloudinary");
@@ -7,142 +8,404 @@ const multer = require("multer");
 
 const upload = memoryUpload().single("file");
 
+const DOC_INCLUDE = [
+  {
+    model: db.projects,
+    as: "project",
+    attributes: ["id", "name", "road_name", "contract_number"],
+    required: false,
+  },
+  {
+    model: db.users,
+    as: "creator",
+    attributes: ["id", "username"],
+    required: false,
+  },
+];
+
+function parseParentId(value) {
+  if (value === undefined || value === null || value === "" || value === "null") {
+    return null;
+  }
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function parseOptionalInt(value) {
+  if (value === undefined || value === null || value === "" || value === "null") {
+    return null;
+  }
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function buildMetaFromBody(body = {}) {
+  return {
+    description: body.description ?? null,
+    doc_type: body.doc_type || "other",
+    doc_number: body.doc_number || null,
+    status: body.status || "active",
+    project_id: parseOptionalInt(body.project_id),
+    tags: body.tags || null,
+    issue_date: body.issue_date || null,
+    expiry_date: body.expiry_date || null,
+    issuer: body.issuer || null,
+    notes: body.notes || null,
+  };
+}
+
+// ─── Folders ───────────────────────────────────────────────────────────────
+
+exports.listFolders = async (req, res) => {
+  try {
+    const parent_id =
+      req.query.parent_id !== undefined ? parseParentId(req.query.parent_id) : undefined;
+    const where = {};
+    if (parent_id !== undefined) where.parent_id = parent_id;
+
+    const data = await Folder.findAll({
+      where,
+      order: [
+        ["sort_order", "ASC"],
+        ["name", "ASC"],
+      ],
+    });
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.createFolder = async (req, res) => {
+  try {
+    if (!req.body.name) {
+      return res.status(400).json({ success: false, message: "Хавтасны нэр шаардлагатай" });
+    }
+    const data = await Folder.create({
+      name: req.body.name.trim(),
+      parent_id: parseParentId(req.body.parent_id),
+      description: req.body.description || null,
+      sort_order: Number(req.body.sort_order) || 0,
+      is_system: false,
+    });
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.updateFolder = async (req, res) => {
+  try {
+    const folder = await Folder.findByPk(req.params.id);
+    if (!folder) {
+      return res.status(404).json({ success: false, message: "Хавтас олдсонгүй" });
+    }
+    if (folder.is_system && req.body.name === undefined && req.body.description === undefined) {
+      // allow rename of system folders for flexibility
+    }
+    const patch = {};
+    if (req.body.name !== undefined) patch.name = String(req.body.name).trim();
+    if (req.body.description !== undefined) patch.description = req.body.description;
+    if (req.body.parent_id !== undefined) patch.parent_id = parseParentId(req.body.parent_id);
+    if (req.body.sort_order !== undefined) patch.sort_order = Number(req.body.sort_order) || 0;
+
+    await folder.update(patch);
+    res.json({ success: true, data: folder });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.deleteFolder = async (req, res) => {
+  try {
+    const folder = await Folder.findByPk(req.params.id);
+    if (!folder) {
+      return res.status(404).json({ success: false, message: "Хавтас олдсонгүй" });
+    }
+    if (folder.is_system) {
+      return res.status(400).json({
+        success: false,
+        message: "Системийн хавтсыг устгах боломжгүй",
+      });
+    }
+    const childFolders = await Folder.count({ where: { parent_id: folder.id } });
+    const childFiles = await Document.count({ where: { parent_id: folder.id } });
+    if (childFolders > 0 || childFiles > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Хавтас хоосон биш — эхлээд доторх зүйлсийг устгана уу",
+      });
+    }
+    await folder.destroy();
+    res.json({ success: true, message: "Хавтас устгагдлаа" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ─── Stats ─────────────────────────────────────────────────────────────────
+
+exports.stats = async (_req, res) => {
+  try {
+    const [total, active, draft, archived, folders] = await Promise.all([
+      Document.count(),
+      Document.count({ where: { status: "active" } }),
+      Document.count({ where: { status: "draft" } }),
+      Document.count({ where: { status: "archived" } }),
+      Folder.count(),
+    ]);
+
+    const soon = new Date();
+    soon.setDate(soon.getDate() + 30);
+    const expiring = await Document.count({
+      where: {
+        expiry_date: { [Op.ne]: null, [Op.lte]: soon.toISOString().slice(0, 10) },
+        status: { [Op.ne]: "archived" },
+      },
+    });
+
+    const byTypeRows = await Document.findAll({
+      attributes: ["doc_type", [db.Sequelize.fn("COUNT", db.Sequelize.col("id")), "count"]],
+      group: ["doc_type"],
+      raw: true,
+    });
+
+    res.json({
+      success: true,
+      data: {
+        total,
+        active,
+        draft,
+        archived,
+        folders,
+        expiring,
+        by_type: byTypeRows.map((r) => ({
+          doc_type: r.doc_type,
+          count: Number(r.count) || 0,
+        })),
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ─── Documents ─────────────────────────────────────────────────────────────
+
 exports.create = (req, res) => {
   upload(req, res, async function (err) {
     if (err instanceof multer.MulterError) {
       return res.status(500).json({ success: false, message: "File upload error." });
-    } else if (err) {
+    }
+    if (err) {
       return res.status(500).json({ success: false, message: err.message || "Unexpected error." });
     }
-
     if (!req.body.name || !req.file) {
       return res.status(400).json({ success: false, message: "Name and file are required!" });
     }
 
     try {
       const result = await uploadMulterFile(req.file, "documents");
-      const doc = {
+      const meta = buildMetaFromBody(req.body);
+      const data = await Document.create({
         name: req.body.name,
-        parent_id: req.body.parent_id || null,
+        parent_id: parseParentId(req.body.parent_id),
         file_url: result.secure_url,
-      };
-
-      const data = await Document.create(doc);
-      res.json({ success: true, data });
+        mime_type: req.file.mimetype || null,
+        file_size: req.file.size || null,
+        original_name: req.file.originalname || null,
+        version: Number(req.body.version) || 1,
+        ...meta,
+      });
+      const full = await Document.findByPk(data.id, { include: DOC_INCLUDE });
+      res.json({ success: true, data: full });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
   });
 };
 
-exports.findAll = (req, res) => {
-  const name = req.query.name;
-  const parent_id = req.query.parent_id;
+exports.findAll = async (req, res) => {
+  try {
+    const {
+      name,
+      q,
+      parent_id,
+      doc_type,
+      status,
+      project_id,
+      expiring,
+      search_all,
+    } = req.query;
 
-  const condition = {};
+    const condition = {};
+    const search = q || name;
 
-  if (name) {
-    condition.name = { [Op.like]: `%${name}%` };
+    if (search) {
+      condition[Op.or] = [
+        { name: { [Op.iLike]: `%${search}%` } },
+        { doc_number: { [Op.iLike]: `%${search}%` } },
+        { tags: { [Op.iLike]: `%${search}%` } },
+        { description: { [Op.iLike]: `%${search}%` } },
+        { issuer: { [Op.iLike]: `%${search}%` } },
+      ];
+    }
+
+    // Folder browse vs global search
+    if (search_all !== "1" && search_all !== "true") {
+      if (parent_id !== undefined) {
+        condition.parent_id = parseParentId(parent_id);
+      }
+    }
+
+    if (doc_type) condition.doc_type = doc_type;
+    if (status) condition.status = status;
+    if (project_id) condition.project_id = parseOptionalInt(project_id);
+
+    if (expiring === "1" || expiring === "true") {
+      const soon = new Date();
+      soon.setDate(soon.getDate() + 30);
+      condition.expiry_date = {
+        [Op.ne]: null,
+        [Op.lte]: soon.toISOString().slice(0, 10),
+      };
+      condition.status = { [Op.ne]: "archived" };
+    }
+
+    const data = await Document.findAll({
+      where: condition,
+      include: DOC_INCLUDE,
+      order: [["updatedAt", "DESC"]],
+    });
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message || "Some error occurred while retrieving documents.",
+    });
   }
+};
 
-  if (parent_id !== undefined) {
-    condition.parent_id = parent_id === "" ? null : parent_id;
+exports.findOne = async (req, res) => {
+  try {
+    const data = await Document.findByPk(req.params.id, { include: DOC_INCLUDE });
+    if (!data) {
+      return res.status(404).json({
+        success: false,
+        message: `Cannot find Document with id=${req.params.id}.`,
+      });
+    }
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Error retrieving Document with id=" + req.params.id,
+    });
   }
-
-  Document.findAll({ where: condition })
-    .then((data) => {
-      res.send({ success: true, data });
-    })
-    .catch((err) => {
-      res.status(500).send({
-        success: false,
-        message: err.message || "Some error occurred while retrieving documents.",
-      });
-    });
 };
 
-exports.findOne = (req, res) => {
-  const id = req.params.id;
+exports.update = async (req, res) => {
+  try {
+    const doc = await Document.findByPk(req.params.id);
+    if (!doc) {
+      return res.status(404).json({ success: false, message: "Document not found" });
+    }
 
-  Document.findByPk(id)
-    .then((data) => {
-      if (data) {
-        res.send({ success: true, data });
-      } else {
-        res.status(404).send({
-          success: false,
-          message: `Cannot find Document with id=${id}.`,
-        });
+    const patch = {};
+    if (req.body.name !== undefined) patch.name = req.body.name;
+    if (req.body.parent_id !== undefined) patch.parent_id = parseParentId(req.body.parent_id);
+    if (req.body.file_url !== undefined) patch.file_url = req.body.file_url;
+    if (req.body.version !== undefined) patch.version = Number(req.body.version) || doc.version;
+
+    const metaKeys = [
+      "description",
+      "doc_type",
+      "doc_number",
+      "status",
+      "tags",
+      "issue_date",
+      "expiry_date",
+      "issuer",
+      "notes",
+    ];
+    for (const key of metaKeys) {
+      if (req.body[key] !== undefined) patch[key] = req.body[key] || null;
+    }
+    if (req.body.project_id !== undefined) {
+      patch.project_id = parseOptionalInt(req.body.project_id);
+    }
+
+    await doc.update(patch);
+    const full = await Document.findByPk(doc.id, { include: DOC_INCLUDE });
+    res.json({ success: true, data: full });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message || `Error updating Document with id=${req.params.id}`,
+    });
+  }
+};
+
+exports.replaceFile = (req, res) => {
+  upload(req, res, async function (err) {
+    if (err instanceof multer.MulterError) {
+      return res.status(500).json({ success: false, message: "File upload error." });
+    }
+    if (err) {
+      return res.status(500).json({ success: false, message: err.message || "Unexpected error." });
+    }
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "File is required" });
+    }
+
+    try {
+      const doc = await Document.findByPk(req.params.id);
+      if (!doc) {
+        return res.status(404).json({ success: false, message: "Document not found" });
       }
-    })
-    .catch((err) => {
-      res.status(500).send({
-        success: false,
-        message: "Error retrieving Document with id=" + id,
+      const result = await uploadMulterFile(req.file, "documents");
+      await doc.update({
+        file_url: result.secure_url,
+        mime_type: req.file.mimetype || doc.mime_type,
+        file_size: req.file.size || null,
+        original_name: req.file.originalname || doc.original_name,
+        version: (doc.version || 1) + 1,
+        name: req.body.name || doc.name,
       });
-    });
+      const full = await Document.findByPk(doc.id, { include: DOC_INCLUDE });
+      res.json({ success: true, data: full });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
 };
 
-exports.update = (req, res) => {
-  const id = req.params.id;
-  const updateData = {
-    name: req.body.name,
-    file_url: req.body.file_url,
-    parent_id: req.body.parent_id || null,
-  };
-
-  Document.update(updateData, {
-    where: { id },
-  })
-    .then((num) => {
-      if (num == 1) {
-        return Document.findByPk(id);
-      } else {
-        throw new Error(`Cannot update Document with id=${id}.`);
-      }
-    })
-    .then((updatedData) => {
-      res.json({ success: true, data: updatedData });
-    })
-    .catch((err) => {
-      res.status(500).json({
-        success: false,
-        message: err.message || `Error updating Document with id=${id}`,
-      });
+exports.delete = async (req, res) => {
+  try {
+    const num = await Document.destroy({ where: { id: req.params.id } });
+    if (num === 1) {
+      return res.json({ success: true, message: "Document was deleted successfully!" });
+    }
+    res.status(404).json({
+      success: false,
+      message: `Cannot delete Document with id=${req.params.id}. Not found.`,
     });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Could not delete Document with id=" + req.params.id,
+    });
+  }
 };
 
-exports.delete = (req, res) => {
-  const id = req.params.id;
-
-  Document.destroy({ where: { id } })
-    .then((num) => {
-      if (num == 1) {
-        res.json({ success: true, message: "Document was deleted successfully!" });
-      } else {
-        res.status(404).send({
-          success: false,
-          message: `Cannot delete Document with id=${id}. Not found.`,
-        });
-      }
-    })
-    .catch((err) => {
-      res.status(500).send({
-        success: false,
-        message: "Could not delete Document with id=" + id,
-      });
+exports.deleteAll = async (_req, res) => {
+  try {
+    const nums = await Document.destroy({ where: {}, truncate: false });
+    res.json({ success: true, message: `${nums} documents were deleted successfully!` });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message || "Some error occurred while removing all documents.",
     });
-};
-
-exports.deleteAll = (req, res) => {
-  Document.destroy({ where: {}, truncate: false })
-    .then((nums) => {
-      res.send({ success: true, message: `${nums} documents were deleted successfully!` });
-    })
-    .catch((err) => {
-      res.status(500).send({
-        success: false,
-        message: err.message || "Some error occurred while removing all documents.",
-      });
-    });
+  }
 };
