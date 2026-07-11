@@ -23,6 +23,8 @@ import {
   INTERNSHIP_TYPE_LABELS,
   STUDENT_STATUS_COLORS,
   STUDENT_STATUS_LABELS,
+  formatGpa,
+  normalizeSkills,
   studentApi,
   studentFullName,
   type InternshipType,
@@ -131,6 +133,29 @@ export default function StudentListPage() {
       dataIndex: 'course_year',
       width: 70,
       render: (v) => (v != null ? `${v}` : '—'),
+    },
+    {
+      title: 'Голч',
+      dataIndex: 'gpa',
+      width: 80,
+      render: (v) => formatGpa(v),
+    },
+    {
+      title: 'Ур чадвар',
+      key: 'skills',
+      width: 220,
+      render: (_, r) => {
+        const skills = normalizeSkills(r.skills);
+        if (skills.length === 0) return '—';
+        return (
+          <div className="flex max-w-[220px] flex-wrap gap-1">
+            {skills.slice(0, 4).map((s) => (
+              <Tag key={s}>{s}</Tag>
+            ))}
+            {skills.length > 4 && <Tag>+{skills.length - 4}</Tag>}
+          </div>
+        );
+      },
     },
     {
       title: 'Төрөл',
@@ -256,7 +281,7 @@ export default function StudentListPage() {
         dataSource={rows}
         rowKey="id"
         loading={loading}
-        scroll={{ x: 900 }}
+        scroll={{ x: 1100 }}
         pagination={{ pageSize: 20, showSizeChanger: true }}
       />
 
