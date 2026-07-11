@@ -8,6 +8,7 @@ module.exports = (app) => {
   router.get("/:id", student.findOne);
   router.put("/:id", student.update);
   router.patch("/:id", student.update);
+  router.post("/:id/photo", student.uploadPhoto);
   router.delete("/:id", student.delete);
 
   app.use("/api/student", router);

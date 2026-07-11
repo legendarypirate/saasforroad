@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
+  Avatar,
   Button,
   Descriptions,
   Form,
@@ -15,13 +16,23 @@ import {
   message,
   DatePicker,
   Popconfirm,
+  Upload,
 } from '@/components/admin/primitives';
-import { ArrowLeftOutlined, DeleteOutlined, EditOutlined } from '@/components/admin/icons';
+import {
+  ArrowLeftOutlined,
+  CameraOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  PlusOutlined,
+  UserOutlined,
+} from '@/components/admin/icons';
 import { dateFormItemProps, formatDate } from '@/lib/userDates';
 import {
   INTERNSHIP_TYPE_LABELS,
   STUDENT_STATUS_COLORS,
   STUDENT_STATUS_LABELS,
+  formatGpa,
+  normalizeSkills,
   studentApi,
   studentFullName,
   type InternshipType,
@@ -37,8 +48,13 @@ export default function StudentDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
+  const [skillsSaving, setSkillsSaving] = useState(false);
+  const [skillDraft, setSkillDraft] = useState('');
   const [student, setStudent] = useState<StudentRecord | null>(null);
   const [form] = Form.useForm();
+
+  const skills = normalizeSkills(student?.skills);
 
   const display = (v?: string | number | null) =>
     v !== undefined && v !== null && String(v).trim() !== '' ? String(v) : '—';
@@ -60,7 +76,10 @@ export default function StudentDetailPage() {
         return;
       }
       setStudent(data);
-      form.setFieldsValue(data);
+      form.setFieldsValue({
+        ...data,
+        gpa: data.gpa != null ? Number(data.gpa) : undefined,
+      });
     } catch (err) {
       console.error(err);
       message.error('Ачаалахад алдаа');
@@ -79,7 +98,10 @@ export default function StudentDetailPage() {
     try {
       const values = await form.validateFields();
       setSaving(true);
-      const res = await studentApi.update(studentId, values);
+      const res = await studentApi.update(studentId, {
+        ...values,
+        skills,
+      });
       if (res.success && res.data) {
         message.success('Хадгалагдлаа');
         setStudent(res.data);
@@ -104,6 +126,50 @@ export default function StudentDetailPage() {
     }
   };
 
+  const uploadPhoto = async (file: File) => {
+    setImageUploading(true);
+    try {
+      const res = await studentApi.uploadPhoto(studentId, file);
+      if (!res.success || !res.data) throw new Error(res.message || 'Зураг хадгалахад алдаа');
+      message.success('Зураг хадгалагдлаа');
+      setStudent(res.data);
+    } catch (err) {
+      console.error(err);
+      message.error(err instanceof Error ? err.message : 'Зураг хадгалахад алдаа');
+    } finally {
+      setImageUploading(false);
+    }
+  };
+
+  const persistSkills = async (next: string[]) => {
+    setSkillsSaving(true);
+    try {
+      const res = await studentApi.update(studentId, { skills: next });
+      if (!res.success || !res.data) throw new Error(res.message || 'Ур чадвар хадгалахад алдаа');
+      setStudent(res.data);
+    } catch (err) {
+      console.error(err);
+      message.error(err instanceof Error ? err.message : 'Ур чадвар хадгалахад алдаа');
+    } finally {
+      setSkillsSaving(false);
+    }
+  };
+
+  const addSkill = async () => {
+    const value = skillDraft.trim();
+    if (!value) return;
+    if (skills.some((s) => s.toLowerCase() === value.toLowerCase())) {
+      message.warning('Энэ ур чадвар аль хэдийн нэмэгдсэн');
+      return;
+    }
+    setSkillDraft('');
+    await persistSkills([...skills, value]);
+  };
+
+  const removeSkill = async (skill: string) => {
+    await persistSkills(skills.filter((s) => s !== skill));
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-20">
@@ -119,7 +185,7 @@ export default function StudentDetailPage() {
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap items-center gap-3">
+      <div className="mb-6 flex flex-wrap items-center gap-4">
         <Button
           type="text"
           icon={<ArrowLeftOutlined />}
@@ -127,6 +193,37 @@ export default function StudentDetailPage() {
         >
           Буцах
         </Button>
+
+        <Upload
+          showUploadList={false}
+          accept="image/jpeg,image/png,image/webp"
+          beforeUpload={(file) => {
+            uploadPhoto(file);
+            return false;
+          }}
+          disabled={imageUploading}
+        >
+          <div
+            className="relative"
+            style={{ cursor: imageUploading ? 'wait' : 'pointer' }}
+            title="Зураг солих"
+          >
+            <Spin spinning={imageUploading}>
+              <Avatar
+                size={96}
+                src={student.photo || undefined}
+                icon={<UserOutlined />}
+                style={{ border: '2px solid var(--border)' }}
+              />
+            </Spin>
+            <div
+              className="absolute bottom-0 right-0 flex size-8 items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground"
+            >
+              <CameraOutlined />
+            </div>
+          </div>
+        </Upload>
+
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-semibold">{studentFullName(student)}</h1>
           <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -136,8 +233,13 @@ export default function StudentDetailPage() {
             <span className="text-sm text-muted-foreground">
               {INTERNSHIP_TYPE_LABELS[type] || student.internship_type}
             </span>
+            <span className="text-sm text-muted-foreground">
+              Голч дүн: {formatGpa(student.gpa)}
+            </span>
           </div>
+          <p className="mt-1 text-xs text-muted-foreground">Зураг дээр дарж солино</p>
         </div>
+
         <Space>
           {!editing ? (
             <Button icon={<EditOutlined />} onClick={() => setEditing(true)}>
@@ -148,7 +250,10 @@ export default function StudentDetailPage() {
               <Button
                 onClick={() => {
                   setEditing(false);
-                  form.setFieldsValue(student);
+                  form.setFieldsValue({
+                    ...student,
+                    gpa: student.gpa != null ? Number(student.gpa) : undefined,
+                  });
                 }}
               >
                 Болих
@@ -171,6 +276,56 @@ export default function StudentDetailPage() {
         </Space>
       </div>
 
+      <div className="mb-6 rounded-lg border border-border bg-card p-4">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h2 className="text-base font-semibold">Ур чадвар</h2>
+          {skillsSaving && <span className="text-xs text-muted-foreground">Хадгалж байна…</span>}
+        </div>
+        <div className="mb-3 flex flex-wrap gap-2">
+          {skills.length === 0 && (
+            <span className="text-sm text-muted-foreground">Ур чадвар нэмээгүй</span>
+          )}
+          {skills.map((skill) => (
+            <span
+              key={skill}
+              className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/50 px-2 py-1 text-sm"
+            >
+              {skill}
+              <button
+                type="button"
+                className="ml-0.5 text-muted-foreground hover:text-destructive"
+                aria-label={`${skill} устгах`}
+                disabled={skillsSaving}
+                onClick={() => removeSkill(skill)}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+        <div className="flex max-w-md flex-wrap gap-2">
+          <Input
+            placeholder="Жишээ: AutoCAD, Excel…"
+            value={skillDraft}
+            onChange={(e) => setSkillDraft(e.target.value)}
+            onPressEnter={(e) => {
+              e.preventDefault();
+              addSkill();
+            }}
+            disabled={skillsSaving}
+          />
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={addSkill}
+            loading={skillsSaving}
+            disabled={!skillDraft.trim()}
+          >
+            Нэмэх
+          </Button>
+        </div>
+      </div>
+
       {!editing ? (
         <div className="space-y-6">
           <Descriptions bordered column={{ xs: 1, sm: 2 }} size="middle" title="Хувийн мэдээлэл">
@@ -189,6 +344,7 @@ export default function StudentDetailPage() {
             <Descriptions.Item label="Сургууль">{display(student.school)}</Descriptions.Item>
             <Descriptions.Item label="Мэргэжил">{display(student.major)}</Descriptions.Item>
             <Descriptions.Item label="Курс">{display(student.course_year)}</Descriptions.Item>
+            <Descriptions.Item label="Голч дүн">{formatGpa(student.gpa)}</Descriptions.Item>
             <Descriptions.Item label="Оюутны үнэмлэх">
               {display(student.student_card_no)}
             </Descriptions.Item>
@@ -259,6 +415,9 @@ export default function StudentDetailPage() {
             </Form.Item>
             <Form.Item name="course_year" label="Курс">
               <InputNumber min={1} max={6} className="w-full" />
+            </Form.Item>
+            <Form.Item name="gpa" label="Голч дүн">
+              <InputNumber min={0} max={4} step={0.01} className="w-full" placeholder="0.00 – 4.00" />
             </Form.Item>
             <Form.Item name="student_card_no" label="Оюутны үнэмлэх">
               <Input />

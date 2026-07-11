@@ -34,9 +34,12 @@ export type StudentRecord = {
   phone?: string | null;
   email?: string | null;
   gender?: string | null;
+  photo?: string | null;
   school?: string | null;
   major?: string | null;
   course_year?: number | null;
+  gpa?: number | string | null;
+  skills?: string[] | null;
   student_card_no?: string | null;
   internship_type: InternshipType | string;
   status: StudentStatus | string;
@@ -68,11 +71,25 @@ export function studentFullName(s: Pick<StudentRecord, 'last_name' | 'first_name
   return `${s.last_name || ''} ${s.first_name || ''}`.trim();
 }
 
+export function normalizeSkills(skills?: string[] | null): string[] {
+  if (!Array.isArray(skills)) return [];
+  return skills.map((s) => String(s || '').trim()).filter(Boolean);
+}
+
+export function formatGpa(value?: number | string | null) {
+  if (value === undefined || value === null || value === '') return '—';
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '—';
+  return n.toFixed(2);
+}
+
 async function studentFetch<T>(path = '', init?: RequestInit) {
   const res = await fetch(`${STUDENT_API}${path}`, {
     ...init,
     headers: {
-      ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(init?.body && !(init.body instanceof FormData)
+        ? { 'Content-Type': 'application/json' }
+        : {}),
       ...init?.headers,
     },
   });
@@ -97,4 +114,9 @@ export const studentApi = {
   update: (id: number, body: Record<string, unknown>) =>
     studentFetch<StudentRecord>(`/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   remove: (id: number) => studentFetch(`/${id}`, { method: 'DELETE' }),
+  uploadPhoto: (id: number, file: File) => {
+    const fd = new FormData();
+    fd.append('image', file);
+    return studentFetch<StudentRecord>(`/${id}/photo`, { method: 'POST', body: fd });
+  },
 };

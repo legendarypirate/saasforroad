@@ -300,6 +300,7 @@ async function ensureSchema(sequelize, UserModel) {
   await ensureNotificationColumns(sequelize);
   await ensurePlantSiteColumns(sequelize);
   await ensureEquipmentCategoryColumns(sequelize);
+  await ensureStudentColumns(sequelize);
 }
 
 async function ensureEquipmentCategoryColumns(sequelize) {
@@ -309,6 +310,35 @@ async function ensureEquipmentCategoryColumns(sequelize) {
     );
   } catch (err) {
     console.warn("ensureEquipmentCategoryColumns:", err.message);
+  }
+}
+
+async function ensureStudentColumns(sequelize) {
+  const [rows] = await sequelize.query(`
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'students'
+  `);
+  if (rows.length === 0) return;
+
+  const columns = [
+    `ALTER TABLE "students" ADD COLUMN IF NOT EXISTS "photo" VARCHAR(512);`,
+    `ALTER TABLE "students" ADD COLUMN IF NOT EXISTS "gpa" DECIMAL(4,2);`,
+    `ALTER TABLE "students" ADD COLUMN IF NOT EXISTS "skills" JSONB DEFAULT '[]'::jsonb;`,
+  ];
+  for (const sql of columns) {
+    try {
+      await sequelize.query(sql);
+    } catch (err) {
+      console.warn("ensureStudentColumns:", err.message);
+    }
+  }
+
+  try {
+    await sequelize.query(
+      `UPDATE "students" SET "skills" = '[]'::jsonb WHERE "skills" IS NULL;`
+    );
+  } catch (err) {
+    console.warn("ensureStudentColumns skills backfill:", err.message);
   }
 }
 
@@ -421,6 +451,7 @@ module.exports = {
   ensureNotificationColumns,
   ensurePlantSiteColumns,
   ensureEquipmentCategoryColumns,
+  ensureStudentColumns,
   resolveTableName,
   resolveExistingUserTable,
 };

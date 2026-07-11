@@ -8,9 +8,14 @@ module.exports = (sequelize, Sequelize) => {
       phone: { type: Sequelize.STRING(40), allowNull: true },
       email: { type: Sequelize.STRING(120), allowNull: true },
       gender: { type: Sequelize.STRING(20), allowNull: true },
+      photo: { type: Sequelize.STRING(512), allowNull: true },
       school: { type: Sequelize.STRING(255), allowNull: true },
       major: { type: Sequelize.STRING(255), allowNull: true },
       course_year: { type: Sequelize.INTEGER, allowNull: true },
+      /** Голч дүн (GPA), e.g. 3.45 */
+      gpa: { type: Sequelize.DECIMAL(4, 2), allowNull: true },
+      /** Skill tags as JSON array of strings */
+      skills: { type: Sequelize.JSONB, allowNull: false, defaultValue: [] },
       student_card_no: { type: Sequelize.STRING(80), allowNull: true },
       /** internship | thesis | volunteer | other */
       internship_type: {
