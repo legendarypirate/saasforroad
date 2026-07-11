@@ -245,8 +245,9 @@ export const ADMIN_DATA_FOLDERS: ModuleConfig[] = [
     label: 'Бригад',
     description: 'Бригад, багийн бүтэц, гүйцэтгэл',
     color: '#531dab',
-    items: [],
-    comingSoon: true,
+    items: [
+      { path: '/admin/data/brigada', label: 'Бригадын жагсаалт', permission: 'brigada:read' },
+    ],
   },
   {
     id: 'data-laboratory',

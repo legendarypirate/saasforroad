@@ -63,6 +63,7 @@ exports.create = async (req, res) => {
 exports.findAll = async (req, res) => {
   const username = req.query.username;
   const role_id = req.query.role_id;
+  const includeBrigada = req.query.include_brigada === "1" || req.query.include_brigada === "true";
   let condition = {};
 
   if (username) {
@@ -70,6 +71,25 @@ exports.findAll = async (req, res) => {
   }
   if (role_id) {
     condition.role_id = role_id;
+  }
+
+  // Brigade accounts are outside the company — hide from company user lists by default.
+  if (!includeBrigada) {
+    condition[Op.and] = [
+      ...(condition[Op.and] || []),
+      {
+        [Op.or]: [
+          { affiliation: { [Op.ne]: "brigada" } },
+          { affiliation: null },
+        ],
+      },
+      {
+        [Op.or]: [
+          { role: { [Op.ne]: "brigada" } },
+          { role: null },
+        ],
+      },
+    ];
   }
 
   try {

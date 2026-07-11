@@ -50,6 +50,7 @@ export {
   Empty,
   List,
 } from './extra';
+export { Rate } from './rate';
 
 // Legacy destructuring support
 import { Layout as LayoutRoot } from './layout';

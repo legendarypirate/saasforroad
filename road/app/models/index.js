@@ -121,6 +121,16 @@ db.invites = require("./invite.model.js")(sequelize, Sequelize);
 db.items = require("./item.model.js")(sequelize, Sequelize);
 db.notifications = require("./notification.model.js")(sequelize, Sequelize);
 db.students = require("./student.model.js")(sequelize, Sequelize);
+db.brigades = require("./brigade.model.js")(sequelize, Sequelize);
+db.brigade_members = require("./brigade_member.model.js")(sequelize, Sequelize);
+db.brigade_equipment = require("./brigade_equipment.model.js")(sequelize, Sequelize);
+db.hire_requests = require("./hire_request.model.js")(sequelize, Sequelize);
+db.hire_request_history = require("./hire_request_history.model.js")(sequelize, Sequelize);
+db.brigade_reviews = require("./brigade_review.model.js")(sequelize, Sequelize);
+db.brigade_documents = require("./brigade_document.model.js")(sequelize, Sequelize);
+db.brigade_timeline_events = require("./brigade_timeline_event.model.js")(sequelize, Sequelize);
+db.brigade_progress_reports = require("./brigade_progress_report.model.js")(sequelize, Sequelize);
+db.brigade_notifications = require("./brigade_notification.model.js")(sequelize, Sequelize);
 db.documents = require("./document.model.js")(sequelize, Sequelize);
 db.document_folders = require("./document_folder.model.js")(sequelize, Sequelize);
 db.warehouses = require("./warehouse.model.js")(sequelize, Sequelize);
@@ -214,6 +224,98 @@ db.students.belongsTo(db.users, {
 db.users.hasMany(db.students, {
   foreignKey: "mentor_user_id",
   as: "mentees",
+});
+
+// Brigada module
+db.brigades.belongsTo(db.users, { foreignKey: "leader_user_id", as: "leader" });
+db.users.hasMany(db.brigades, { foreignKey: "leader_user_id", as: "ledBrigades" });
+
+db.brigades.hasMany(db.brigade_members, {
+  foreignKey: "brigade_id",
+  as: "members",
+  onDelete: "CASCADE",
+});
+db.brigade_members.belongsTo(db.brigades, { foreignKey: "brigade_id", as: "brigade" });
+db.brigade_members.belongsTo(db.users, { foreignKey: "user_id", as: "user" });
+db.users.hasMany(db.brigade_members, { foreignKey: "user_id", as: "brigadeMemberships" });
+
+db.brigades.hasMany(db.brigade_equipment, {
+  foreignKey: "brigade_id",
+  as: "equipmentLinks",
+  onDelete: "CASCADE",
+});
+db.brigade_equipment.belongsTo(db.brigades, { foreignKey: "brigade_id", as: "brigade" });
+db.brigade_equipment.belongsTo(db.equipments, { foreignKey: "equipment_id", as: "equipment" });
+db.equipments.hasMany(db.brigade_equipment, { foreignKey: "equipment_id", as: "brigadeLinks" });
+
+db.brigades.hasMany(db.hire_requests, {
+  foreignKey: "brigade_id",
+  as: "hireRequests",
+  onDelete: "CASCADE",
+});
+db.hire_requests.belongsTo(db.brigades, { foreignKey: "brigade_id", as: "brigade" });
+db.hire_requests.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
+db.projects.hasMany(db.hire_requests, { foreignKey: "project_id", as: "hireRequests" });
+db.hire_requests.belongsTo(db.users, { foreignKey: "requested_by", as: "requester" });
+
+db.hire_requests.hasMany(db.hire_request_history, {
+  foreignKey: "hire_request_id",
+  as: "history",
+  onDelete: "CASCADE",
+});
+db.hire_request_history.belongsTo(db.hire_requests, {
+  foreignKey: "hire_request_id",
+  as: "hireRequest",
+});
+db.hire_request_history.belongsTo(db.users, { foreignKey: "changed_by", as: "changer" });
+
+db.brigades.hasMany(db.brigade_reviews, {
+  foreignKey: "brigade_id",
+  as: "reviews",
+  onDelete: "CASCADE",
+});
+db.brigade_reviews.belongsTo(db.brigades, { foreignKey: "brigade_id", as: "brigade" });
+db.brigade_reviews.belongsTo(db.hire_requests, {
+  foreignKey: "hire_request_id",
+  as: "hireRequest",
+});
+db.brigade_reviews.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
+db.brigade_reviews.belongsTo(db.users, { foreignKey: "reviewer_user_id", as: "reviewer" });
+
+db.brigades.hasMany(db.brigade_documents, {
+  foreignKey: "brigade_id",
+  as: "documents",
+  onDelete: "CASCADE",
+});
+db.brigade_documents.belongsTo(db.brigades, { foreignKey: "brigade_id", as: "brigade" });
+db.brigade_documents.belongsTo(db.users, { foreignKey: "uploaded_by", as: "uploader" });
+
+db.brigades.hasMany(db.brigade_timeline_events, {
+  foreignKey: "brigade_id",
+  as: "timeline",
+  onDelete: "CASCADE",
+});
+db.brigade_timeline_events.belongsTo(db.brigades, { foreignKey: "brigade_id", as: "brigade" });
+db.brigade_timeline_events.belongsTo(db.users, { foreignKey: "actor_user_id", as: "actor" });
+
+db.brigades.hasMany(db.brigade_progress_reports, {
+  foreignKey: "brigade_id",
+  as: "progressReports",
+  onDelete: "CASCADE",
+});
+db.brigade_progress_reports.belongsTo(db.brigades, { foreignKey: "brigade_id", as: "brigade" });
+db.brigade_progress_reports.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
+db.brigade_progress_reports.belongsTo(db.hire_requests, {
+  foreignKey: "hire_request_id",
+  as: "hireRequest",
+});
+db.brigade_progress_reports.belongsTo(db.users, { foreignKey: "created_by", as: "author" });
+
+db.brigade_notifications.belongsTo(db.users, { foreignKey: "user_id", as: "user" });
+db.brigade_notifications.belongsTo(db.brigades, { foreignKey: "brigade_id", as: "brigade" });
+db.brigades.hasMany(db.brigade_notifications, {
+  foreignKey: "brigade_id",
+  as: "brigadeNotifications",
 });
 
 db.district = require("./district.model.js")(sequelize, Sequelize);

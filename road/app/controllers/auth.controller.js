@@ -45,12 +45,24 @@ async function findUserByUsernameOrPhone(loginId) {
   return findUserByPhone(identifier);
 }
 
-// Register a new user
+// Register a new company user (brigade accounts use POST /api/brigada/auth/register)
 exports.register = async (req, res) => {
-  const { username, password, role } = req.body;
+  const { username, password, role, phone, affiliation } = req.body;
 
   if (!username || !password) {
     return res.status(400).json({ message: "Username and password are required!" });
+  }
+
+  const isBrigada =
+    affiliation === "brigada" ||
+    role === "brigada" ||
+    String(req.body.account_type || "").toLowerCase() === "brigada";
+
+  if (isBrigada) {
+    return res.status(400).json({
+      success: false,
+      message: "Бригад бүртгэл /api/brigada/auth/register энд хийнэ. Компаны хэрэглэгч биш.",
+    });
   }
 
   try {
@@ -63,11 +75,12 @@ exports.register = async (req, res) => {
     // Hash the password using bcryptjs
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create a new user in the database
     const newUser = await User.create({
       username,
       password: hashedPassword,
-      role: role || "user",  // Default role is 'user'
+      role: role || "user",
+      phone: phone || null,
+      affiliation: affiliation || null,
     });
 
     // Generate JWT token
@@ -80,7 +93,8 @@ exports.register = async (req, res) => {
       user: {
         id: newUser.id,
         username: newUser.username,
-        role: newUser.role
+        role: newUser.role,
+        affiliation: newUser.affiliation,
       }
     });
   } catch (err) {

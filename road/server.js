@@ -49,6 +49,7 @@ function registerRoutes() {
   require("./app/routes/notification.routes")(app);
   require("./app/routes/document.routes")(app);
   require("./app/routes/student.routes")(app);
+  require("./app/routes/brigade.routes")(app);
   require("./app/routes/angilal.routes")(app);
   require("./app/routes/material.routes")(app);
   require("./app/routes/banner.routes")(app);
@@ -96,6 +97,8 @@ async function start() {
     await db.sequelize.authenticate();
     await db.sequelize.sync();
     await ensureSchema(db.sequelize, db.users);
+    const { migrateBrigadeSeparation } = require("./app/utils/migrateBrigadeSeparation");
+    await migrateBrigadeSeparation(db);
     const { migrateLegacyEquipment } = require("./app/utils/migrateEquipment");
     await migrateLegacyEquipment(db.sequelize, db);
     await seedPermissionsAndRoles();

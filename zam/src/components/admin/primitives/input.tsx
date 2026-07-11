@@ -50,15 +50,16 @@ function BaseInput({
     onChange?.(event);
   };
 
+  const widthClass = className; // may include w-[…] for filter bars
+
   const input = (
-    <div className="relative flex w-full flex-1 items-center">
+    <div className={cn('relative flex items-center', widthClass ?? 'w-full')}>
       {prefix && <span className="pointer-events-none absolute left-3 z-10 text-muted-foreground">{prefix}</span>}
       <UiInput
         className={cn(
-          'h-10',
+          'h-10 w-full',
           prefix && 'pl-9',
           (suffix || allowClear) && 'pr-9',
-          className,
         )}
         value={value}
         defaultValue={defaultValue}
@@ -87,9 +88,39 @@ function BaseInput({
 
   if (addonBefore || addonAfter) {
     return (
-      <div className="flex w-full items-center gap-2">
+      <div className={cn('flex items-center gap-2', widthClass ?? 'w-full')}>
         {addonBefore}
-        {input}
+        <div className="relative flex min-w-0 flex-1 items-center">
+          {prefix && <span className="pointer-events-none absolute left-3 z-10 text-muted-foreground">{prefix}</span>}
+          <UiInput
+            className={cn(
+              'h-10 w-full',
+              prefix && 'pl-9',
+              (suffix || allowClear) && 'pr-9',
+            )}
+            value={value}
+            defaultValue={defaultValue}
+            disabled={disabled}
+            onChange={onChange}
+            onKeyDown={(e) => {
+              onKeyDown?.(e);
+              if (e.key === 'Enter') onPressEnter?.(e);
+            }}
+            {...props}
+          />
+          {allowClear && hasValue && !disabled ? (
+            <button
+              type="button"
+              className="absolute right-2 z-10 rounded p-0.5 text-muted-foreground hover:text-foreground"
+              onClick={handleClear}
+              aria-label="Цэвэрлэх"
+            >
+              <X className="size-3.5" />
+            </button>
+          ) : (
+            suffix && <span className="absolute right-3 text-muted-foreground">{suffix}</span>
+          )}
+        </div>
         {addonAfter}
       </div>
     );
@@ -165,11 +196,11 @@ function SearchInput({
   void addonBefore;
 
   return (
-    <div className="relative flex w-full items-center">
+    <div className={cn('relative inline-flex items-center', className ?? 'w-full')}>
       <UiInput
         value={value}
         placeholder={placeholder}
-        className={cn('pr-9', className)}
+        className="h-10 w-full pr-9"
         onChange={onChange}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {

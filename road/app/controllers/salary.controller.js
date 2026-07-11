@@ -41,6 +41,21 @@ const ADJUSTMENT_FIELDS = [
   "note",
 ];
 
+/**
+ * Safety net: exclude any leftover brigada markers from payroll.
+ * Brigade identity now lives on `brigades` — should not appear in users.
+ */
+async function getExcludedBrigadaUserIds() {
+  const affiliated = await User.findAll({
+    attributes: ["id"],
+    where: {
+      [Op.or]: [{ affiliation: "brigada" }, { role: "brigada" }],
+    },
+    raw: true,
+  });
+  return affiliated.map((u) => u.id);
+}
+
 const NULLABLE_NUM_FIELDS = new Set([
   "worked_hours",
   "billable_hours",
@@ -134,8 +149,16 @@ async function buildMonthlyRows(month, userIds = null) {
   }
 
   const { from, to } = monthRange(year, mon);
-  const userWhere = userIds?.length ? { id: userIds } : {};
   const expectedHours = await getMonthExpectedHours(month);
+  const excludedIds = await getExcludedBrigadaUserIds();
+
+  const userWhere = {};
+  if (userIds?.length) {
+    const allowed = userIds.filter((id) => !excludedIds.includes(Number(id)));
+    userWhere.id = allowed.length ? { [Op.in]: allowed } : { [Op.in]: [-1] };
+  } else if (excludedIds.length) {
+    userWhere.id = { [Op.notIn]: excludedIds };
+  }
 
   const users = await User.findAll({
     where: userWhere,
