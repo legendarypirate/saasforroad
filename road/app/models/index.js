@@ -120,6 +120,7 @@ db.projects = require("./project.model.js")(sequelize, Sequelize);
 db.invites = require("./invite.model.js")(sequelize, Sequelize);
 db.items = require("./item.model.js")(sequelize, Sequelize);
 db.notifications = require("./notification.model.js")(sequelize, Sequelize);
+db.students = require("./student.model.js")(sequelize, Sequelize);
 db.documents = require("./document.model.js")(sequelize, Sequelize);
 db.document_folders = require("./document_folder.model.js")(sequelize, Sequelize);
 db.warehouses = require("./warehouse.model.js")(sequelize, Sequelize);
@@ -196,6 +197,23 @@ db.projects.hasMany(db.notifications, {
 db.notifications.belongsTo(db.users, {
   foreignKey: "user_id",
   as: "author",
+});
+
+db.students.belongsTo(db.projects, {
+  foreignKey: "project_id",
+  as: "project",
+});
+db.projects.hasMany(db.students, {
+  foreignKey: "project_id",
+  as: "students",
+});
+db.students.belongsTo(db.users, {
+  foreignKey: "mentor_user_id",
+  as: "mentor",
+});
+db.users.hasMany(db.students, {
+  foreignKey: "mentor_user_id",
+  as: "mentees",
 });
 
 db.district = require("./district.model.js")(sequelize, Sequelize);

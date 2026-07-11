@@ -267,10 +267,11 @@ export const ADMIN_DATA_FOLDERS: ModuleConfig[] = [
   {
     id: 'data-student',
     label: 'Оюутан',
-    description: 'Оюутан, дадлагажигчдын мэдээлэл',
+    description: 'Оюутан, дадлагажигчдын бүртгэл',
     color: '#7c3aed',
-    items: [],
-    comingSoon: true,
+    items: [
+      { path: '/admin/data/student', label: 'Жагсаалт', permission: 'student:read' },
+    ],
   },
   {
     id: 'data-road-sign',
@@ -333,7 +334,7 @@ export function getModuleForPath(pathname: string): ModuleConfig | null {
   let best: ModuleConfig | null = null;
   let bestLen = -1;
 
-  for (const mod of ADMIN_MODULES) {
+  for (const mod of [...ADMIN_MODULES, ...ADMIN_DATA_FOLDERS]) {
     for (const item of mod.items) {
       const match =
         pathname === item.path || pathname.startsWith(`${item.path}/`);
