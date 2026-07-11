@@ -474,7 +474,7 @@ export default function ProjectDetailPage() {
       href: `/admin/hse/incidents`,
     },
     {
-      label: 'Тоног төхөөрөмж',
+      label: 'Техник',
       value: project.related?.equipment_count ?? 0,
       href: `#`,
       tab: 'equipment',
@@ -788,42 +788,51 @@ export default function ProjectDetailPage() {
               key: 'parties',
               label: 'Талууд',
               children: (
-                <ProjectPartiesTab
-                  project={project}
-                  onSaved={fetchProject}
-                  brigadeSlot={
-                    <>
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          marginBottom: 16,
-                        }}
-                      >
-                        <Text type="secondary">Талбайгийн бригад</Text>
-                        <Button type="primary" icon={<UserAddOutlined />} onClick={openMemberDrawer}>
-                          Хүн нэмэх
-                        </Button>
-                      </div>
-                      <Row gutter={[16, 16]}>
-                        {brigadeMembers.length === 0 ? (
-                          <Col span={24}>
-                            <div className="rounded-xl border border-dashed border-border bg-muted/30 px-6 py-10 text-center">
-                              <Text type="secondary">Бригадын гишүүн байхгүй</Text>
-                            </div>
-                          </Col>
-                        ) : (
-                          brigadeMembers.map((member) => (
-                            <Col xs={24} sm={12} md={8} lg={6} key={member.id}>
-                              <TeamMemberCard member={member} onRemove={handleRemoveMember} />
-                            </Col>
-                          ))
-                        )}
-                      </Row>
-                    </>
-                  }
-                />
+                <ProjectPartiesTab project={project} onSaved={fetchProject} />
+              ),
+            },
+            {
+              key: 'staff',
+              label: 'Ажилтнууд',
+              children: (
+                <>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: 16,
+                    }}
+                  >
+                    <div>
+                      <h3 className="text-base font-semibold">Ажилтнууд</h3>
+                      <Text type="secondary">Талбайгийн бригад / баг</Text>
+                    </div>
+                    <Button type="primary" icon={<UserAddOutlined />} onClick={openMemberDrawer}>
+                      Хүн нэмэх
+                    </Button>
+                  </div>
+                  <Row gutter={[16, 16]}>
+                    {brigadeMembers.length === 0 ? (
+                      <Col span={24}>
+                        <div className="rounded-xl border border-dashed border-border bg-muted/30 px-6 py-10 text-center">
+                          <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
+                            Ажилтан байхгүй байна
+                          </Text>
+                          <Button type="primary" icon={<UserAddOutlined />} onClick={openMemberDrawer}>
+                            Эхний ажилтан нэмэх
+                          </Button>
+                        </div>
+                      </Col>
+                    ) : (
+                      brigadeMembers.map((member) => (
+                        <Col xs={24} sm={12} md={8} lg={6} key={member.id}>
+                          <TeamMemberCard member={member} onRemove={handleRemoveMember} />
+                        </Col>
+                      ))
+                    )}
+                  </Row>
+                </>
               ),
             },
             {
@@ -871,7 +880,7 @@ export default function ProjectDetailPage() {
             },
             {
               key: 'equipment',
-              label: 'Тоног төхөөрөмж',
+              label: 'Техник',
               children: <ProjectEquipmentTab projectId={projectId} />,
             },
             {
