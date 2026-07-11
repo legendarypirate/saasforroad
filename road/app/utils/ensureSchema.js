@@ -299,6 +299,17 @@ async function ensureSchema(sequelize, UserModel) {
   await ensureDmsColumns(sequelize);
   await ensureNotificationColumns(sequelize);
   await ensurePlantSiteColumns(sequelize);
+  await ensureEquipmentCategoryColumns(sequelize);
+}
+
+async function ensureEquipmentCategoryColumns(sequelize) {
+  try {
+    await sequelize.query(
+      `ALTER TABLE "equipments" ADD COLUMN IF NOT EXISTS "equipment_category_id" INTEGER;`
+    );
+  } catch (err) {
+    console.warn("ensureEquipmentCategoryColumns:", err.message);
+  }
 }
 
 async function ensurePlantSiteColumns(sequelize) {
@@ -409,6 +420,7 @@ module.exports = {
   ensureDmsColumns,
   ensureNotificationColumns,
   ensurePlantSiteColumns,
+  ensureEquipmentCategoryColumns,
   resolveTableName,
   resolveExistingUserTable,
 };

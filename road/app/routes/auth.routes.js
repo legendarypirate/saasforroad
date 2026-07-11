@@ -19,6 +19,7 @@ module.exports = app => {
     });
 
     router.get("/me", auth.verifyToken, auth.getMe);
+    router.post("/refresh", auth.verifyToken, auth.refresh);
 
     router.post("/verifyOtp", auth.verifyOtp);
     router.post("/verifyOtpForgot", auth.verifyOtpForgot);

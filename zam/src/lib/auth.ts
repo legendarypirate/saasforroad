@@ -190,3 +190,22 @@ export function getTokenRemainingMs(): number {
   return Math.max(0, exp - Date.now());
 }
 
+/** Ask server for a new 30m JWT and store it. */
+export async function renewSessionToken(): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  const token = getToken();
+  if (!token) return false;
+  try {
+    const res = await fetch(`${API}/api/auth/refresh`, {
+      method: 'POST',
+      headers: { Authorization: token },
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success || !json.token) return false;
+    localStorage.setItem('token', json.token);
+    return true;
+  } catch {
+    return false;
+  }
+}
+

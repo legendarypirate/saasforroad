@@ -35,6 +35,7 @@ const PROFILE_FIELDS = [
   "responsible_user_id",
   "operator_user_id",
   "category",
+  "equipment_category_id",
   "unit",
   "default_daily_rate",
   "is_rentable",
@@ -91,7 +92,7 @@ const DECIMAL_FIELDS = new Set([
   "oil_quantity_liters",
 ]);
 
-const INT_FIELDS = new Set(["responsible_user_id", "operator_user_id"]);
+const INT_FIELDS = new Set(["responsible_user_id", "operator_user_id", "equipment_category_id"]);
 
 const BOOL_FIELDS = new Set(["is_rentable", "tax_paid"]);
 
@@ -175,6 +176,12 @@ const userBrief = {
 
 const equipmentInclude = [
   {
+    model: db.equipment_categories,
+    as: "equipmentCategory",
+    attributes: ["id", "name", "code"],
+    required: false,
+  },
+  {
     model: EquipmentOilChange,
     as: "oilChanges",
     separate: true,
@@ -215,6 +222,7 @@ const equipmentInclude = [
 exports.findAll = async (req, res) => {
   const q = req.query.q;
   const category = req.query.category;
+  const equipment_category_id = req.query.equipment_category_id;
   const rentable = req.query.is_rentable;
   const status = req.query.status;
   const where = {};
@@ -229,6 +237,7 @@ exports.findAll = async (req, res) => {
     ];
   }
   if (category) where.category = category;
+  if (equipment_category_id) where.equipment_category_id = equipment_category_id;
   if (status) where.status = status;
   if (rentable === "true") where.is_rentable = true;
   if (rentable === "false") where.is_rentable = false;
@@ -649,6 +658,83 @@ exports.deleteFinance = async (req, res) => {
     const num = await EquipmentMonthlyFinance.destroy({ where: { id: req.params.finId } });
     if (num === 1) return res.json({ success: true });
     return res.status(404).json({ success: false, message: "Not found" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+/* ── Equipment categories (Техникийн ангилал) ───────────── */
+
+const Category = db.equipment_categories;
+
+exports.listCategories = async (req, res) => {
+  try {
+    const where = {};
+    if (req.query.active === "1" || req.query.active === "true") {
+      where.is_active = true;
+    }
+    const data = await Category.findAll({
+      where,
+      order: [
+        ["sort_order", "ASC"],
+        ["name", "ASC"],
+      ],
+    });
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.createCategory = async (req, res) => {
+  try {
+    if (!req.body.name) {
+      return res.status(400).json({ success: false, message: "Нэр заавал" });
+    }
+    const data = await Category.create({
+      name: String(req.body.name).trim(),
+      code: req.body.code || null,
+      description: req.body.description || null,
+      sort_order: Number(req.body.sort_order) || 0,
+      is_active: req.body.is_active !== false && req.body.is_active !== "false",
+    });
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.updateCategory = async (req, res) => {
+  try {
+    const row = await Category.findByPk(req.params.id);
+    if (!row) return res.status(404).json({ success: false, message: "Олдсонгүй" });
+    const patch = {};
+    if (req.body.name !== undefined) patch.name = String(req.body.name).trim();
+    if (req.body.code !== undefined) patch.code = req.body.code || null;
+    if (req.body.description !== undefined) patch.description = req.body.description || null;
+    if (req.body.sort_order !== undefined) patch.sort_order = Number(req.body.sort_order) || 0;
+    if (req.body.is_active !== undefined) {
+      patch.is_active = req.body.is_active !== false && req.body.is_active !== "false";
+    }
+    await row.update(patch);
+    res.json({ success: true, data: row });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.deleteCategory = async (req, res) => {
+  try {
+    const inUse = await Equipment.count({ where: { equipment_category_id: req.params.id } });
+    if (inUse > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Энэ ангилалд ${inUse} техник бүртгэлтэй — эхлээд солино уу`,
+      });
+    }
+    const num = await Category.destroy({ where: { id: req.params.id } });
+    if (num === 1) return res.json({ success: true, message: "Устгагдлаа" });
+    return res.status(404).json({ success: false, message: "Олдсонгүй" });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

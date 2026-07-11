@@ -50,6 +50,7 @@ db.tasks = require("./task.model.js")(sequelize, Sequelize);
 db.milestones = require("./milestone.model.js")(sequelize, Sequelize);
 db.project_phases = require("./project_phase.model.js")(sequelize, Sequelize);
 db.equipments = require("./equipment.model.js")(sequelize, Sequelize);
+db.equipment_categories = require("./equipment_category.model.js")(sequelize, Sequelize);
 db.project_equipment_links = require("./project_equipment_link.model.js")(sequelize, Sequelize);
 db.equipment_oil_changes = require("./equipment_oil_change.model.js")(sequelize, Sequelize);
 db.equipment_service_logs = require("./equipment_service_log.model.js")(sequelize, Sequelize);
@@ -442,6 +443,15 @@ db.equipment_documents.belongsTo(db.equipments, { foreignKey: "equipment_id", on
 db.equipments.hasMany(db.equipment_documents, {
   foreignKey: "equipment_id",
   as: "documents",
+});
+
+db.equipments.belongsTo(db.equipment_categories, {
+  foreignKey: "equipment_category_id",
+  as: "equipmentCategory",
+});
+db.equipment_categories.hasMany(db.equipments, {
+  foreignKey: "equipment_category_id",
+  as: "equipments",
 });
 
 db.equipment_monthly_finances.belongsTo(db.equipments, { foreignKey: "equipment_id", onDelete: "CASCADE" });

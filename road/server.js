@@ -15,7 +15,7 @@ app.use(express.urlencoded({ extended: true }));
 
 const db = require("./app/models");
 const dbConfig = require("./app/config/db.config");
-const { seedPermissionsAndRoles, seedDocumentFolders } = require("./app/utils/seed");
+const { seedPermissionsAndRoles, seedDocumentFolders, seedEquipmentCategories } = require("./app/utils/seed");
 const { ensureSchema } = require("./app/utils/ensureSchema");
 
 function registerRoutes() {
@@ -99,6 +99,7 @@ async function start() {
     await migrateLegacyEquipment(db.sequelize, db);
     await seedPermissionsAndRoles();
     await seedDocumentFolders();
+    await seedEquipmentCategories();
     console.log("Synced db.");
 
     registerRoutes();

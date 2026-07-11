@@ -2,6 +2,13 @@ module.exports = (app) => {
   const equipment = require("../controllers/equipment.controller.js");
   const router = require("express").Router();
 
+  // Categories (before /:id)
+  router.get("/categories", equipment.listCategories);
+  router.post("/categories", equipment.createCategory);
+  router.put("/categories/:id", equipment.updateCategory);
+  router.patch("/categories/:id", equipment.updateCategory);
+  router.delete("/categories/:id", equipment.deleteCategory);
+
   router.get("/", equipment.findAll);
   router.post("/", equipment.create);
 

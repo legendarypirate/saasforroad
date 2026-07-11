@@ -40,6 +40,31 @@ const TYPE_COLORS: Record<string, string> = {
   other: '#78716c',
 };
 
+/** Factory / plant pin icon as SVG data URL for Google Maps markers. */
+function plantMarkerIcon(fill = '#b45309', size = 44) {
+  const svg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 48 56">
+  <path d="M24 54c0 0-16-15.2-16-28a16 16 0 1 1 32 0c0 12.8-16 28-16 28z" fill="${fill}" stroke="#fff" stroke-width="2.5"/>
+  <g fill="#fff" transform="translate(12,10)">
+    <rect x="2" y="12" width="20" height="14" rx="1"/>
+    <rect x="4" y="4" width="5" height="10" rx="0.5"/>
+    <rect x="11" y="7" width="4" height="7" rx="0.5"/>
+    <rect x="17" y="2" width="4" height="12" rx="0.5"/>
+    <rect x="4.5" y="1" width="2" height="3" rx="0.5"/>
+    <rect x="17.5" y="0" width="2" height="2" rx="0.5"/>
+    <rect x="6" y="16" width="3" height="4" fill="${fill}" opacity="0.85"/>
+    <rect x="11" y="16" width="3" height="4" fill="${fill}" opacity="0.85"/>
+    <rect x="16" y="16" width="3" height="4" fill="${fill}" opacity="0.85"/>
+  </g>
+</svg>`.trim();
+
+  return {
+    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+    scaledSize: { width: size, height: size },
+    anchor: { x: size / 2, y: size },
+  };
+}
+
 declare global {
   interface Window {
     google: any;
@@ -199,6 +224,7 @@ export default function FactoryMapPage() {
 
   const setPin = useCallback((lat: number, lng: number) => {
     if (!mapInstance.current || !window.google) return;
+    const icon = plantMarkerIcon('#dc2626', 48);
     if (!pinRef.current) {
       pinRef.current = new window.google.maps.Marker({
         map: mapInstance.current,
@@ -206,11 +232,22 @@ export default function FactoryMapPage() {
         zIndex: 999,
         title: 'Шинэ байршил',
         animation: window.google.maps.Animation?.DROP,
+        icon: {
+          url: icon.url,
+          scaledSize: new window.google.maps.Size(icon.scaledSize.width, icon.scaledSize.height),
+          anchor: new window.google.maps.Point(icon.anchor.x, icon.anchor.y),
+        },
       });
       pinRef.current.addListener('dragend', () => {
         const pos = pinRef.current?.getPosition();
         if (!pos) return;
         setForm((f) => ({ ...f, latitude: pos.lat(), longitude: pos.lng() }));
+      });
+    } else {
+      pinRef.current.setIcon({
+        url: icon.url,
+        scaledSize: new window.google.maps.Size(icon.scaledSize.width, icon.scaledSize.height),
+        anchor: new window.google.maps.Point(icon.anchor.x, icon.anchor.y),
       });
     }
     pinRef.current.setPosition({ lat, lng });
@@ -273,17 +310,15 @@ export default function FactoryMapPage() {
       const lat = Number(site.latitude);
       const lng = Number(site.longitude);
       const color = TYPE_COLORS[site.plant_type] || TYPE_COLORS.other;
+      const icon = plantMarkerIcon(color, 44);
       const marker = new window.google.maps.Marker({
         map: mapInstance.current!,
         position: { lat, lng },
         title: site.name,
         icon: {
-          path: window.google.maps.SymbolPath.CIRCLE,
-          scale: 9,
-          fillColor: color,
-          fillOpacity: 1,
-          strokeWeight: 2,
-          strokeColor: '#fff',
+          url: icon.url,
+          scaledSize: new window.google.maps.Size(icon.scaledSize.width, icon.scaledSize.height),
+          anchor: new window.google.maps.Point(icon.anchor.x, icon.anchor.y),
         },
       });
       marker.addListener('click', () => {

@@ -40,11 +40,12 @@ export const ADMIN_MODULES: ModuleConfig[] = [
   },
   {
     id: 'equipment',
-    label: 'Тоног төхөөрөмж',
-    description: 'Техникийн профайл, ТО, бичиг баримт, орлого',
+    label: 'Техник',
+    description: 'Техникийн бүртгэл, ангилал, ТО, бичиг баримт',
     color: '#1d4ed8',
     items: [
       { path: '/admin/equipment', label: 'Бүртгэл', permission: 'equipment:read' },
+      { path: '/admin/equipment/categories', label: 'Ангилал', permission: 'equipment:read' },
     ],
   },
   {

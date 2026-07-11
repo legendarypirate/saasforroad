@@ -54,6 +54,7 @@ export default function UsersPage() {
   const [togglingId, setTogglingId] = useState<number | null>(null);
   const [passwordUser, setPasswordUser] = useState<User | null>(null);
   const [passwordSaving, setPasswordSaving] = useState(false);
+  const [roleFilter, setRoleFilter] = useState<number | undefined>();
   const [form] = Form.useForm();
   const [passwordForm] = Form.useForm();
 
@@ -67,10 +68,15 @@ export default function UsersPage() {
     }
   };
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (roleId?: number) => {
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user`);
+      const params = new URLSearchParams();
+      if (roleId) params.set('role_id', String(roleId));
+      const qs = params.toString();
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/user${qs ? `?${qs}` : ''}`,
+      );
       const result = await res.json();
       if (result.success) setUsers(result.data);
       else message.error(result.message || 'Ачаалахад алдаа');
@@ -84,8 +90,11 @@ export default function UsersPage() {
   useEffect(() => {
     document.title = 'Хэрэглэгч';
     fetchRoles();
-    fetchUsers();
   }, []);
+
+  useEffect(() => {
+    fetchUsers(roleFilter);
+  }, [roleFilter]);
 
   const handleDrawerClose = () => {
     setDrawerVisible(false);
@@ -126,7 +135,7 @@ export default function UsersPage() {
       const result = await response.json();
       if (response.ok && result.success) {
         message.success('Хэрэглэгч үүслээ');
-        fetchUsers();
+        fetchUsers(roleFilter);
         handleDrawerClose();
       } else {
         message.error(result.message || 'Үүсгэхэд алдаа');
@@ -231,11 +240,26 @@ export default function UsersPage() {
   return (
     <div>
       <h1 style={{ marginBottom: 24 }}>Хэрэглэгч</h1>
-      <Space style={{ marginBottom: 16, width: '100%' }} wrap>
-        <Button type="primary" style={{ marginLeft: 'auto' }} icon={<PlusOutlined />} onClick={() => setDrawerVisible(true)}>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <Select
+          allowClear
+          showSearch
+          optionFilterProp="label"
+          placeholder="Эрхээр шүүх"
+          className="w-[200px]"
+          value={roleFilter}
+          onChange={(v) => setRoleFilter(v)}
+          options={roles.map((r) => ({ value: r.id, label: r.name }))}
+        />
+        <Button
+          type="primary"
+          className="ml-auto"
+          icon={<PlusOutlined />}
+          onClick={() => setDrawerVisible(true)}
+        >
           + Хэрэглэгч үүсгэх
         </Button>
-      </Space>
+      </div>
 
       <Table columns={columns} dataSource={users} rowKey="id" loading={loading} />
 

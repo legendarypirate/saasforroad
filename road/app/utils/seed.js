@@ -294,9 +294,47 @@ async function seedDocumentFolders() {
   }
 }
 
+const DEFAULT_EQUIPMENT_CATEGORIES = [
+  { name: "Экскаватор", code: "excavator", sort_order: 1 },
+  { name: "Дэвсэгч", code: "compactor", sort_order: 2 },
+  { name: "Бульдозер", code: "bulldozer", sort_order: 3 },
+  { name: "Грейдер", code: "grader", sort_order: 4 },
+  { name: "Ачигч", code: "loader", sort_order: 5 },
+  { name: "Автокран", code: "crane", sort_order: 6 },
+  { name: "Самосвал", code: "dump_truck", sort_order: 7 },
+  { name: "Чиргүүл", code: "trailer", sort_order: 8 },
+  { name: "Бетонохутгагч", code: "concrete_mixer", sort_order: 9 },
+  { name: "Бусад", code: "other", sort_order: 99 },
+];
+
+async function seedEquipmentCategories() {
+  if (!db.equipment_categories) return;
+  let created = 0;
+  for (const cat of DEFAULT_EQUIPMENT_CATEGORIES) {
+    const [row, wasCreated] = await db.equipment_categories.findOrCreate({
+      where: { name: cat.name },
+      defaults: {
+        ...cat,
+        is_active: true,
+      },
+    });
+    if (wasCreated) created += 1;
+    else {
+      await row.update({
+        code: row.code || cat.code,
+        sort_order: row.sort_order || cat.sort_order,
+      });
+    }
+  }
+  if (created > 0) {
+    console.log(`Equipment: seeded ${created} category(ies).`);
+  }
+}
+
 module.exports = {
   seedPermissionsAndRoles,
   seedDocumentFolders,
+  seedEquipmentCategories,
   isAdminRoleName,
   DEFAULT_PERMISSIONS,
   DEFAULT_ROLES,

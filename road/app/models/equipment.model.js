@@ -35,6 +35,11 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.STRING,
         defaultValue: "machine",
       },
+      /** FK → equipment_categories (Экскаватор, Дэвсэгч, …) */
+      equipment_category_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
       unit: {
         type: Sequelize.STRING,
         defaultValue: "ширхэг",

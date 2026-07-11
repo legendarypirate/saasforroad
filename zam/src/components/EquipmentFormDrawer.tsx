@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Button,
   Col,
@@ -18,6 +18,8 @@ import { DATE_FORMAT, dateFormItemProps } from '@/lib/userDates';
 import {
   EQUIPMENT_API,
   EQUIPMENT_STATUS_LABELS,
+  fetchEquipmentCategories,
+  type EquipmentCategory,
   type EquipmentItem,
 } from '@/lib/equipment';
 import { WorkerSelect } from '@/components/equipment/WorkerSelect';
@@ -39,12 +41,21 @@ export default function EquipmentFormDrawer({
 }: EquipmentFormDrawerProps) {
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
+  const [categories, setCategories] = useState<EquipmentCategory[]>([]);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    if (!open) return;
+    fetchEquipmentCategories(true)
+      .then(setCategories)
+      .catch(() => setCategories([]));
+  }, [open]);
+
+  useEffect(() => {
     if (!open) return;
     if (editing) {
       form.setFieldsValue({
         ...editing,
+        equipment_category_id: editing.equipment_category_id ?? undefined,
         import_date: editing.import_date ? dayjs(editing.import_date) : undefined,
       });
     } else {
@@ -78,15 +89,16 @@ export default function EquipmentFormDrawer({
           : values.import_date || null,
         site: values.site || null,
         color: values.color || null,
-        responsible_user_id: values.responsible_user_id ?? null,
-        operator_user_id: values.operator_user_id ?? null,
-        phone: values.phone || null,
+        equipment_category_id: values.equipment_category_id || null,
+        category: values.category || 'machine',
         status: values.status,
         motor_hours: values.motor_hours ?? 0,
-        category: values.category,
         unit: values.unit || 'ширхэг',
         default_daily_rate: values.default_daily_rate ?? 0,
         is_rentable: values.is_rentable !== false,
+        responsible_user_id: values.responsible_user_id || null,
+        operator_user_id: values.operator_user_id || null,
+        phone: values.phone || null,
         notes: values.notes || null,
       };
 
@@ -110,7 +122,7 @@ export default function EquipmentFormDrawer({
 
   return (
     <Drawer
-      title={editing ? 'Ерөнхий мэдээлэл засах' : 'Шинэ тоног бүртгэх'}
+      title={editing ? 'Ерөнхий мэдээлэл засах' : 'Шинэ техник бүртгэх'}
       width={560}
       open={open}
       onClose={onClose}
@@ -218,14 +230,23 @@ export default function EquipmentFormDrawer({
             </Form.Item>
           </Col>
           <Col span={8}>
-            <Form.Item name="category" label="Ангилал">
+            <Form.Item
+              name="equipment_category_id"
+              label="Ангилал"
+              rules={[{ required: true, message: 'Ангилал сонгоно уу' }]}
+            >
               <Select
-                options={[
-                  { value: 'machine', label: 'Машин / тоног' },
-                  { value: 'tool', label: 'Барилгын хэрэгсэл' },
-                  { value: 'material', label: 'Материал' },
-                ]}
+                showSearch
+                optionFilterProp="label"
+                placeholder="Экскаватор, Дэвсэгч…"
+                options={categories.map((c) => ({ value: c.id, label: c.name }))}
+                notFoundContent="Ангилал бүртгэгдээгүй — Ангилал цэснээс нэмнэ үү"
               />
+            </Form.Item>
+          </Col>
+          <Col span={8} className="hidden">
+            <Form.Item name="category" initialValue="machine">
+              <Input type="hidden" />
             </Form.Item>
           </Col>
           <Col span={12}>

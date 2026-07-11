@@ -244,6 +244,30 @@ exports.getMe = async (req, res) => {
   }
 };
 
+/** Issue a fresh 30m JWT for the currently authenticated user. */
+exports.refresh = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    const roleInfo = await resolveUserRole(user);
+    const token = jwt.sign(
+      { id: user.id, username: user.username, role: roleInfo.role },
+      secretKey,
+      { expiresIn: "30m" }
+    );
+    res.json({
+      success: true,
+      token,
+      expiresIn: 30 * 60,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
 
 exports.mobile_register = async (req, res) => {
   const { username, email, phone } = req.body;

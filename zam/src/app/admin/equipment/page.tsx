@@ -29,6 +29,8 @@ import {
   EQUIPMENT_STATUS_COLORS,
   EQUIPMENT_STATUS_LABELS,
   expiryTone,
+  fetchEquipmentCategories,
+  type EquipmentCategory,
   type EquipmentItem,
   type EquipmentStatus,
 } from '@/lib/equipment';
@@ -41,11 +43,13 @@ function EquipmentPageContent() {
   const highlightId = searchParams.get('id');
 
   const [list, setList] = useState<EquipmentItem[]>([]);
+  const [categories, setCategories] = useState<EquipmentCategory[]>([]);
   const [loading, setLoading] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<EquipmentItem | null>(null);
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<string | undefined>();
+  const [categoryId, setCategoryId] = useState<number | undefined>();
 
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -53,6 +57,7 @@ function EquipmentPageContent() {
       const params = new URLSearchParams();
       if (q.trim()) params.set('q', q.trim());
       if (status) params.set('status', status);
+      if (categoryId) params.set('equipment_category_id', String(categoryId));
       const res = await fetch(`${EQUIPMENT_API}?${params}`);
       const result = await res.json();
       if (result.success) setList(result.data);
@@ -62,10 +67,16 @@ function EquipmentPageContent() {
     } finally {
       setLoading(false);
     }
-  }, [q, status]);
+  }, [q, status, categoryId]);
 
   useEffect(() => {
-    document.title = 'Тоног төхөөрөмж';
+    document.title = 'Техник';
+    fetchEquipmentCategories(true)
+      .then(setCategories)
+      .catch(() => setCategories([]));
+  }, []);
+
+  useEffect(() => {
     fetchList();
   }, [fetchList]);
 
@@ -104,6 +115,12 @@ function EquipmentPageContent() {
       ),
     },
     { title: 'Талбай', dataIndex: 'site', width: 140, render: (v) => v || '—' },
+    {
+      title: 'Ангилал',
+      key: 'equipmentCategory',
+      width: 130,
+      render: (_, r) => r.equipmentCategory?.name || '—',
+    },
     {
       title: 'Мот/цаг',
       dataIndex: 'motor_hours',
@@ -168,7 +185,7 @@ function EquipmentPageContent() {
         className="mb-4 flex flex-nowrap items-center gap-3 overflow-x-auto rounded-xl border border-border bg-card px-4 py-3 shadow-sm"
       >
         <Title level={4} style={{ margin: 0, whiteSpace: 'nowrap', flexShrink: 0 }}>
-          Тоног төхөөрөмж
+          Техник
         </Title>
         <div className="ml-auto flex flex-nowrap items-center gap-2">
           <div style={{ width: 200, flexShrink: 0 }}>
@@ -178,6 +195,17 @@ function EquipmentPageContent() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               onPressEnter={fetchList}
+            />
+          </div>
+          <div style={{ width: 160, flexShrink: 0 }}>
+            <Select
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              placeholder="Ангилал"
+              value={categoryId}
+              onChange={(v) => setCategoryId(v)}
+              options={categories.map((c) => ({ value: c.id, label: c.name }))}
             />
           </div>
           <div style={{ width: 140, flexShrink: 0 }}>
