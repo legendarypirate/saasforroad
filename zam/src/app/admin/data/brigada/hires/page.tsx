@@ -13,9 +13,9 @@ import {
   Table,
   Tag,
   message,
-  Rate,
 } from '@/components/admin/primitives';
 import type { ColumnsType } from '@/components/admin/primitives';
+import { Rate } from '@/components/admin/primitives/rate';
 import { ReloadOutlined, StarOutlined } from '@/components/admin/icons';
 import { formatDate } from '@/lib/userDates';
 import {

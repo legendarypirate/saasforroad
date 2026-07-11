@@ -21,10 +21,10 @@ import {
   Drawer,
   Popconfirm,
   Upload,
-  Rate,
   Modal,
 } from '@/components/admin/primitives';
 import type { ColumnsType } from '@/components/admin/primitives';
+import { Rate } from '@/components/admin/primitives/rate';
 import {
   ArrowLeftOutlined,
   EditOutlined,
