@@ -30,7 +30,7 @@ import {
   TYPE_COLORS,
   type FactoryEditPin,
   type FactoryMapSite,
-} from '@/components/admin/data/factory/FactoryMap';
+} from '@/components/admin/data/factory/factoryMapShared';
 
 const MONGOLIA_CENTER: [number, number] = [46.8625, 103.8467];
 

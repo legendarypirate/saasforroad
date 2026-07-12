@@ -5,31 +5,17 @@ import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-lea
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { BASE_LAYERS } from '@/lib/Map.layers';
+import {
+  TYPE_COLORS,
+  type FactoryEditPin,
+  type FactoryMapSite,
+} from '@/components/admin/data/factory/factoryMapShared';
+
+export type { FactoryEditPin, FactoryMapSite } from '@/components/admin/data/factory/factoryMapShared';
+export { TYPE_COLORS } from '@/components/admin/data/factory/factoryMapShared';
 
 const MONGOLIA_CENTER: [number, number] = [46.8625, 103.8467];
 const OSM = BASE_LAYERS.find((l) => l.id === 'osm')!;
-
-export type FactoryMapSite = {
-  id: number;
-  name: string;
-  plant_type: string;
-  latitude?: number | string | null;
-  longitude?: number | string | null;
-};
-
-export type FactoryEditPin = {
-  lat: number;
-  lng: number;
-};
-
-export const TYPE_COLORS: Record<string, string> = {
-  asphalt: '#b45309',
-  cement: '#64748b',
-  crushing: '#0d9488',
-  emulsion: '#7c3aed',
-  ctb: '#2563eb',
-  other: '#78716c',
-};
 
 function plantMarkerSvg(fill = '#b45309', size = 44) {
   return `
