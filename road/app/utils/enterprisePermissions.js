@@ -183,6 +183,14 @@ const MODULES = [
     label: 'Оюутан',
     menus: [{ menuId: 'list', label: 'Жагсаалт' }],
   },
+  {
+    index: 'job_seeker',
+    label: 'Ажил горилогч',
+    menus: [
+      { menuId: 'list', label: 'Жагсаалт' },
+      { menuId: 'hire_requests', label: 'Авах хүсэлт' },
+    ],
+  },
 ];
 
 // Fix finance menus (avoid duplicate reports from the hack above)

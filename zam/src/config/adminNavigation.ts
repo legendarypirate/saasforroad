@@ -378,10 +378,17 @@ export const ADMIN_DATA_FOLDERS: ModuleConfig[] = [
     index: 'job_seeker',
     moduleKey: 'job_seeker:module',
     label: 'Ажил горилогч',
-    description: 'Ажил горилогчдын мэдээлэл',
+    description: 'Анкет (rcos) ажил горилогчид — авах хүсэлт',
     color: '#d48806',
-    items: [],
-    comingSoon: true,
+    items: [
+      { path: '/admin/data/job-seeker', label: 'Жагсаалт', menuId: 'list', permission: mk('job_seeker', 'list') },
+      {
+        path: '/admin/data/job-seeker/hire-requests',
+        label: 'Авах хүсэлт',
+        menuId: 'hire_requests',
+        permission: mk('job_seeker', 'hire_requests'),
+      },
+    ],
   },
   {
     id: 'data-student',

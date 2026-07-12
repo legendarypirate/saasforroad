@@ -52,6 +52,7 @@ function registerRoutes() {
   require("./app/routes/notification.routes")(app);
   require("./app/routes/document.routes")(app);
   require("./app/routes/student.routes")(app);
+  require("./app/routes/job_seeker.routes")(app);
   require("./app/routes/brigade.routes")(app);
   require("./app/routes/angilal.routes")(app);
   require("./app/routes/material.routes")(app);
