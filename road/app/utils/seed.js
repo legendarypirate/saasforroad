@@ -230,11 +230,85 @@ async function linkAdminUsers(adminRole) {
   return updated;
 }
 
+/** Normalize seed rows into Module → Menu → Action permission shape. */
+function enrichPermissionDef(perm) {
+  const index = perm.index || perm.module;
+  const action = perm.action;
+  const key = perm.key;
+  let level = perm.level;
+  if (!level) {
+    if (action === "module" || key.endsWith(":module")) level = "module";
+    else if (["read", "view", "dashboard", "summary"].includes(action)) level = "menu";
+    else level = "action";
+  }
+  const module_key = perm.module_key || `${index}:module`;
+  let menu_key = perm.menu_key;
+  if (menu_key === undefined) {
+    if (level === "module") menu_key = null;
+    else if (level === "menu") menu_key = key;
+    else menu_key = `${index}:read`;
+  }
+  return {
+    module: index,
+    index,
+    level,
+    module_key,
+    menu_key,
+    action,
+    key,
+    label: perm.label || null,
+    sort_order: perm.sort_order ?? 0,
+  };
+}
+
 async function seedPermissionsAndRoles() {
-  for (const perm of DEFAULT_PERMISSIONS) {
-    await db.permissions.findOrCreate({
+  const { getEnterprisePermissionDefs } = require("./enterprisePermissions");
+  const indexes = new Set();
+
+  const upsertPermission = async (perm) => {
+    indexes.add(perm.index);
+    const [row, created] = await db.permissions.findOrCreate({
       where: { key: perm.key },
       defaults: perm,
+    });
+    if (!created) {
+      await row.update({
+        module: perm.module,
+        index: perm.index,
+        level: perm.level,
+        module_key: perm.module_key,
+        menu_key: perm.menu_key,
+        action: perm.action,
+        label: perm.label,
+        sort_order: perm.sort_order,
+      });
+    }
+  };
+
+  for (const raw of DEFAULT_PERMISSIONS) {
+    await upsertPermission(enrichPermissionDef(raw));
+  }
+
+  for (const perm of getEnterprisePermissionDefs()) {
+    await upsertPermission(perm);
+  }
+
+  // Ensure each module has a module-level row (finance:module, …)
+  for (const index of indexes) {
+    const moduleKey = `${index}:module`;
+    await db.permissions.findOrCreate({
+      where: { key: moduleKey },
+      defaults: {
+        module: index,
+        index,
+        level: "module",
+        module_key: moduleKey,
+        menu_key: null,
+        action: "module",
+        key: moduleKey,
+        label: null,
+        sort_order: 0,
+      },
     });
   }
 

@@ -40,27 +40,40 @@ import {
 import { uiToast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 
+const HEADER_CLASS =
+  'sticky top-0 z-60 flex items-center justify-between border-b border-border bg-background/95 px-6 py-3 backdrop-blur supports-backdrop-filter:bg-background/80';
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [loading, setLoading] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [userPermissions, setUserPermissions] = useState<string[]>(() => getUserPermissions());
-  const [userRole, setUserRole] = useState(() => getUserRole());
+  const [mounted, setMounted] = useState(false);
+  const [userPermissions, setUserPermissions] = useState<string[]>([]);
+  const [userRole, setUserRole] = useState('');
   const [username, setUsername] = useState('Admin');
+  const [sessionReady, setSessionReady] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
 
-  const handleLogout = () => {
-    clearAuthSession();
-    uiToast.success('Logged out');
-    router.push('/login');
-  };
+  const isDashboard = pathname === DASHBOARD_PATH;
+  const isBusy = loading || isPending;
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
+    let cancelled = false;
     (async () => {
       setUsername(getUsername());
       setUserRole(getUserRole());
+      setUserPermissions(getUserPermissions());
+
       const perms = await loadUserPermissions();
+      if (cancelled) return;
+
       if (!localStorage.getItem('token')) {
         router.replace('/login');
         return;
@@ -68,11 +81,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       setUserPermissions(perms);
       setUserRole(getUserRole());
       setUsername(getUsername());
+      setSessionReady(true);
     })();
-  }, [router]);
 
-  const isDashboard = pathname === DASHBOARD_PATH;
-  const isBusy = loading || isPending;
+    return () => {
+      cancelled = true;
+    };
+  }, [mounted, router]);
+
+  const handleLogout = () => {
+    clearAuthSession();
+    uiToast.success('Logged out');
+    router.push('/login');
+  };
 
   const goHome = () => {
     setLoading(true);
@@ -82,14 +103,45 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     });
   };
 
+  // Server + first client paint: identical shell (no portals / localStorage UI)
+  if (!mounted) {
+    return (
+      <div className="admin-shell min-h-screen bg-muted/30" suppressHydrationWarning>
+        <header className={HEADER_CLASS}>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-lg font-semibold text-primary">
+              <AppWindow className="size-5" />
+              Замын систем
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="size-10 rounded-full bg-primary/20" aria-hidden />
+          </div>
+        </header>
+        <main className="mx-auto w-full max-w-full px-5 py-4">
+          <div className="relative">
+            <div
+              className={cn(
+                'min-h-[360px] rounded-xl border border-border/60 bg-card shadow-sm dark:border-(--neon-border)',
+                isDashboard ? 'p-8' : 'p-4',
+              )}
+            >
+              {children}
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="admin-shell min-h-screen bg-muted/30">
-      <header className="sticky top-0 z-[60] flex items-center justify-between border-b border-border bg-background/95 px-6 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <header className={HEADER_CLASS}>
         <div className="flex items-center gap-4">
           <button
             type="button"
             onClick={goHome}
-            className="flex items-center gap-2 text-lg font-semibold text-primary transition-opacity hover:opacity-80 dark:text-[var(--neon-green)] dark:hover:drop-shadow-[0_0_8px_rgba(33,205,168,0.45)]"
+            className="flex items-center gap-2 text-lg font-semibold text-primary transition-opacity hover:opacity-80 dark:text-(--neon-green) dark:hover:drop-shadow-[0_0_8px_rgba(33,205,168,0.45)]"
           >
             <AppWindow className="size-5" />
             Замын систем
@@ -106,30 +158,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <SessionCountdown />
           <ThemeToggle />
           <DropdownMenu>
-          <DropdownMenuTrigger className="rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring">
-            <Avatar className="size-10 cursor-pointer bg-primary dark:shadow-[var(--neon-glow-sm)]">
-              <AvatarFallback className="bg-primary text-primary-foreground">
-                <User className="size-5" />
-              </AvatarFallback>
-            </Avatar>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuGroup>
-              <DropdownMenuLabel>Таны нэр: {username}</DropdownMenuLabel>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onClick={() => setLogoutOpen(true)}>
-              <LogOut className="size-4" />
-              Гарах
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            <DropdownMenuTrigger className="rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring">
+              <Avatar className="size-10 cursor-pointer bg-primary dark:shadow-(--neon-glow-sm)">
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  <User className="size-5" />
+                </AvatarFallback>
+              </Avatar>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Таны нэр: {username}</DropdownMenuLabel>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" onClick={() => setLogoutOpen(true)}>
+                <LogOut className="size-4" />
+                Гарах
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
-      {!isDashboard && <ModuleSubNav userPermissions={userPermissions} userRole={userRole} />}
+      {sessionReady && !isDashboard && (
+        <ModuleSubNav userPermissions={userPermissions} userRole={userRole} />
+      )}
 
-      <main className="mx-auto w-full max-w-[100%] px-5 py-4">
+      <main className="mx-auto w-full max-w-full px-5 py-4">
         <div className="relative">
           {isBusy && (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-xl bg-background/70">
@@ -139,7 +193,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           )}
           <div
             className={cn(
-              'min-h-[360px] rounded-xl border border-border/60 bg-card shadow-sm dark:border-[color:var(--neon-border)]',
+              'min-h-[360px] rounded-xl border border-border/60 bg-card shadow-sm dark:border-(--neon-border)',
               isDashboard ? 'p-8' : 'p-4',
             )}
           >
@@ -148,20 +202,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </main>
 
-      <AlertDialog open={logoutOpen} onOpenChange={setLogoutOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Та гарахдаа итгэлтэй байна уу?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Системээс гарсны дараа дахин нэвтрэх шаардлагатай.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Үгүй</AlertDialogCancel>
-            <AlertDialogAction onClick={handleLogout}>Тийм</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {logoutOpen && (
+        <AlertDialog open={logoutOpen} onOpenChange={setLogoutOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Та гарахдаа итгэлтэй байна уу?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Системээс гарсны дараа дахин нэвтрэх шаардлагатай.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Үгүй</AlertDialogCancel>
+              <AlertDialogAction onClick={handleLogout}>Тийм</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   );
 }

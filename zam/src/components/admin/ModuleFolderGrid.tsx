@@ -272,7 +272,10 @@ export default function ModuleFolderGrid({ userPermissions, userRole }: ModuleFo
     () => filterModules(userPermissions, userRole),
     [userPermissions, userRole],
   );
-  const baseData = useMemo(() => filterDataFolders(), []);
+  const baseData = useMemo(
+    () => filterDataFolders(userPermissions, userRole),
+    [userPermissions, userRole],
+  );
 
   const [order, setOrder] = useState<FolderOrderMap>({});
 

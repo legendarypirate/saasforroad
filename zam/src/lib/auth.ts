@@ -76,7 +76,7 @@ export function setAuthSession(
 /** Sync read of cached permissions (for first paint). */
 export function getUserPermissions(): string[] {
   if (typeof window === 'undefined') return [];
-  return readStoredPermissions();
+  return readStoredPermissions().filter((p): p is string => typeof p === 'string' && p.length > 0);
 }
 
 /**

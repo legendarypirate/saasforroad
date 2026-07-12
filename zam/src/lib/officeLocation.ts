@@ -9,3 +9,21 @@ export interface OfficeLocation {
   address?: string;
   is_active: boolean;
 }
+
+export type OfficeLocationFormValues = {
+  name: string;
+  address?: string;
+  latitude: number;
+  longitude: number;
+  radius_meters: number;
+  is_active: boolean;
+};
+
+export type OfficeLocationPayload = {
+  name: string;
+  address?: string;
+  latitude: number;
+  longitude: number;
+  radius_meters: number;
+  is_active: boolean;
+};

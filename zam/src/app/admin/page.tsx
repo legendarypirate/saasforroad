@@ -8,11 +8,14 @@ import { getUserPermissions, getUserRole, loadUserPermissions } from '@/lib/auth
 
 export default function Dashboard() {
   const router = useRouter();
-  const [userPermissions, setUserPermissions] = useState<string[]>(() => getUserPermissions());
-  const [userRole, setUserRole] = useState(() => getUserRole());
+  const [userPermissions, setUserPermissions] = useState<string[]>([]);
+  const [userRole, setUserRole] = useState('');
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     (async () => {
+      setUserPermissions(getUserPermissions());
+      setUserRole(getUserRole());
       const perms = await loadUserPermissions();
       if (!localStorage.getItem('token')) {
         router.replace('/login');
@@ -20,8 +23,13 @@ export default function Dashboard() {
       }
       setUserPermissions(perms);
       setUserRole(getUserRole());
+      setReady(true);
     })();
   }, [router]);
+
+  if (!ready) {
+    return <div className="min-h-[200px]" />;
+  }
 
   return (
     <div>

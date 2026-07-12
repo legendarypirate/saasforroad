@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   AlignCenter,
   AlignLeft,
@@ -6,7 +5,6 @@ import {
   AppWindow,
   ArrowLeft,
   ArrowRight,
-  Award,
   Banknote,
   Bold,
   BookOpen,
@@ -53,7 +51,6 @@ import {
   Menu,
   MoreHorizontal,
   Phone,
-  PictureInPicture,
   Plus,
   Printer,
   Projector,
@@ -66,8 +63,8 @@ import {
   Shirt,
   Sparkles,
   Star,
-  Strikethrough,
   StopCircle,
+  Strikethrough,
   Table2,
   Trash2,
   Trophy,
@@ -82,7 +79,8 @@ import {
   ZoomIn,
   ZoomOut,
   type LucideIcon,
-} from 'lucide-react';
+} from "lucide-react";
+import React from "react";
 
 type IconProps = {
   className?: string;

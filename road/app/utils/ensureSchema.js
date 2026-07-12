@@ -285,6 +285,68 @@ async function ensureLeaveRequestColumns(sequelize) {
   }
 }
 
+async function ensurePermissionColumns(sequelize) {
+  const [rows] = await sequelize.query(`
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'permissions'
+  `);
+  if (rows.length === 0) return;
+
+  const columns = [
+    `ALTER TABLE "permissions" ADD COLUMN IF NOT EXISTS "index" VARCHAR(255);`,
+    `ALTER TABLE "permissions" ADD COLUMN IF NOT EXISTS "level" VARCHAR(32) DEFAULT 'action';`,
+    `ALTER TABLE "permissions" ADD COLUMN IF NOT EXISTS "module_key" VARCHAR(255);`,
+    `ALTER TABLE "permissions" ADD COLUMN IF NOT EXISTS "menu_key" VARCHAR(255);`,
+    `ALTER TABLE "permissions" ADD COLUMN IF NOT EXISTS "label" VARCHAR(255);`,
+    `ALTER TABLE "permissions" ADD COLUMN IF NOT EXISTS "sort_order" INTEGER DEFAULT 0;`,
+  ];
+
+  for (const sql of columns) {
+    try {
+      await sequelize.query(sql);
+    } catch (err) {
+      console.warn("ensurePermissionColumns:", err.message);
+    }
+  }
+
+  // Backfill from legacy module/action/key when new columns are empty
+  try {
+    await sequelize.query(`
+      UPDATE "permissions"
+      SET
+        "index" = COALESCE(NULLIF("index", ''), "module"),
+        "module_key" = COALESCE(
+          NULLIF("module_key", ''),
+          CONCAT(COALESCE(NULLIF("index", ''), "module"), ':module')
+        ),
+        "level" = COALESCE(
+          NULLIF("level", ''),
+          CASE
+            WHEN "action" = 'module' OR "key" LIKE '%:module' THEN 'module'
+            WHEN "action" IN ('read', 'view', 'dashboard', 'summary') THEN 'menu'
+            ELSE 'action'
+          END
+        ),
+        "menu_key" = CASE
+          WHEN COALESCE(NULLIF("level", ''), '') = 'module'
+            OR "action" = 'module'
+            OR "key" LIKE '%:module'
+            THEN NULL
+          WHEN "menu_key" IS NOT NULL AND "menu_key" <> '' THEN "menu_key"
+          WHEN "action" IN ('read', 'view', 'dashboard', 'summary') THEN "key"
+          ELSE CONCAT(COALESCE(NULLIF("index", ''), "module"), ':read')
+        END,
+        "sort_order" = COALESCE("sort_order", 0)
+      WHERE "module_key" IS NULL
+         OR "index" IS NULL
+         OR "level" IS NULL
+         OR "level" = '';
+    `);
+  } catch (err) {
+    console.warn("ensurePermissionColumns backfill:", err.message);
+  }
+}
+
 async function ensureSchema(sequelize, UserModel) {
   if (!UserModel) {
     throw new Error("User model is required for ensureSchema");
@@ -302,6 +364,7 @@ async function ensureSchema(sequelize, UserModel) {
   await ensurePlantSiteColumns(sequelize);
   await ensureEquipmentCategoryColumns(sequelize);
   await ensureStudentColumns(sequelize);
+  await ensurePermissionColumns(sequelize);
 }
 
 async function ensureEquipmentCategoryColumns(sequelize) {
@@ -453,6 +516,7 @@ module.exports = {
   ensurePlantSiteColumns,
   ensureEquipmentCategoryColumns,
   ensureStudentColumns,
+  ensurePermissionColumns,
   resolveTableName,
   resolveExistingUserTable,
 };

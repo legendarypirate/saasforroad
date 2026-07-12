@@ -99,7 +99,7 @@ export default function ModuleSubNav({ userPermissions, userRole }: ModuleSubNav
     <div className="border-b border-border bg-background px-4 pb-0 pt-3 sm:px-6">
       <p className="mb-2 text-sm font-medium text-muted-foreground">{mod.label}</p>
       <Tabs value={selectedKey} onValueChange={(key) => router.push(key)}>
-        <div className="w-full overflow-x-auto">
+        <div className="w-full overflow-hidden">
           <TabsList
             variant="line"
             className="h-auto min-w-max justify-start rounded-none border-0 bg-transparent p-0"

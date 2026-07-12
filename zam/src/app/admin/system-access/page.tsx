@@ -1,0 +1,160 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import {
+  Table,
+  Button,
+  Space,
+  Drawer,
+  Form,
+  message,
+  Switch,
+  Input,
+} from '@/components/admin/primitives';
+import type { ColumnsType } from '@/components/admin/primitives';
+import { EditOutlined, PlusOutlined } from '@/components/admin/icons';
+import { PageWrapper } from '@/components/auth/PageWrapper';
+import { CanAccess } from '@/components/auth/CanAccess';
+import { usePermissions } from '@/hooks/usePermissions';
+import { ACTIONS } from '@/lib/rbac';
+
+const MENU_INDEX = 'system.role';
+
+interface Role {
+  id: number;
+  name: string;
+  description?: string;
+  mobile_access?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export default function SystemAccessPage() {
+  const router = useRouter();
+  const { canAccess } = usePermissions();
+  const canCreate = canAccess(MENU_INDEX, ACTIONS.CREATE);
+  const canUpdate = canAccess(MENU_INDEX, ACTIONS.UPDATE);
+
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [createDrawerVisible, setCreateDrawerVisible] = useState(false);
+  const [createForm] = Form.useForm();
+
+  useEffect(() => {
+    document.title = 'Эрхийн зохицуулалт';
+    fetchRoles();
+  }, []);
+
+  const fetchRoles = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/role`);
+      const result = await res.json();
+      if (result.success) setRoles(result.data);
+      else message.error('Эрх ачаалахад алдаа гарлаа');
+    } catch (err) {
+      console.error('Error fetching roles:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const goToPermissions = (roleId: number) => {
+    router.push(`/admin/system-access/${roleId}/permissions`);
+  };
+
+  const handleCreateRole = async () => {
+    if (!canCreate) {
+      message.error('Шинэ эрх үүсгэх эрхгүй');
+      return;
+    }
+    try {
+      const values = await createForm.validateFields();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/role`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
+      });
+      const result = await res.json();
+      if (res.ok && result.data?.id) {
+        message.success('Эрх амжилттай үүслээ');
+        setCreateDrawerVisible(false);
+        createForm.resetFields();
+        goToPermissions(result.data.id);
+      } else {
+        message.error(result.message || 'Үүсгэхэд алдаа гарлаа');
+      }
+    } catch {
+      message.error('Мэдээлэл буруу байна');
+    }
+  };
+
+  const columns: ColumnsType<Role> = [
+    { title: 'Эрхийн нэр', dataIndex: 'name' },
+    { title: 'Тайлбар', dataIndex: 'description' },
+    {
+      title: 'Апп нэвтрэх',
+      dataIndex: 'mobile_access',
+      render: (v: boolean) => (v ? 'Тийм' : 'Үгүй'),
+    },
+    {
+      title: 'Үйлдэл',
+      render: (_, record) =>
+        canUpdate ? (
+          <Space>
+            <Button type="link" icon={<EditOutlined />} onClick={() => goToPermissions(record.id)}>
+              Эрх тохируулах
+            </Button>
+          </Space>
+        ) : null,
+    },
+  ];
+
+  return (
+    <PageWrapper menuIndex={MENU_INDEX} requiredAction={ACTIONS.VIEW}>
+      <div>
+        <h1 style={{ marginBottom: 24 }}>Эрхийн зохицуулалт</h1>
+
+        <Space style={{ marginBottom: 16 }}>
+          <CanAccess menuIndex={MENU_INDEX} action={ACTIONS.CREATE}>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setCreateDrawerVisible(true)}
+            >
+              + Шинэ эрх үүсгэх
+            </Button>
+          </CanAccess>
+        </Space>
+
+        <Table columns={columns} dataSource={roles} rowKey="id" loading={loading} />
+
+        <Drawer
+          title="Шинэ эрх үүсгэх"
+          width={400}
+          onClose={() => {
+            setCreateDrawerVisible(false);
+            createForm.resetFields();
+          }}
+          open={createDrawerVisible && canCreate}
+        >
+          <Form form={createForm} layout="vertical" onFinish={handleCreateRole}>
+            <Form.Item name="name" label="Эрхийн нэр" rules={[{ required: true }]}>
+              <Input placeholder="Жишээ: Ажилчин" />
+            </Form.Item>
+            <Form.Item name="description" label="Тайлбар">
+              <Input.TextArea rows={2} />
+            </Form.Item>
+            <Form.Item name="mobile_access" label="Апп-аар нэвтрэх эрх" valuePropName="checked">
+              <Switch />
+            </Form.Item>
+            <Button type="primary" htmlType="submit" block>
+              Үүсгээд эрх тохируулах
+            </Button>
+          </Form>
+        </Drawer>
+      </div>
+    </PageWrapper>
+  );
+}
