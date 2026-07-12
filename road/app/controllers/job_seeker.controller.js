@@ -1,27 +1,55 @@
-const RCOS_API_URL = (process.env.RCOS_API_URL || "http://localhost:4001").replace(/\/$/, "");
-const RCOS_SERVICE_KEY = process.env.RCOS_SERVICE_KEY || "";
+/**
+ * Job-seeker admin ↔ Anket (RCOS) bridge.
+ * Frontend (vlemj) → road /api/job-seeker → https://api.rcos.mn/api/hr/admin/*
+ *
+ * road/.env (VPS vlemj):
+ *   RCOS_API_URL=https://api.rcos.mn
+ *   RCOS_SERVICE_KEY=<same-as-rcos>
+ *
+ * rcos backend/.env (api.rcos.mn):
+ *   RCOS_SERVICE_KEY=<same-as-road>
+ */
+function rcosConfig() {
+  const url = (process.env.RCOS_API_URL || "https://api.rcos.mn").replace(/\/$/, "");
+  const key = (process.env.RCOS_SERVICE_KEY || "").trim();
+  return { url, key };
+}
 
 async function rcosFetch(path, options = {}) {
-  if (!RCOS_SERVICE_KEY) {
-    const err = new Error("RCOS_SERVICE_KEY тохируулаагүй (road .env)");
+  const { url, key } = rcosConfig();
+  if (!key) {
+    const err = new Error(
+      "RCOS_SERVICE_KEY тохируулаагүй. road/.env-д RCOS_API_URL=https://api.rcos.mn болон RCOS_SERVICE_KEY нэмээд API-г дахин асаана уу.",
+    );
     err.status = 503;
     throw err;
   }
-  const res = await fetch(`${RCOS_API_URL}/api/hr${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      "X-RCOS-Key": RCOS_SERVICE_KEY,
-      ...(options.headers || {}),
-    },
-  });
+
+  let res;
+  try {
+    res = await fetch(`${url}/api/hr${path}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        "X-RCOS-Key": key,
+        ...(options.headers || {}),
+      },
+    });
+  } catch (e) {
+    const err = new Error(
+      `RCOS холбогдохгүй (${url}): ${e.message}. api.rcos.mn ажиллаж байгаа эсэхийг шалгана уу.`,
+    );
+    err.status = 502;
+    throw err;
+  }
+
   const json = await res.json().catch(() => ({
     success: false,
     message: `RCOS HTTP ${res.status}`,
   }));
   if (!res.ok || json.success === false) {
     const err = new Error(json.message || `RCOS алдаа (${res.status})`);
-    err.status = res.status;
+    err.status = res.status >= 400 ? res.status : 502;
     err.body = json;
     throw err;
   }
