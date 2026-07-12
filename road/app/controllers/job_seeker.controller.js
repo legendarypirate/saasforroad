@@ -11,19 +11,15 @@
  */
 function rcosConfig() {
   const url = (process.env.RCOS_API_URL || "https://api.rcos.mn").replace(/\/$/, "");
-  const key = (process.env.RCOS_SERVICE_KEY || "").trim();
+  // Must match rcos backend DEFAULT / RCOS_SERVICE_KEY
+  const key = (
+    process.env.RCOS_SERVICE_KEY || "rcos_prod_vlemj_anket_shared_2026"
+  ).trim();
   return { url, key };
 }
 
 async function rcosFetch(path, options = {}) {
   const { url, key } = rcosConfig();
-  if (!key) {
-    const err = new Error(
-      "RCOS_SERVICE_KEY тохируулаагүй. road/.env-д RCOS_API_URL=https://api.rcos.mn болон RCOS_SERVICE_KEY нэмээд API-г дахин асаана уу.",
-    );
-    err.status = 503;
-    throw err;
-  }
 
   let res;
   try {
