@@ -410,6 +410,9 @@ async function ensurePlantSiteColumns(sequelize) {
   const columns = [
     `ALTER TABLE "plant_sites" ADD COLUMN IF NOT EXISTS "latitude" DECIMAL(10,7);`,
     `ALTER TABLE "plant_sites" ADD COLUMN IF NOT EXISTS "longitude" DECIMAL(10,7);`,
+    `ALTER TABLE "plant_sites" ADD COLUMN IF NOT EXISTS "rcos_status" VARCHAR(20);`,
+    `ALTER TABLE "plant_sites" ADD COLUMN IF NOT EXISTS "rcos_factory_id" INTEGER;`,
+    `ALTER TABLE "plant_sites" ADD COLUMN IF NOT EXISTS "rcos_request_id" INTEGER;`,
   ];
   for (const sql of columns) {
     try {

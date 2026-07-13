@@ -53,5 +53,10 @@ module.exports = (app) => {
   router.put("/daily-reports/:id", ctrl.updateReport);
   router.delete("/daily-reports/:id", ctrl.deleteReport);
 
+  const rcos = require("../controllers/rcos_plant.controller");
+  router.get("/rcos/map-factories", rcos.listMapFactories);
+  router.post("/rcos/sync-statuses", rcos.syncRcosStatuses);
+  router.post("/sites/:id/place-to-rcos", rcos.placeToRcos);
+
   app.use("/api/plant", router);
 };

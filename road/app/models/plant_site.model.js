@@ -16,5 +16,13 @@ module.exports = (sequelize, Sequelize) => {
     phone: { type: Sequelize.STRING(40), allowNull: true },
     opened_date: { type: Sequelize.DATEONLY, allowNull: true },
     notes: { type: Sequelize.TEXT, allowNull: true },
+    /**
+     * RCOS (plant.rcos.mn) map publication status.
+     * null | pending | approved | rejected
+     * Local sites stay invisible on the factory map until approved on RCOS.
+     */
+    rcos_status: { type: Sequelize.STRING(20), allowNull: true },
+    rcos_factory_id: { type: Sequelize.INTEGER, allowNull: true },
+    rcos_request_id: { type: Sequelize.INTEGER, allowNull: true },
   });
 };

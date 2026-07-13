@@ -4,6 +4,12 @@ export type FactoryMapSite = {
   plant_type: string;
   latitude?: number | string | null;
   longitude?: number | string | null;
+  /** When set, marker is from plant.rcos.mn (not a local road site). */
+  rcos?: boolean;
+  aimag?: string | null;
+  location?: string | null;
+  status?: string;
+  source?: string | null;
 };
 
 export type FactoryEditPin = {

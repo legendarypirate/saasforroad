@@ -151,3 +151,35 @@ export async function updatePlantRecord(resource: string, id: number, body: Reco
 export async function deletePlantRecord(resource: string, id: number) {
   return plantFetch(`/${resource}/${id}`, { method: 'DELETE' });
 }
+
+/** Published factories from plant.rcos.mn (map markers). */
+export async function fetchRcosMapFactories<T = Record<string, unknown>>() {
+  const data = await plantFetch<T[]>('/rcos/map-factories');
+  return data || [];
+}
+
+/** Sync local rcos_status from plant.rcos.mn approvals. */
+export async function syncRcosPlantStatuses() {
+  return plantFetch<{ synced: number; ids: number[] }>('/rcos/sync-statuses', {
+    method: 'POST',
+  });
+}
+
+/** Submit local site for admin approval on plant.rcos.mn. */
+export async function placePlantToRcos(
+  siteId: number,
+  meta?: { requested_by_name?: string; requested_by_email?: string },
+) {
+  return plantFetch(`/sites/${siteId}/place-to-rcos`, {
+    method: 'POST',
+    body: JSON.stringify(meta || {}),
+  });
+}
+
+export function rcosStatusLabel(v?: string | null) {
+  if (!v) return 'Зөвхөн локал';
+  if (v === 'pending') return 'RCOS хүлээгдэж буй';
+  if (v === 'approved') return 'RCOS-д батлагдсан';
+  if (v === 'rejected') return 'RCOS татгалзсан';
+  return v;
+}

@@ -23,7 +23,11 @@ import {
   createPlantRecord,
   deletePlantRecord,
   fetchPlantList,
+  fetchRcosMapFactories,
+  placePlantToRcos,
   plantTypeLabel,
+  rcosStatusLabel,
+  syncRcosPlantStatuses,
 } from '@/lib/plant';
 import { cn } from '@/lib/utils';
 import {
@@ -52,16 +56,24 @@ type ProductDraft = {
   unit_price_default: number | string;
 };
 
-type FactorySite = FactoryMapSite & {
+type FactorySite = {
+  id: number;
+  name: string;
+  plant_type: string;
   code?: string | null;
   location?: string | null;
   aimag?: string | null;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
   capacity_per_hour?: number | string | null;
   capacity_unit?: string | null;
   status: string;
   manager_name?: string | null;
   phone?: string | null;
   notes?: string | null;
+  rcos_status?: string | null;
+  rcos_factory_id?: number | null;
+  rcos_request_id?: number | null;
   products?: Array<{
     id: number;
     name: string;
@@ -70,6 +82,16 @@ type FactorySite = FactoryMapSite & {
     unit?: string | null;
     unit_price_default?: number | string | null;
   }>;
+};
+
+type RcosFactory = FactoryMapSite & {
+  code?: string | null;
+  capacity_per_hour?: number | string | null;
+  capacity_unit?: string | null;
+  manager_name?: string | null;
+  phone?: string | null;
+  notes?: string | null;
+  road_plant_site_id?: number | null;
 };
 
 type FormState = {
@@ -89,7 +111,7 @@ type FormState = {
   products: ProductDraft[];
 };
 
-type PanelMode = 'list' | 'detail' | 'create';
+type PanelMode = 'list' | 'detail' | 'rcos-detail' | 'create';
 
 const emptyForm = (): FormState => ({
   code: '',
@@ -119,7 +141,7 @@ function newProductDraft(): ProductDraft {
   };
 }
 
-function hasCoords(site: FactorySite) {
+function hasCoords(site: { latitude?: number | string | null; longitude?: number | string | null }) {
   const lat = Number(site.latitude);
   const lng = Number(site.longitude);
   return Number.isFinite(lat) && Number.isFinite(lng);
@@ -143,12 +165,22 @@ function DetailRow({ label, value }: { label: string; value?: React.ReactNode })
   );
 }
 
+function rcosTagColor(status?: string | null) {
+  if (status === 'approved') return 'green';
+  if (status === 'pending') return 'gold';
+  if (status === 'rejected') return 'red';
+  return 'default';
+}
+
 export default function FactoryMapPage() {
   const [sites, setSites] = useState<FactorySite[]>([]);
+  const [mapFactories, setMapFactories] = useState<RcosFactory[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [placingRcos, setPlacingRcos] = useState(false);
   const [mode, setMode] = useState<PanelMode>('list');
   const [selected, setSelected] = useState<FactorySite | null>(null);
+  const [selectedRcos, setSelectedRcos] = useState<RcosFactory | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm());
   const [q, setQ] = useState('');
   const [filterType, setFilterType] = useState('');
@@ -157,12 +189,29 @@ export default function FactoryMapPage() {
   const [focus, setFocus] = useState<[number, number] | null>(null);
   const [focusZoom, setFocusZoom] = useState(5.6);
 
-  const loadSites = useCallback(async () => {
+  const loadAll = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchPlantList<FactorySite>('sites');
-      setSites(data);
-      setSelected((prev) => (prev ? data.find((s) => s.id === prev.id) || null : null));
+      try {
+        await syncRcosPlantStatuses();
+      } catch {
+        /* RCOS may be offline — still load local */
+      }
+      const [local, rcos] = await Promise.all([
+        fetchPlantList<FactorySite>('sites'),
+        fetchRcosMapFactories<RcosFactory>().catch(() => [] as RcosFactory[]),
+      ]);
+      setSites(local);
+      setMapFactories(
+        (rcos || []).map((f) => ({
+          ...f,
+          rcos: true,
+        })),
+      );
+      setSelected((prev) => (prev ? local.find((s) => s.id === prev.id) || null : null));
+      setSelectedRcos((prev) =>
+        prev ? (rcos || []).find((f) => f.id === prev.id) || null : null,
+      );
     } catch (err) {
       message.error(err instanceof Error ? err.message : 'Үйлдвэр татахад алдаа');
     } finally {
@@ -172,8 +221,8 @@ export default function FactoryMapPage() {
 
   useEffect(() => {
     document.title = 'Үйлдвэр — Газрын зураг';
-    loadSites();
-  }, [loadSites]);
+    loadAll();
+  }, [loadAll]);
 
   const filtered = useMemo(() => {
     return sites.filter((s) => {
@@ -184,30 +233,52 @@ export default function FactoryMapPage() {
     });
   }, [sites, q, filterType]);
 
+  const mapSites = useMemo(() => {
+    return mapFactories.filter((f) => {
+      if (filterType && f.plant_type !== filterType) return false;
+      if (!q.trim()) return true;
+      const hay = `${f.name} ${f.aimag || ''} ${f.location || ''}`.toLowerCase();
+      return hay.includes(q.trim().toLowerCase());
+    });
+  }, [mapFactories, q, filterType]);
+
   const backToList = useCallback(() => {
     setPlacing(false);
     setEditPin(null);
     setMode('list');
     setSelected(null);
+    setSelectedRcos(null);
     setForm(emptyForm());
   }, []);
 
-  const selectSite = useCallback((site: FactoryMapSite) => {
-    const full = site as FactorySite;
+  const selectLocal = useCallback((site: FactorySite) => {
     setPlacing(false);
     setEditPin(null);
-    setSelected(full);
+    setSelected(site);
+    setSelectedRcos(null);
     setMode('detail');
+    if (hasCoords(site)) {
+      setFocus([Number(site.latitude), Number(site.longitude)]);
+      setFocusZoom(10);
+    }
+  }, []);
+
+  const selectRcos = useCallback((site: FactoryMapSite) => {
+    const full = site as RcosFactory;
+    setPlacing(false);
+    setEditPin(null);
+    setSelected(null);
+    setSelectedRcos(full);
+    setMode('rcos-detail');
     if (hasCoords(full)) {
-      const lat = Number(full.latitude);
-      const lng = Number(full.longitude);
-      setFocus([lat, lng]);
+      setFocus([Number(full.latitude), Number(full.longitude)]);
       setFocusZoom(10);
     }
   }, []);
 
   const openCreate = useCallback(() => {
     setSelected(null);
+    setSelectedRcos(null);
     setForm({
       ...emptyForm(),
       latitude: null,
@@ -219,7 +290,7 @@ export default function FactoryMapPage() {
     setMode('create');
     setFocus(MONGOLIA_CENTER);
     setFocusZoom(5.6);
-    message.info('Газрын зураг дээр дарж байршил сонгоно уу');
+    message.info('Газрын зураг дээр дарж байршил сонгоно уу — локал хадгалагдана, зурагт харагдахгүй');
   }, []);
 
   const handleMapClick = useCallback((lat: number, lng: number) => {
@@ -272,13 +343,13 @@ export default function FactoryMapPage() {
     setSaving(true);
     try {
       const created = await createPlantRecord('sites', body);
-      message.success('Үйлдвэр нэмэгдлээ');
+      message.success('Локал хадгаллаа — газрын зурагт харагдахгүй. «Place to RCOS» дарж илгээнэ үү');
       setPlacing(false);
       setEditPin(null);
       setForm(emptyForm());
-      await loadSites();
+      await loadAll();
       if (created && typeof created === 'object' && 'id' in created) {
-        selectSite(created as FactorySite);
+        selectLocal(created as FactorySite);
       } else {
         setMode('list');
       }
@@ -295,13 +366,27 @@ export default function FactoryMapPage() {
       .then(() => {
         message.success('Устгагдлаа');
         backToList();
-        loadSites();
+        loadAll();
       })
       .catch((err) => message.error(err instanceof Error ? err.message : 'Устгахад алдаа'));
   };
 
-  const mappedCount = sites.filter(hasCoords).length;
+  const sendToRcos = async (site: FactorySite) => {
+    setPlacingRcos(true);
+    try {
+      await placePlantToRcos(site.id);
+      message.success('RCOS-д илгээгдлээ — plant.rcos.mn админ батална');
+      await loadAll();
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : 'Илгээхэд алдаа');
+    } finally {
+      setPlacingRcos(false);
+    }
+  };
+
   const pinReady = form.latitude != null && form.longitude != null;
+  const mapSelectedId =
+    mode === 'rcos-detail' && selectedRcos ? selectedRcos.id : null;
 
   return (
     <div className="flex h-[calc(100vh-7rem)] min-h-[560px] flex-col gap-3 p-4 sm:p-6">
@@ -309,13 +394,14 @@ export default function FactoryMapPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Үйлдвэр — Газрын зураг</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Бүртгэлтэй үйлдвэр дээр дарж мэдээлэл харна · нэмэхэд зураг дээр дарж байршил сонгоно
+            Зурагт зөвхөн plant.rcos.mn-д батлагдсан үйлдвэр харагдана · локал бүртгэл «Place to
+            RCOS»-оор илгээнэ
           </p>
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <EnvironmentOutlined />
           <span>
-            {mappedCount}/{sites.length} байршилтай
+            {mapFactories.length} RCOS · {sites.length} локал
           </span>
           {mode !== 'create' && (
             <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
@@ -333,7 +419,7 @@ export default function FactoryMapPage() {
                 <Button type="text" size="small" icon={<ArrowLeftOutlined />} onClick={backToList}>
                   Болих
                 </Button>
-                <span className="text-sm font-semibold">Шинэ үйлдвэр</span>
+                <span className="text-sm font-semibold">Шинэ үйлдвэр (локал)</span>
               </div>
 
               <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
@@ -346,7 +432,7 @@ export default function FactoryMapPage() {
                   )}
                 >
                   {pinReady
-                    ? `Байршил: ${form.latitude!.toFixed(5)}, ${form.longitude!.toFixed(5)} — чирж засна`
+                    ? `Байршил: ${form.latitude!.toFixed(5)}, ${form.longitude!.toFixed(5)} — локал хадгалагдана`
                     : 'Газрын зураг дээр дарж байршил сонгоно уу'}
                 </div>
 
@@ -568,7 +654,7 @@ export default function FactoryMapPage() {
 
               <div className="border-t border-border p-3">
                 <Button type="primary" block loading={saving} onClick={save}>
-                  Хадгалах
+                  Локал хадгалах
                 </Button>
               </div>
             </div>
@@ -593,6 +679,9 @@ export default function FactoryMapPage() {
                   <div className="mt-2 flex flex-wrap gap-1">
                     <Tag color="blue">{plantTypeLabel(selected.plant_type)}</Tag>
                     <Tag>{statusLabel(selected.status)}</Tag>
+                    <Tag color={rcosTagColor(selected.rcos_status)}>
+                      {rcosStatusLabel(selected.rcos_status)}
+                    </Tag>
                   </div>
                 </div>
 
@@ -649,10 +738,69 @@ export default function FactoryMapPage() {
                   )}
                 </div>
               </div>
-              <div className="border-t border-border p-3">
+              <div className="space-y-2 border-t border-border p-3">
+                {selected.rcos_status !== 'approved' && selected.rcos_status !== 'pending' && (
+                  <Button
+                    type="primary"
+                    block
+                    loading={placingRcos}
+                    disabled={!hasCoords(selected)}
+                    onClick={() => sendToRcos(selected)}
+                  >
+                    Place to RCOS
+                  </Button>
+                )}
+                {selected.rcos_status === 'pending' && (
+                  <p className="text-center text-xs text-amber-700 dark:text-amber-300">
+                    plant.rcos.mn админы баталгаа хүлээж байна
+                  </p>
+                )}
+                {selected.rcos_status === 'approved' && (
+                  <p className="text-center text-xs text-emerald-700 dark:text-emerald-300">
+                    RCOS-д батлагдсан — газрын зурагт харагдана
+                  </p>
+                )}
                 <Button danger block icon={<DeleteOutlined />} onClick={() => remove(selected)}>
                   Устгах
                 </Button>
+              </div>
+            </div>
+          ) : mode === 'rcos-detail' && selectedRcos ? (
+            <div className="flex min-h-0 flex-1 flex-col">
+              <div className="flex items-center gap-2 border-b border-border p-3">
+                <Button type="text" size="small" icon={<ArrowLeftOutlined />} onClick={backToList}>
+                  Жагсаалт
+                </Button>
+              </div>
+              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
+                <div>
+                  <h2 className="text-lg font-semibold leading-snug">{selectedRcos.name}</h2>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    <Tag color="blue">{plantTypeLabel(selectedRcos.plant_type)}</Tag>
+                    <Tag color="green">plant.rcos.mn</Tag>
+                    {selectedRcos.source === 'zam' ? (
+                      <Tag>rd_zam</Tag>
+                    ) : (
+                      <Tag>өөрийн бүртгэл</Tag>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-2.5">
+                  <DetailRow label="Код" value={selectedRcos.code} />
+                  <DetailRow label="Аймаг" value={selectedRcos.aimag} />
+                  <DetailRow label="Хаяг" value={selectedRcos.location} />
+                  <DetailRow label="Менежер" value={selectedRcos.manager_name} />
+                  <DetailRow label="Утас" value={selectedRcos.phone} />
+                  <DetailRow
+                    label="Байршил"
+                    value={
+                      hasCoords(selectedRcos)
+                        ? `${Number(selectedRcos.latitude).toFixed(5)}, ${Number(selectedRcos.longitude).toFixed(5)}`
+                        : null
+                    }
+                  />
+                  <DetailRow label="Тэмдэглэл" value={selectedRcos.notes} />
+                </div>
               </div>
             </div>
           ) : (
@@ -679,7 +827,7 @@ export default function FactoryMapPage() {
                 )}
                 {!loading && filtered.length === 0 && (
                   <p className="p-3 text-sm text-muted-foreground">
-                    Үйлдвэр байхгүй. «Үйлдвэр нэмэх» товчоор бүртгэнэ үү.
+                    Локал үйлдвэр байхгүй. «Үйлдвэр нэмэх» товчоор бүртгэнэ үү.
                   </p>
                 )}
                 {filtered.map((site) => {
@@ -688,7 +836,7 @@ export default function FactoryMapPage() {
                     <button
                       key={site.id}
                       type="button"
-                      onClick={() => selectSite(site)}
+                      onClick={() => selectLocal(site)}
                       className="mb-1 w-full rounded-lg border border-transparent px-3 py-2.5 text-left transition-colors hover:border-border hover:bg-muted/40"
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -698,9 +846,9 @@ export default function FactoryMapPage() {
                             <Tag color="blue" className="m-0 text-[10px]">
                               {plantTypeLabel(site.plant_type)}
                             </Tag>
-                            {site.aimag && (
-                              <Tag className="m-0 text-[10px]">{site.aimag}</Tag>
-                            )}
+                            <Tag color={rcosTagColor(site.rcos_status)} className="m-0 text-[10px]">
+                              {rcosStatusLabel(site.rcos_status)}
+                            </Tag>
                           </div>
                           <div className="mt-1 text-xs text-muted-foreground">
                             {(site.products || []).length} бүтээгдэхүүн
@@ -722,13 +870,13 @@ export default function FactoryMapPage() {
 
         <div className="relative min-h-[420px] overflow-hidden rounded-xl border border-border bg-muted/30">
           <FactoryMap
-            sites={filtered}
-            selectedId={selected?.id ?? null}
+            sites={mapSites}
+            selectedId={mapSelectedId}
             placing={placing}
             editPin={editPin}
             focus={focus}
             focusZoom={focusZoom}
-            onSelectSite={selectSite}
+            onSelectSite={selectRcos}
             onMapClick={handleMapClick}
             onEditDrag={handleEditDrag}
           />
@@ -741,8 +889,8 @@ export default function FactoryMapPage() {
             )}
           >
             {mode === 'create'
-              ? 'Зураг дээр дарж байршил сонгоно · тэмдэглэгээг чирж засна'
-              : 'Тэмдэглэгээ дээр дарж үйлдвэрийн мэдээлэл харна'}
+              ? 'Зураг дээр дарж байршил сонгоно · локал хадгалагдана, тэмдэглэгээ үлдэхгүй'
+              : 'Тэмдэглэгээ = plant.rcos.mn-д батлагдсан үйлдвэрүүд'}
           </div>
         </div>
       </div>
