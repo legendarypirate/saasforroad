@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
-import FuelEntityPage, { Tag } from '@/components/admin/fuel/FuelEntityPage';
+import FuelEntityPage from '@/components/admin/fuel/FuelEntityPage';
 import { FUEL_TYPES, fuelTypeLabel, fetchFuelList } from '@/lib/fuel';
 
 export default function Page() {
@@ -109,5 +109,3 @@ export default function Page() {
     />
   );
 }
-
-export { Tag };
