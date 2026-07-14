@@ -14,12 +14,12 @@ module.exports = (sequelize, DataTypes) => {
       image: {
         type: DataTypes.STRING,
         allowNull: false,
-      }
-        tenant_id: {
-          type: Sequelize.INTEGER,
-          allowNull: true,
-        },
-  });
+      },
+      tenant_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+    });
   
     ProductImage.associate = function(models) {
       ProductImage.belongsTo(models.Product, {

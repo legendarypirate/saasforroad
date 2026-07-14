@@ -44,10 +44,14 @@ export default function NewTenantPage() {
     setError("");
     setLoading(true);
     try {
+      const slug =
+        form.slug.trim() ||
+        form.name.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
       const body: Record<string, unknown> = {
         name: form.name.trim(),
-        slug: form.slug.trim() || form.name.trim().toLowerCase().replace(/\s+/g, "-"),
-        domain: form.domain.trim().toLowerCase(),
+        slug,
+        // Empty → API defaults to {slug}.rcos.mn
+        domain: form.domain.trim().toLowerCase() || undefined,
         company_name: form.company_name.trim() || form.name.trim(),
         contact_email: form.contact_email.trim() || null,
         contact_phone: form.contact_phone.trim() || null,
@@ -75,7 +79,9 @@ export default function NewTenantPage() {
     <Shell>
       <h1 style={{ marginTop: 0 }}>Register tenant</h1>
       <p className="muted">
-        Creates a single-tenant workspace. Point DNS for the domain to zam; API stays shared on road.
+        Creates a single-tenant workspace. If you leave domain empty, zam is hosted at{" "}
+        <strong>{"{slug}.rcos.mn"}</strong> (e.g. tenant1 → tenant1.rcos.mn). Optional custom
+        domain (tenant1.mn) can be set as primary; the .rcos.mn subdomain stays as an alias.
       </p>
 
       <form className="panel" onSubmit={onSubmit} style={{ maxWidth: 860 }}>
@@ -97,13 +103,19 @@ export default function NewTenantPage() {
             />
           </div>
           <div className="field">
-            <label>Domain (zam)</label>
+            <label>Custom domain (optional)</label>
             <input
-              required
-              placeholder="tenant1.mn"
+              placeholder="tenant1.mn — leave empty for tenant1.rcos.mn"
               value={form.domain}
               onChange={(e) => setForm({ ...form, domain: e.target.value })}
             />
+            <span className="muted" style={{ fontSize: "0.8rem" }}>
+              Default:{" "}
+              {(form.slug.trim() || form.name.trim().toLowerCase().replace(/\s+/g, "-") || "slug")
+                .replace(/[^a-z0-9-]/gi, "")
+                .toLowerCase()}
+              .rcos.mn
+            </span>
           </div>
           <div className="field">
             <label>Company name</label>

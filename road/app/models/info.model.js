@@ -37,11 +37,11 @@ module.exports = (sequelize, Sequelize) => {
         model: 'categories',
         key: 'id'
       }
-    }
-        tenant_id: {
-          type: Sequelize.INTEGER,
-          allowNull: true,
-        },
+    },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 
   return Info;

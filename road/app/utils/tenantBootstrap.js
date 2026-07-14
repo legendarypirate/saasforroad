@@ -147,14 +147,39 @@ async function bootstrapTenant(data, { superadmin } = {}) {
     const slug = String(data.slug || "")
       .trim()
       .toLowerCase()
-      .replace(/[^a-z0-9-]/g, "-");
-    const domain = String(data.domain || "")
+      .replace(/[^a-z0-9-]/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    if (!data.name || !slug) {
+      throw new Error("name and slug are required");
+    }
+
+    // Default SaaS subdomain: tenant1 → tenant1.rcos.mn
+    const baseDomain = String(
+      process.env.TENANT_BASE_DOMAIN || "rcos.mn"
+    )
+      .trim()
+      .toLowerCase()
+      .replace(/^www\./, "");
+    const defaultDomain = `${slug}.${baseDomain}`;
+
+    let domain = String(data.domain || "")
       .trim()
       .toLowerCase()
       .replace(/^www\./, "");
 
-    if (!data.name || !slug || !domain) {
-      throw new Error("name, slug and domain are required");
+    // No custom domain → use {slug}.rcos.mn
+    if (!domain) {
+      domain = defaultDomain;
+    }
+
+    const aliases = Array.isArray(data.domains)
+      ? data.domains.map((d) => String(d).trim().toLowerCase().replace(/^www\./, "")).filter(Boolean)
+      : [];
+
+    // Always keep the default subdomain as a reachable alias when custom domain is set
+    if (domain !== defaultDomain && !aliases.includes(defaultDomain)) {
+      aliases.push(defaultDomain);
     }
 
     const tenant = await db.tenants.create(
@@ -162,7 +187,7 @@ async function bootstrapTenant(data, { superadmin } = {}) {
         name: data.name,
         slug,
         domain,
-        domains: Array.isArray(data.domains) ? data.domains : [],
+        domains: [...new Set(aliases.filter((d) => d !== domain))],
         company_name: data.company_name || data.name,
         contact_email: data.contact_email || null,
         contact_phone: data.contact_phone || null,
