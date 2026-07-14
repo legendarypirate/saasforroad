@@ -1,0 +1,26 @@
+# Caddy: auto HTTPS for any *registered* custom domain (vlemj.mn, …)
+# No per-tenant nginx. Customer: DNS A/CNAME → VPS. Admin: set domain in admin.rcos.mn.
+#
+# Caddy calls ask with ?domain=<host> — cert only if that tenant exists.
+
+{
+	on_demand_tls {
+		ask http://127.0.0.1:3201/api/tenant/ssl-allowed
+	}
+}
+
+:443 {
+	tls {
+		on_demand
+	}
+
+	reverse_proxy 127.0.0.1:3000 {
+		header_up Host {host}
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Forwarded-For {remote_host}
+	}
+}
+
+:80 {
+	redir https://{host}{uri} permanent
+}

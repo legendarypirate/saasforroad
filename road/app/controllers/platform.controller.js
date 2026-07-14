@@ -366,3 +366,26 @@ exports.getCurrentTenantPublic = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+/**
+ * Used by Caddy on_demand TLS ask URL.
+ * 200 = domain is a registered tenant → allow cert issuance.
+ * 404 = unknown host → refuse cert (stops abuse via rate limits).
+ */
+exports.sslAllowed = async (req, res) => {
+  try {
+    const domain = String(req.query.domain || "").trim().toLowerCase();
+    if (!domain) {
+      return res.status(400).send("missing domain");
+    }
+    const { findTenantByDomain } = require("../utils/tenantHelper");
+    const tenant = await findTenantByDomain(domain);
+    if (!tenant) {
+      return res.status(404).send("unknown");
+    }
+    return res.status(200).send("ok");
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send("error");
+  }
+};

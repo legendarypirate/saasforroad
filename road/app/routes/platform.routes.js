@@ -29,5 +29,6 @@ module.exports = (app) => {
   // Public tenant resolution for zam (by domain)
   const publicRouter = require("express").Router();
   publicRouter.get("/current", platform.getCurrentTenantPublic);
+  publicRouter.get("/ssl-allowed", platform.sslAllowed);
   app.use("/api/tenant", publicRouter);
 };
