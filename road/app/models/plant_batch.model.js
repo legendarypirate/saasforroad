@@ -15,5 +15,9 @@ module.exports = (sequelize, Sequelize) => {
     operator_name: { type: Sequelize.STRING, allowNull: true },
     fuel_used: { type: Sequelize.DECIMAL(12, 2), allowNull: true },
     notes: { type: Sequelize.TEXT, allowNull: true },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

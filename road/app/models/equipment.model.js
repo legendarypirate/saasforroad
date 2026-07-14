@@ -107,7 +107,11 @@ module.exports = (sequelize, Sequelize) => {
       photo_right: { type: Sequelize.STRING, allowNull: true },
       certificate_image: { type: Sequelize.STRING, allowNull: true },
       notes: { type: Sequelize.TEXT, allowNull: true },
-    },
+      tenant_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
+  },
     {
       tableName: "equipments",
     }

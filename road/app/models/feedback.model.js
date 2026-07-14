@@ -28,6 +28,10 @@ module.exports = (sequelize, Sequelize) => {
       type: Sequelize.STRING,
       defaultValue: "new",
     },
+      tenant_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
   });
 
   return Feedback;

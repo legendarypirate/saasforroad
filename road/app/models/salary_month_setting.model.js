@@ -12,7 +12,11 @@ module.exports = (sequelize, Sequelize) => {
         allowNull: false,
         defaultValue: 176,
       },
-    }
+        tenant_id: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        },
+  }
   );
 
   return SalaryMonthSetting;

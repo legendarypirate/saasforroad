@@ -12,5 +12,9 @@ module.exports = (sequelize, Sequelize) => {
     reference: { type: Sequelize.STRING(120) },
     notes: { type: Sequelize.TEXT },
     created_by: { type: Sequelize.INTEGER },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

@@ -14,5 +14,9 @@ module.exports = (sequelize, Sequelize) => {
     station_to: { type: Sequelize.DECIMAL(12, 3), allowNull: true },
     sort_order: { type: Sequelize.INTEGER, allowNull: true, defaultValue: 0 },
     remarks: { type: Sequelize.TEXT, allowNull: true },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

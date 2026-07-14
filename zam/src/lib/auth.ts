@@ -1,5 +1,7 @@
 const API = process.env.NEXT_PUBLIC_API_URL || '';
 
+import { setStoredTenant, tenantHeaders } from '@/lib/tenant';
+
 const AUTH_KEYS = ['user', 'token', 'permissions', 'role', 'username'] as const;
 
 function readStoredPermissions(): string[] {
@@ -96,7 +98,7 @@ export async function refreshAuthSession(): Promise<{
 
   try {
     const res = await fetch(`${API}/api/auth/me`, {
-      headers: { Authorization: token },
+      headers: tenantHeaders({ Authorization: token }),
     });
 
     if (res.status === 401 || res.status === 403) {
@@ -127,6 +129,9 @@ export async function refreshAuthSession(): Promise<{
 
     // Keep the same token; replace user/permissions completely
     setAuthSession(token, data.user);
+    if (data.user.tenant) {
+      setStoredTenant(data.user.tenant);
+    }
 
     // Sync folder order cache from server preferences
     try {

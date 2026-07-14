@@ -26,7 +26,7 @@ if (process.env.DATABASE_URL) {
     useUrl: false,
     HOST: process.env.DB_HOST || "localhost",
     USER: process.env.DB_USER || "postgres",
-    PASSWORD: process.env.DB_PASSWORD || "3247",
+    PASSWORD: process.env.DB_PASSWORD || "Joker0328",
     DB: process.env.DB_NAME || "road_saas",
     dialect: "postgres",
     dialectOptions: ssl ? { ssl } : {},

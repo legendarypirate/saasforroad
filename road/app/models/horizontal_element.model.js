@@ -13,5 +13,9 @@ module.exports = (sequelize, Sequelize) => {
     easting: { type: Sequelize.DECIMAL(14, 4), allowNull: true },
     remarks: { type: Sequelize.STRING(255), allowNull: true },
     sort_order: { type: Sequelize.INTEGER, allowNull: true, defaultValue: 0 },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

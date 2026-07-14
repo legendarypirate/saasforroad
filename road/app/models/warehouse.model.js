@@ -9,6 +9,10 @@ module.exports = (sequelize, Sequelize) => {
     status: { type: Sequelize.STRING, defaultValue: "active" },
     is_active: { type: Sequelize.BOOLEAN, defaultValue: true },
     deleted_at: { type: Sequelize.DATE },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
   return Warehouse;
 };

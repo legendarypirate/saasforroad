@@ -12,5 +12,9 @@ module.exports = (sequelize, Sequelize) => {
     verified_by: { type: Sequelize.INTEGER, allowNull: true },
     verified_at: { type: Sequelize.DATE, allowNull: true },
     updated_by: { type: Sequelize.INTEGER, allowNull: true },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

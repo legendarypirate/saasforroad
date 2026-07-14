@@ -24,6 +24,10 @@ module.exports = (sequelize, Sequelize) => {
       type: Sequelize.JSON,
       defaultValue: {},
     },
+      tenant_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
   });
 
   return TenderPackage;

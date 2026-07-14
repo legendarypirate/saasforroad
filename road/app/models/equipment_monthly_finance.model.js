@@ -12,7 +12,11 @@ module.exports = (sequelize, Sequelize) => {
       fuel_cost: { type: Sequelize.DECIMAL(14, 2), defaultValue: 0 },
       other_cost: { type: Sequelize.DECIMAL(14, 2), defaultValue: 0 },
       notes: { type: Sequelize.TEXT, allowNull: true },
-    },
+      tenant_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
+  },
     {
       tableName: "equipment_monthly_finances",
       indexes: [

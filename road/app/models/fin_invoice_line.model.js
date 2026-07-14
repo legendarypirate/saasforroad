@@ -6,5 +6,9 @@ module.exports = (sequelize, Sequelize) => {
     unit_price: { type: Sequelize.DECIMAL(18, 2), defaultValue: 0 },
     amount: { type: Sequelize.DECIMAL(18, 2), defaultValue: 0 },
     vat_rate: { type: Sequelize.DECIMAL(5, 2), defaultValue: 10 },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

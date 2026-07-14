@@ -4,7 +4,10 @@ const db = require("../models");
 const User = db.users;
 const { resolveUserRole } = require("../utils/roleHelper");
 const { registerOrUpdateDevice, serializeDevice } = require("../utils/deviceHelper");
-const secretKey = 'your_secret_key';  // You can store this key in .env for better security
+const { signTenantToken } = require("../middleware/tenant");
+const { serializeTenant, normalizeModules } = require("../utils/tenantHelper");
+const { MODULE_CATALOG } = require("../utils/moduleCatalog");
+const secretKey = process.env.JWT_SECRET || "your_secret_key";
 const axios = require("axios");
 
 function normalizePhone(phone) {
@@ -27,22 +30,85 @@ function phoneLookupCandidates(phone) {
   return [...new Set(candidates.filter(Boolean))];
 }
 
-async function findUserByPhone(phone) {
+function tenantWhere(tenantId) {
+  if (!tenantId) return {};
+  return { tenant_id: tenantId };
+}
+
+async function findUserByPhone(phone, tenantId) {
   for (const candidate of phoneLookupCandidates(phone)) {
-    const user = await User.findOne({ where: { phone: candidate } });
+    const user = await User.findOne({
+      where: { phone: candidate, ...tenantWhere(tenantId) },
+    });
     if (user) return user;
   }
   return null;
 }
 
-async function findUserByUsernameOrPhone(loginId) {
+async function findUserByUsernameOrPhone(loginId, tenantId) {
   const identifier = String(loginId || "").trim();
   if (!identifier) return null;
 
-  const byUsername = await User.findOne({ where: { username: identifier } });
+  const byUsername = await User.findOne({
+    where: { username: identifier, ...tenantWhere(tenantId) },
+  });
   if (byUsername) return byUsername;
 
-  return findUserByPhone(identifier);
+  return findUserByPhone(identifier, tenantId);
+}
+
+/** Drop permission keys for modules the platform admin disabled on this tenant. */
+function filterPermissionsByTenantModules(permissions, tenant) {
+  if (!tenant || !Array.isArray(permissions)) return permissions || [];
+  const enabled = new Set(normalizeModules(tenant.modules));
+  const enabledKeys = new Set(
+    MODULE_CATALOG.filter((m) => enabled.has(m.id)).map((m) => m.key)
+  );
+
+  // If all modules enabled, keep everything
+  if (enabled.size >= MODULE_CATALOG.length) return permissions;
+
+  const prefixes = new Set();
+  for (const m of MODULE_CATALOG) {
+    if (!enabled.has(m.id)) continue;
+    const base = m.key.replace(/:module$/, "");
+    prefixes.add(base);
+  }
+
+  return permissions.filter((key) => {
+    if (enabledKeys.has(key)) return true;
+    const base = String(key).split(":")[0].split(".")[0];
+    if (prefixes.has(base)) return true;
+    // Always keep core auth / admin dashboard keys
+    if (key.startsWith("admin:") || key.startsWith("user:") || key.startsWith("role:") || key.startsWith("system")) {
+      return true;
+    }
+    // Keep if any enabled module key prefix matches
+    for (const p of prefixes) {
+      if (key === `${p}:module` || key.startsWith(`${p}:`) || key.startsWith(`${p}.`)) {
+        return true;
+      }
+    }
+    return false;
+  });
+}
+
+function buildAuthUserPayload(user, roleInfo, tenant) {
+  const permissions = filterPermissionsByTenantModules(
+    roleInfo.permissions,
+    tenant
+  );
+  return {
+    id: user.id,
+    username: user.username,
+    role: roleInfo.role,
+    role_id: roleInfo.role_id,
+    permissions,
+    ui_preferences: user.ui_preferences || {},
+    tenant_id: user.tenant_id || tenant?.id || null,
+    is_tenant_superadmin: !!user.is_tenant_superadmin,
+    tenant: tenant ? serializeTenant(tenant) : null,
+  };
 }
 
 // Register a new company user (brigade accounts use POST /api/brigada/auth/register)
@@ -66,8 +132,11 @@ exports.register = async (req, res) => {
   }
 
   try {
-    // Check if user already exists
-    const existingUser = await User.findOne({ where: { username } });
+    const tenantId = req.tenant?.id || null;
+    // Check if user already exists in this tenant
+    const existingUser = await User.findOne({
+      where: { username, ...tenantWhere(tenantId) },
+    });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists!" });
     }
@@ -81,10 +150,17 @@ exports.register = async (req, res) => {
       role: role || "user",
       phone: phone || null,
       affiliation: affiliation || null,
+      tenant_id: tenantId,
     });
 
-    // Generate JWT token
-    const token = jwt.sign({ id: newUser.id, username: newUser.username, role: newUser.role }, secretKey, { expiresIn: "30m" });
+    const token = signTenantToken({
+      id: newUser.id,
+      username: newUser.username,
+      role: newUser.role,
+      role_id: newUser.role_id,
+      tenant_id: newUser.tenant_id,
+      is_tenant_superadmin: false,
+    });
 
     res.status(201).json({
       success: true,
@@ -95,6 +171,7 @@ exports.register = async (req, res) => {
         username: newUser.username,
         role: newUser.role,
         affiliation: newUser.affiliation,
+        tenant_id: newUser.tenant_id,
       }
     });
   } catch (err) {
@@ -113,7 +190,13 @@ exports.login = async (req, res) => {
   }
 
   try {
-    const user = await findUserByUsernameOrPhone(loginId);
+    if (!req.tenant?.id) {
+      return res.status(404).json({
+        message: "Tenant not found for this domain. Contact platform admin.",
+      });
+    }
+
+    const user = await findUserByUsernameOrPhone(loginId, req.tenant.id);
 
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials!" });
@@ -130,23 +213,19 @@ exports.login = async (req, res) => {
     }
 
     const roleInfo = await resolveUserRole(user);
-    const token = jwt.sign(
-      { id: user.id, username: user.username, role: roleInfo.role, role_id: roleInfo.role_id },
-      secretKey,
-      { expiresIn: "30m" }
-    );
+    const token = signTenantToken({
+      id: user.id,
+      username: user.username,
+      role: roleInfo.role,
+      role_id: roleInfo.role_id,
+      tenant_id: user.tenant_id,
+      is_tenant_superadmin: user.is_tenant_superadmin,
+    });
 
     res.json({
       success: true,
       token,
-      user: {
-        id: user.id,
-        username: user.username,
-        role: roleInfo.role,
-        role_id: roleInfo.role_id,
-        permissions: roleInfo.permissions,
-        ui_preferences: user.ui_preferences || {},
-      },
+      user: buildAuthUserPayload(user, roleInfo, req.tenant),
     });
   } catch (err) {
     console.error(err);
@@ -164,7 +243,8 @@ exports.mobile_login = async (req, res) => {
   }
 
   try {
-    const user = await findUserByPhone(phone);
+    const tenantId = req.tenant?.id || null;
+    const user = await findUserByPhone(phone, tenantId);
 
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials!" });
@@ -195,11 +275,14 @@ exports.mobile_login = async (req, res) => {
       });
     }
 
-    const token = jwt.sign(
-      { id: user.id, phone: user.phone, role: roleInfo.role, role_id: roleInfo.role_id },
-      secretKey,
-      { expiresIn: "30m" }
-    );
+    const token = signTenantToken({
+      id: user.id,
+      username: user.username,
+      role: roleInfo.role,
+      role_id: roleInfo.role_id,
+      tenant_id: user.tenant_id,
+      is_tenant_superadmin: user.is_tenant_superadmin,
+    });
 
     res.json({
       success: true,
@@ -210,6 +293,7 @@ exports.mobile_login = async (req, res) => {
         username: user.username,
         role: roleInfo.role,
         role_id: roleInfo.role_id,
+        tenant_id: user.tenant_id,
       },
       device: serializeDevice(device),
     });
@@ -242,17 +326,16 @@ exports.getMe = async (req, res) => {
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
+    if (req.tenant?.id && user.tenant_id && user.tenant_id !== req.tenant.id) {
+      return res.status(403).json({ success: false, message: "User does not belong to this tenant" });
+    }
     const roleInfo = await resolveUserRole(user);
+    const tenant =
+      req.tenant ||
+      (user.tenant_id ? await db.tenants.findByPk(user.tenant_id) : null);
     res.json({
       success: true,
-      user: {
-        id: user.id,
-        username: user.username,
-        role: roleInfo.role,
-        role_id: roleInfo.role_id,
-        permissions: roleInfo.permissions,
-        ui_preferences: user.ui_preferences || {},
-      },
+      user: buildAuthUserPayload(user, roleInfo, tenant),
     });
   } catch (err) {
     console.error(err);
@@ -308,11 +391,14 @@ exports.refresh = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
     const roleInfo = await resolveUserRole(user);
-    const token = jwt.sign(
-      { id: user.id, username: user.username, role: roleInfo.role },
-      secretKey,
-      { expiresIn: "30m" }
-    );
+    const token = signTenantToken({
+      id: user.id,
+      username: user.username,
+      role: roleInfo.role,
+      role_id: roleInfo.role_id,
+      tenant_id: user.tenant_id,
+      is_tenant_superadmin: user.is_tenant_superadmin,
+    });
     res.json({
       success: true,
       token,

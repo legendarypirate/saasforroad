@@ -20,6 +20,10 @@ module.exports = (sequelize, Sequelize) => {
       type: Sequelize.STRING,
       allowNull: true,
     },
+      tenant_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
   });
 
   return Education;

@@ -17,5 +17,9 @@ module.exports = (sequelize, Sequelize) => {
     start_date: { type: Sequelize.DATEONLY, allowNull: true },
     end_date: { type: Sequelize.DATEONLY, allowNull: true },
     created_by: { type: Sequelize.INTEGER, allowNull: true },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

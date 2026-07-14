@@ -29,6 +29,8 @@ db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
 // Register all the models
+db.tenants = require("./tenant.model.js")(sequelize, Sequelize);
+db.platform_admins = require("./platform_admin.model.js")(sequelize, Sequelize);
 db.roles = require("./role.model.js")(sequelize, Sequelize);
 db.permissions = require("./permission.model.js")(sequelize, Sequelize);
 db.role_permissions = require("./role_permission.model.js")(sequelize, Sequelize);
@@ -478,6 +480,13 @@ db.warehouses.hasMany(db.stocks, { foreignKey: "warehouse_id" });
 db.users.belongsTo(db.roles, { foreignKey: "role_id", as: "roleRecord" });
 db.roles.hasMany(db.users, { foreignKey: "role_id" });
 
+db.tenants.hasMany(db.users, { foreignKey: "tenant_id", as: "users" });
+db.users.belongsTo(db.tenants, { foreignKey: "tenant_id", as: "tenant" });
+db.tenants.hasMany(db.roles, { foreignKey: "tenant_id", as: "roles" });
+db.roles.belongsTo(db.tenants, { foreignKey: "tenant_id", as: "tenant" });
+db.tenants.hasMany(db.projects, { foreignKey: "tenant_id", as: "projects" });
+db.projects.belongsTo(db.tenants, { foreignKey: "tenant_id", as: "tenant" });
+
 db.roles.belongsToMany(db.permissions, {
   through: db.role_permissions,
   foreignKey: "roleId",
@@ -875,6 +884,14 @@ db.road_budget_items.belongsTo(db.road_budgets, { foreignKey: "budget_id", as: "
 db.road_budget_items.belongsTo(db.road_budget_rates, { foreignKey: "rate_id", as: "rate" });
 db.road_budgets.hasMany(db.road_budget_assumptions, { foreignKey: "budget_id", as: "assumptions", onDelete: "CASCADE" });
 db.road_budget_assumptions.belongsTo(db.road_budgets, { foreignKey: "budget_id", as: "budget" });
+
+// Inject tenant_id only as a safety net if a new model forgot to declare it.
+// All business *.model.js files now declare tenant_id explicitly.
+const { injectTenantIdAttributes } = require("../utils/tenantColumns");
+const tenantAttrs = injectTenantIdAttributes(db, Sequelize);
+if (tenantAttrs.length) {
+  console.log(`tenant_id attribute injected (missing in model file) on ${tenantAttrs.length} models`);
+}
 
 // Export the db object for easy access throughout the app
 module.exports = db;

@@ -10,5 +10,9 @@ module.exports = (sequelize, Sequelize) => {
     side_slope: { type: Sequelize.DECIMAL(8, 3), allowNull: true },
     ditch_width: { type: Sequelize.DECIMAL(8, 3), allowNull: true },
     remarks: { type: Sequelize.TEXT, allowNull: true },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

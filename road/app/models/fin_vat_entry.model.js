@@ -9,5 +9,9 @@ module.exports = (sequelize, Sequelize) => {
     vat_rate: { type: Sequelize.DECIMAL(5, 2), defaultValue: 10 },
     counterparty: { type: Sequelize.STRING(255) },
     notes: { type: Sequelize.TEXT },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

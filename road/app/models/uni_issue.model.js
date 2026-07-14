@@ -7,5 +7,9 @@ module.exports = (sequelize, Sequelize) => {
     issued_by: { type: Sequelize.INTEGER },
     status: { type: Sequelize.STRING(30), defaultValue: "issued" },
     notes: { type: Sequelize.TEXT },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

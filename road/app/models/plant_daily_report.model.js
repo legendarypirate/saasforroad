@@ -18,5 +18,9 @@ module.exports = (sequelize, Sequelize) => {
     /** draft | submitted | approved */
     status: { type: Sequelize.STRING(20), defaultValue: "submitted" },
     created_by_name: { type: Sequelize.STRING, allowNull: true },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

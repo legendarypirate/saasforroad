@@ -8,5 +8,9 @@ module.exports = (sequelize, Sequelize) => {
     expiry_months: { type: Sequelize.INTEGER, allowNull: true },
     created_by: { type: Sequelize.INTEGER, allowNull: true },
     updated_by: { type: Sequelize.INTEGER, allowNull: true },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

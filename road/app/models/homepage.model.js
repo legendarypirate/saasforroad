@@ -5,6 +5,10 @@ module.exports = (sequelize, Sequelize) => {
       allowNull: false,
       defaultValue: {},
     },
+      tenant_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
   });
 
   return Homepage;

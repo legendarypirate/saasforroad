@@ -32,6 +32,10 @@ module.exports = (sequelize, Sequelize) => {
       type: Sequelize.INTEGER,
       allowNull: false,
     },
+      tenant_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
   });
 
   return TenderDocument;

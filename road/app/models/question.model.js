@@ -6,7 +6,11 @@ module.exports = (sequelize, Sequelize) => {
       question: {
         type: Sequelize.TEXT
       },
-    });
+        tenant_id: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        },
+  });
   
     return Question;
   };

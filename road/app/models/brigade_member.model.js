@@ -28,7 +28,11 @@ module.exports = (sequelize, Sequelize) => {
       },
       current_assignment: { type: Sequelize.STRING(255), allowNull: true },
       photo: { type: Sequelize.STRING(512), allowNull: true },
-    },
+      tenant_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
+  },
     { tableName: "brigade_members" }
   );
 };

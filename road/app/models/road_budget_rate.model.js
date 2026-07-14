@@ -11,5 +11,9 @@ module.exports = (sequelize, Sequelize) => {
     productivity: { type: Sequelize.DECIMAL(12, 3), allowNull: true },
     remarks: { type: Sequelize.TEXT, allowNull: true },
     is_active: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: true },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

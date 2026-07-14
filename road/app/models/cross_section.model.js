@@ -8,5 +8,9 @@ module.exports = (sequelize, Sequelize) => {
     median_width: { type: Sequelize.DECIMAL(8, 3), allowNull: true, defaultValue: 0 },
     left_slope: { type: Sequelize.DECIMAL(8, 3), allowNull: true },
     right_slope: { type: Sequelize.DECIMAL(8, 3), allowNull: true },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

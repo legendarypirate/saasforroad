@@ -12,5 +12,9 @@ module.exports = (sequelize, Sequelize) => {
     engine_hours: { type: Sequelize.DECIMAL(18, 2) },
     issued_by: { type: Sequelize.INTEGER },
     notes: { type: Sequelize.TEXT },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

@@ -494,10 +494,15 @@ function filterModuleList(
   modules: ModuleConfig[],
   userPermissions: string[],
   userRole?: string,
+  enabledModuleIds?: string[] | null,
 ): ModuleConfig[] {
-  if (isAdminRole(userRole)) return modules;
+  const byTenant = enabledModuleIds?.length
+    ? modules.filter((mod) => enabledModuleIds.includes(mod.id))
+    : modules;
 
-  return modules
+  if (isAdminRole(userRole)) return byTenant;
+
+  return byTenant
     .map((mod) => ({
       ...mod,
       items: filterNavItems(mod.items, userPermissions, userRole),
@@ -509,12 +514,20 @@ function filterModuleList(
     });
 }
 
-export function filterModules(userPermissions: string[], userRole?: string): ModuleConfig[] {
-  return filterModuleList(ADMIN_MODULES, userPermissions, userRole);
+export function filterModules(
+  userPermissions: string[],
+  userRole?: string,
+  enabledModuleIds?: string[] | null,
+): ModuleConfig[] {
+  return filterModuleList(ADMIN_MODULES, userPermissions, userRole, enabledModuleIds);
 }
 
-export function filterDataFolders(userPermissions: string[] = [], userRole?: string): ModuleConfig[] {
-  return filterModuleList(ADMIN_DATA_FOLDERS, userPermissions, userRole);
+export function filterDataFolders(
+  userPermissions: string[] = [],
+  userRole?: string,
+  enabledModuleIds?: string[] | null,
+): ModuleConfig[] {
+  return filterModuleList(ADMIN_DATA_FOLDERS, userPermissions, userRole, enabledModuleIds);
 }
 
 export function getModuleForPath(pathname: string): ModuleConfig | null {

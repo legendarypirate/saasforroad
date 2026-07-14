@@ -84,7 +84,11 @@ module.exports = (sequelize, Sequelize) => {
         allowNull: false,
         defaultValue: true,
       },
-    },
+        tenant_id: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        },
+  },
     { tableName: "brigades" }
   );
 };

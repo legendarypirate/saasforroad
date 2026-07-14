@@ -3,5 +3,9 @@ module.exports = (sequelize, Sequelize) => {
     plant_id: { type: Sequelize.INTEGER, allowNull: false },
     material_id: { type: Sequelize.INTEGER, allowNull: false },
     quantity: { type: Sequelize.DECIMAL(14, 3), defaultValue: 0 },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

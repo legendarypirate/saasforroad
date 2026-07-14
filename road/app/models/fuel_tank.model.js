@@ -8,5 +8,9 @@ module.exports = (sequelize, Sequelize) => {
     status: { type: Sequelize.STRING(30), allowNull: false, defaultValue: "active" },
     min_stock: { type: Sequelize.DECIMAL(18, 3), allowNull: false, defaultValue: 0 },
     notes: { type: Sequelize.TEXT },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

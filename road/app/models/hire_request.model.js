@@ -33,7 +33,11 @@ module.exports = (sequelize, Sequelize) => {
         allowNull: false,
         defaultValue: 0,
       },
-    },
+        tenant_id: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        },
+  },
     { tableName: "hire_requests" }
   );
 };

@@ -52,6 +52,10 @@ module.exports = (sequelize, Sequelize) => {
     review_note: {
       type: Sequelize.TEXT,
     },
+      tenant_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
   });
 
   return LeaveRequest;

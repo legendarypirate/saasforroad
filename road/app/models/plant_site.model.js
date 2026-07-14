@@ -24,5 +24,9 @@ module.exports = (sequelize, Sequelize) => {
     rcos_status: { type: Sequelize.STRING(20), allowNull: true },
     rcos_factory_id: { type: Sequelize.INTEGER, allowNull: true },
     rcos_request_id: { type: Sequelize.INTEGER, allowNull: true },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

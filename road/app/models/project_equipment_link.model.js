@@ -10,7 +10,11 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.INTEGER,
         allowNull: false,
       },
-    },
+        tenant_id: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        },
+  },
     {
       tableName: "project_equipment_links",
       indexes: [

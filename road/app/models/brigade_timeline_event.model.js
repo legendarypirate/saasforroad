@@ -9,7 +9,11 @@ module.exports = (sequelize, Sequelize) => {
       description: { type: Sequelize.TEXT, allowNull: true },
       meta: { type: Sequelize.JSONB, allowNull: false, defaultValue: {} },
       actor_user_id: { type: Sequelize.INTEGER, allowNull: true },
-    },
+      tenant_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
+  },
     { tableName: "brigade_timeline_events" }
   );
 };

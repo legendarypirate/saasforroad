@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { clearAuthSession, refreshAuthSession, setAuthSession } from '@/lib/auth';
+import { fetchCurrentTenant, setStoredTenant, tenantHeaders } from '@/lib/tenant';
 import { uiToast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 
@@ -43,6 +44,7 @@ export default function LoginPage() {
     let cancelled = false;
 
     (async () => {
+      await fetchCurrentTenant();
       const token = localStorage.getItem('token');
       if (!token) {
         clearAuthSession();
@@ -87,7 +89,7 @@ export default function LoginPage() {
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: tenantHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ username: username.trim(), password }),
       });
       const data = await res.json();
@@ -95,6 +97,11 @@ export default function LoginPage() {
       if (res.ok && data.success) {
         uiToast.success('Амжилттай нэвтэрлээ!');
         setAuthSession(data.token, data.user);
+        if (data.user?.tenant) {
+          setStoredTenant(data.user.tenant);
+        } else {
+          await fetchCurrentTenant();
+        }
         try {
           const folderOrder = data.user?.ui_preferences?.folderOrder;
           if (folderOrder && typeof folderOrder === 'object' && data.user?.id != null) {

@@ -11,5 +11,9 @@ module.exports = (sequelize, Sequelize) => {
     /** draft | posted */
     status: { type: Sequelize.STRING(20), defaultValue: "posted" },
     notes: { type: Sequelize.TEXT, allowNull: true },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

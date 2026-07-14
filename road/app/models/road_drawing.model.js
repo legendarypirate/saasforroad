@@ -7,5 +7,9 @@ module.exports = (sequelize, Sequelize) => {
     status: { type: Sequelize.STRING(30), allowNull: false, defaultValue: "draft" },
     file_url: { type: Sequelize.STRING(500), allowNull: true },
     remarks: { type: Sequelize.TEXT, allowNull: true },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

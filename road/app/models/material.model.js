@@ -22,6 +22,10 @@ module.exports = (sequelize, Sequelize) => {
     is_asset: { type: Sequelize.BOOLEAN, defaultValue: false },
     is_active: { type: Sequelize.BOOLEAN, defaultValue: true },
     deleted_at: { type: Sequelize.DATE },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
   return Material;
 };

@@ -11,5 +11,9 @@ module.exports = (sequelize, Sequelize) => {
     description: { type: Sequelize.TEXT },
     created_by: { type: Sequelize.INTEGER },
     approved_by: { type: Sequelize.INTEGER },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

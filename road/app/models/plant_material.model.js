@@ -7,5 +7,9 @@ module.exports = (sequelize, Sequelize) => {
     min_stock: { type: Sequelize.DECIMAL(14, 2), defaultValue: 0 },
     unit_cost_default: { type: Sequelize.DECIMAL(14, 2), defaultValue: 0 },
     notes: { type: Sequelize.TEXT, allowNull: true },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

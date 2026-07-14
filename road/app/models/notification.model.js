@@ -23,7 +23,11 @@ module.exports = (sequelize, Sequelize) => {
       project_id: { type: Sequelize.INTEGER, allowNull: true },
       published_at: { type: Sequelize.DATE, allowNull: true },
       expires_at: { type: Sequelize.DATE, allowNull: true },
-    },
+      tenant_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
+  },
     { tableName: "notifications" }
   );
 };

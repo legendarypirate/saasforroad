@@ -11,5 +11,9 @@ module.exports = (sequelize, Sequelize) => {
     end_date: { type: Sequelize.DATEONLY },
     status: { type: Sequelize.STRING(30), defaultValue: "active" },
     notes: { type: Sequelize.TEXT },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

@@ -45,6 +45,10 @@ module.exports = (sequelize, Sequelize) => {
     check_out_distance_meters: {
       type: Sequelize.INTEGER,
     },
+      tenant_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
   });
 
   return Attendance;

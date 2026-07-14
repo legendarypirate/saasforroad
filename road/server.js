@@ -17,11 +17,25 @@ const db = require("./app/models");
 const dbConfig = require("./app/config/db.config");
 const { seedPermissionsAndRoles, seedDocumentFolders, seedEquipmentCategories } = require("./app/utils/seed");
 const { ensureSchema } = require("./app/utils/ensureSchema");
+const { resolveTenant } = require("./app/middleware/tenant");
+const { bindTenantContext, registerTenantHooks } = require("./app/middleware/tenantScope");
+const {
+  ensureDefaultTenant,
+  ensurePlatformAdmin,
+} = require("./app/utils/tenantBootstrap");
+const {
+  ensureTenantColumns,
+  listTenantScopedModels,
+} = require("./app/utils/tenantColumns");
+
+app.use(resolveTenant);
+app.use(bindTenantContext);
 
 function registerRoutes() {
   app.get("/", (req, res) => {
     res.json({ message: "Welcome to the application." });
   });
+  require("./app/routes/platform.routes")(app);
   require("./app/routes/transaction.routes")(app);
   require("./app/routes/inventory.routes")(app);
   require("./app/routes/invite.routes")(app);
@@ -101,6 +115,13 @@ async function start() {
 
     await db.sequelize.authenticate();
     await db.sequelize.sync();
+    const tenantCols = await ensureTenantColumns(db.sequelize, db);
+    if (tenantCols > 0) {
+      console.log(`Added tenant_id column to ${tenantCols} table(s)`);
+    }
+    registerTenantHooks(db);
+    const scoped = listTenantScopedModels(db);
+    console.log(`Tenant scope active on ${scoped.length} models`);
     await ensureSchema(db.sequelize, db.users);
     const { migrateBrigadeSeparation } = require("./app/utils/migrateBrigadeSeparation");
     await migrateBrigadeSeparation(db);
@@ -108,7 +129,9 @@ async function start() {
     await migrateProjectFidic(db);
     const { migrateLegacyEquipment } = require("./app/utils/migrateEquipment");
     await migrateLegacyEquipment(db.sequelize, db);
+    await ensureDefaultTenant();
     await seedPermissionsAndRoles();
+    await ensurePlatformAdmin();
     await seedDocumentFolders();
     await seedEquipmentCategories();
     const { seedRoadEngineering } = require("./app/utils/seedRoadEngineering");

@@ -9,6 +9,10 @@ module.exports = (sequelize, Sequelize) => {
     parent_id: {
       type: Sequelize.INTEGER
     },
+      tenant_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
   });
 
   return Category;

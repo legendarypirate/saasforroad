@@ -9,7 +9,11 @@ module.exports = (sequelize, Sequelize) => {
       on_order_quantity: { type: Sequelize.DECIMAL(14, 3), defaultValue: 0 },
       average_cost: { type: Sequelize.DECIMAL(14, 2), defaultValue: 0 },
       last_updated: { type: Sequelize.DATE },
-    },
+      tenant_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
+  },
     {
       indexes: [
         { unique: true, fields: ["item_id", "warehouse_id"] },

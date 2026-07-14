@@ -9,5 +9,9 @@ module.exports = (sequelize, Sequelize) => {
     currency: { type: Sequelize.STRING(8), defaultValue: "MNT" },
     is_active: { type: Sequelize.BOOLEAN, defaultValue: true },
     notes: { type: Sequelize.TEXT },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

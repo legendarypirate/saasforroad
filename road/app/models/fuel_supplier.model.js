@@ -7,5 +7,9 @@ module.exports = (sequelize, Sequelize) => {
     tax_number: { type: Sequelize.STRING(80) },
     status: { type: Sequelize.STRING(30), allowNull: false, defaultValue: "active" },
     notes: { type: Sequelize.TEXT },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

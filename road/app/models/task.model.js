@@ -30,7 +30,11 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.ENUM("low", "medium", "high", "urgent"),
         defaultValue: "medium",
       },
-    });
+        tenant_id: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        },
+  });
   
     return Task;
   };

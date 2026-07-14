@@ -42,6 +42,10 @@ module.exports = (sequelize, Sequelize) => {
     notes: {
       type: Sequelize.TEXT,
     },
+      tenant_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
   });
 
   return EquipmentRentalPayment;

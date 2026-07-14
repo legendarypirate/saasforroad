@@ -22,6 +22,10 @@ module.exports = (sequelize, Sequelize) => {
     approved_by: { type: Sequelize.INTEGER },
     transaction_date: { type: Sequelize.DATEONLY, allowNull: false },
     remarks: { type: Sequelize.TEXT },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
   return InvStockMovement;
 };

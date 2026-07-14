@@ -9,5 +9,9 @@ module.exports = (sequelize, Sequelize) => {
     grade_in: { type: Sequelize.DECIMAL(10, 6), allowNull: true },
     grade_out: { type: Sequelize.DECIMAL(10, 6), allowNull: true },
     sort_order: { type: Sequelize.INTEGER, allowNull: true, defaultValue: 0 },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

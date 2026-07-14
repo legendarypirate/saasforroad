@@ -6,5 +6,9 @@ module.exports = (sequelize, Sequelize) => {
     result: { type: Sequelize.STRING(10), allowNull: false, defaultValue: "pass" },
     comment: { type: Sequelize.TEXT, allowNull: true },
     photo_url: { type: Sequelize.STRING(500), allowNull: true },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

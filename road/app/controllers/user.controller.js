@@ -20,12 +20,14 @@ const userInclude = [
   { model: Role, as: "roleRecord", attributes: ["id", "name", "mobile_access"] },
 ];
 
-async function resolveRoleFields(body) {
+async function resolveRoleFields(body, tenantId) {
   const roleId = body.role_id || body.roleId || null;
   if (!roleId) {
     return { role_id: null, role: body.role || "user" };
   }
-  const role = await Role.findByPk(roleId);
+  const where = { id: roleId };
+  if (tenantId) where.tenant_id = tenantId;
+  const role = await Role.findOne({ where });
   if (!role) {
     throw new Error("Role not found");
   }
@@ -40,13 +42,14 @@ exports.create = async (req, res) => {
 
   try {
     const hashedPassword = await bcrypt.hash(req.body.password, saltRounds);
-    const roleFields = await resolveRoleFields(req.body);
+    const roleFields = await resolveRoleFields(req.body, req.tenant?.id);
 
     const user = {
       username: req.body.username,
       email: req.body.email,
       phone: req.body.phone,
       password: hashedPassword,
+      tenant_id: req.tenant?.id || req.body.tenant_id || null,
       ...roleFields,
     };
 
@@ -71,6 +74,9 @@ exports.findAll = async (req, res) => {
   }
   if (role_id) {
     condition.role_id = role_id;
+  }
+  if (req.tenant?.id) {
+    condition.tenant_id = req.tenant.id;
   }
 
   // Brigade accounts are outside the company — hide from company user lists by default.
@@ -219,17 +225,23 @@ exports.update = async (req, res) => {
   });
 
   try {
+    const existingUser = await User.findByPk(id);
+    if (!existingUser) {
+      return res.status(404).send({
+        message: `Cannot update User with id=${id}. Maybe User was not found or req.body is empty!`,
+      });
+    }
+
     if (req.body.role_id) {
-      const roleFields = await resolveRoleFields(req.body);
+      const roleFields = await resolveRoleFields(
+        req.body,
+        req.tenant?.id || existingUser.tenant_id
+      );
       Object.assign(updateData, roleFields);
     }
 
-    const existingUser = await User.findByPk(id);
-    if (!existingUser) {
-      return res.status(404).json({
-        success: false,
-        message: `User with id=${id} not found.`,
-      });
+    if (req.tenant?.id && existingUser.tenant_id && existingUser.tenant_id !== req.tenant.id) {
+      return res.status(403).send({ message: "User belongs to another tenant" });
     }
 
     const [num] = await User.update(updateData, { where: { id } });

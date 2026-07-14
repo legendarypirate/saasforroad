@@ -6,5 +6,9 @@ module.exports = (sequelize, Sequelize) => {
     length: { type: Sequelize.DECIMAL(10, 3), allowNull: true },
     width: { type: Sequelize.DECIMAL(10, 3), allowNull: true },
     remarks: { type: Sequelize.TEXT, allowNull: true },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

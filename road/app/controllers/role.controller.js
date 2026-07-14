@@ -16,6 +16,7 @@ exports.create = (req, res) => {
     name: req.body.name,
     description: req.body.description || null,
     mobile_access: req.body.mobile_access === true,
+    tenant_id: req.tenant?.id || req.body.tenant_id || null,
   };
 
   Role.create(cat)
@@ -33,12 +34,12 @@ exports.create = (req, res) => {
 // Retrieve all Role from the database.
 exports.findAll = async (req, res) => {
   const name = req.query.name;
-  var condition = name ? { name: { [Op.like]: `%${name}%` } } : null;
+  var condition = {};
+  if (name) condition.name = { [Op.like]: `%${name}%` };
+  if (req.tenant?.id) condition.tenant_id = req.tenant.id;
 
   try {
-      console.log("ss");    
     const data = await Role.findAll({ where: condition });
-    console.log(data);
 
     res.send({
       success: true,

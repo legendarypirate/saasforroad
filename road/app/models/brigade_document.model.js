@@ -14,7 +14,11 @@ module.exports = (sequelize, Sequelize) => {
       expires_at: { type: Sequelize.DATEONLY, allowNull: true },
       uploaded_by: { type: Sequelize.INTEGER, allowNull: true },
       notes: { type: Sequelize.TEXT, allowNull: true },
-    },
+      tenant_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
+  },
     { tableName: "brigade_documents" }
   );
 };

@@ -13,7 +13,11 @@ module.exports = (sequelize, Sequelize) => {
       signature_url: { type: Sequelize.STRING(500), allowNull: true },
       instruction_version: { type: Sequelize.INTEGER, allowNull: false, defaultValue: 1 },
       offline_synced: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
-    },
+      tenant_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
+  },
     {
       indexes: [
         {

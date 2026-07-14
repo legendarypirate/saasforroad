@@ -9,5 +9,9 @@ module.exports = (sequelize, Sequelize) => {
     status: { type: Sequelize.STRING(20), allowNull: false, defaultValue: "draft" },
     created_by: { type: Sequelize.INTEGER, allowNull: true },
     updated_by: { type: Sequelize.INTEGER, allowNull: true },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

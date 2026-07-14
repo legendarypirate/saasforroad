@@ -10,5 +10,9 @@ module.exports = (sequelize, Sequelize) => {
     min_stock: { type: Sequelize.INTEGER, allowNull: false, defaultValue: 0 },
     is_active: { type: Sequelize.BOOLEAN, defaultValue: true },
     notes: { type: Sequelize.TEXT },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

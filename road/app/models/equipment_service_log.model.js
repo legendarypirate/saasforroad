@@ -14,7 +14,11 @@ module.exports = (sequelize, Sequelize) => {
       engineer: { type: Sequelize.STRING, allowNull: true },
       next_service_date: { type: Sequelize.DATEONLY, allowNull: true },
       notes: { type: Sequelize.TEXT, allowNull: true },
-    },
+      tenant_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
+  },
     { tableName: "equipment_service_logs" }
   );
   return EquipmentServiceLog;

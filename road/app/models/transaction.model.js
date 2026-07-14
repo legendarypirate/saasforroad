@@ -36,7 +36,11 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.DATEONLY,
         allowNull: false,
       },
-    });
+        tenant_id: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        },
+  });
   
     return Transaction;
   };

@@ -39,7 +39,11 @@ module.exports = (sequelize, Sequelize) => {
       emergency_phone: { type: Sequelize.STRING(40), allowNull: true },
       notes: { type: Sequelize.TEXT, allowNull: true },
       is_active: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: true },
-    },
+      tenant_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
+  },
     { tableName: "students" }
   );
 };

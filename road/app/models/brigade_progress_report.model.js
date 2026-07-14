@@ -13,7 +13,11 @@ module.exports = (sequelize, Sequelize) => {
       photos: { type: Sequelize.JSONB, allowNull: false, defaultValue: [] },
       comments: { type: Sequelize.TEXT, allowNull: true },
       created_by: { type: Sequelize.INTEGER, allowNull: true },
-    },
+      tenant_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
+  },
     { tableName: "brigade_progress_reports" }
   );
 };

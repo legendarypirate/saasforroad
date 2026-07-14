@@ -45,7 +45,11 @@ module.exports = (sequelize, Sequelize) => {
       note: {
         type: Sequelize.STRING(500),
       },
-    },
+        tenant_id: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        },
+  },
     {
       indexes: [
         {

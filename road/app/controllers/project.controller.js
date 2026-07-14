@@ -182,6 +182,9 @@ exports.create = async (req, res) => {
     if (!project.baseline_end && project.planned_end) {
       project.baseline_end = project.planned_end;
     }
+    if (req.tenant?.id) {
+      project.tenant_id = req.tenant.id;
+    }
 
     const data = await Project.create(project);
     const seedPhases = req.body.seed_phases !== false;
@@ -328,6 +331,7 @@ exports.findAll = async (req, res) => {
   if (stage) where.stage = stage;
   if (province) where.province = { [Op.iLike]: `%${province}%` };
   if (contract_type) where.contract_type = contract_type;
+  if (req.tenant?.id) where.tenant_id = req.tenant.id;
 
   try {
     const data = await Project.findAll({

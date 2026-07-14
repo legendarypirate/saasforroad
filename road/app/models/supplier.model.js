@@ -19,6 +19,10 @@ module.exports = (sequelize, Sequelize) => {
     register: {
       type: Sequelize.STRING
     }
+      tenant_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
   });
 
   return Supplier;

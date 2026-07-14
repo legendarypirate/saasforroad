@@ -5,5 +5,9 @@ module.exports = (sequelize, Sequelize) => {
     category: { type: Sequelize.STRING(120), allowNull: false },
     planned_amount: { type: Sequelize.DECIMAL(18, 2), defaultValue: 0 },
     notes: { type: Sequelize.TEXT },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

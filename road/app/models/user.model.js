@@ -154,6 +154,17 @@ module.exports = (sequelize, Sequelize) => {
         allowNull: false,
         defaultValue: {},
       },
+      /** SaaS tenant this user belongs to (null only during migration) */
+        tenant_id: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        },
+      /** Exactly one superadmin per tenant; managed by platform admin */
+      is_tenant_superadmin: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
     });
   
     return User;

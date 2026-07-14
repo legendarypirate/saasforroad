@@ -13,5 +13,9 @@ module.exports = (sequelize, Sequelize) => {
     is_high: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
     fuel_type: { type: Sequelize.STRING(40) },
     notes: { type: Sequelize.TEXT },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

@@ -10,5 +10,9 @@ module.exports = (sequelize, Sequelize) => {
     fill_area: { type: Sequelize.DECIMAL(12, 3), allowNull: true, defaultValue: 0 },
     cut_volume: { type: Sequelize.DECIMAL(14, 3), allowNull: true, defaultValue: 0 },
     fill_volume: { type: Sequelize.DECIMAL(14, 3), allowNull: true, defaultValue: 0 },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

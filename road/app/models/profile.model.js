@@ -39,8 +39,11 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.STRING,
         defaultValue: 0
       },
-    
-    });
+        tenant_id: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        },
+  });
     return Profile;
   };
   

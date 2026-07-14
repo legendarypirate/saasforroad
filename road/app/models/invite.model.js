@@ -11,7 +11,11 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.STRING,
         defaultValue: "member",
       },
-    });
+        tenant_id: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        },
+  });
   
     return Invite;
   };

@@ -10,5 +10,9 @@ module.exports = (sequelize, Sequelize) => {
     tank_id: { type: Sequelize.INTEGER, allowNull: false },
     notes: { type: Sequelize.TEXT },
     created_by: { type: Sequelize.INTEGER },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

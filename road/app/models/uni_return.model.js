@@ -6,5 +6,9 @@ module.exports = (sequelize, Sequelize) => {
     condition: { type: Sequelize.STRING(30), defaultValue: "good" },
     notes: { type: Sequelize.TEXT },
     received_by: { type: Sequelize.INTEGER },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

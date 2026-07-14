@@ -22,6 +22,10 @@ module.exports = (sequelize, Sequelize) => {
     },
     notes: { type: Sequelize.TEXT, allowNull: true },
     changed_by: { type: Sequelize.STRING, allowNull: true },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 
   return EquipmentOilChange;

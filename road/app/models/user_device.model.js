@@ -47,6 +47,10 @@ module.exports = (sequelize, Sequelize) => {
     last_seen_at: {
       type: Sequelize.DATE,
     },
+      tenant_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
   }, {
     indexes: [
       { unique: true, fields: ['user_id', 'device_id'] },

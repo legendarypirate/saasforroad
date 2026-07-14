@@ -6,6 +6,10 @@ module.exports = (sequelize, Sequelize) => {
     unit_cost: { type: Sequelize.DECIMAL(14, 2), defaultValue: 0 },
     total_cost: { type: Sequelize.DECIMAL(14, 2), defaultValue: 0 },
     remarks: { type: Sequelize.STRING },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
   return InvDocumentLine;
 };

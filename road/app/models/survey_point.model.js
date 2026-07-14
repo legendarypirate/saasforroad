@@ -8,5 +8,9 @@ module.exports = (sequelize, Sequelize) => {
     elevation: { type: Sequelize.DECIMAL(10, 3), allowNull: true },
     point_code: { type: Sequelize.STRING(50), allowNull: true },
     description: { type: Sequelize.STRING(255), allowNull: true },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

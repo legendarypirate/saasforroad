@@ -13,7 +13,11 @@ module.exports = (sequelize, Sequelize) => {
       is_read: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
       related_id: { type: Sequelize.INTEGER, allowNull: true },
       related_type: { type: Sequelize.STRING(60), allowNull: true },
-    },
+      tenant_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
+  },
     { tableName: "brigade_notifications" }
   );
 };

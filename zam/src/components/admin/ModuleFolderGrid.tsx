@@ -63,6 +63,7 @@ import {
   type FolderSectionKey,
 } from '@/lib/adminFolderOrder';
 import { cn } from '@/lib/utils';
+import { getEnabledModuleIds } from '@/lib/tenant';
 
 const MODULE_ICONS: Record<string, LucideIcon> = {
   'road-engineering': Construction,
@@ -270,13 +271,14 @@ function FolderSection({
 
 export default function ModuleFolderGrid({ userPermissions, userRole }: ModuleFolderGridProps) {
   const router = useRouter();
+  const enabledModules = useMemo(() => getEnabledModuleIds(), []);
   const baseModules = useMemo(
-    () => filterModules(userPermissions, userRole),
-    [userPermissions, userRole],
+    () => filterModules(userPermissions, userRole, enabledModules),
+    [userPermissions, userRole, enabledModules],
   );
   const baseData = useMemo(
-    () => filterDataFolders(userPermissions, userRole),
-    [userPermissions, userRole],
+    () => filterDataFolders(userPermissions, userRole, enabledModules),
+    [userPermissions, userRole, enabledModules],
   );
 
   const [order, setOrder] = useState<FolderOrderMap>({});

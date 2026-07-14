@@ -6,5 +6,9 @@ module.exports = (sequelize, Sequelize) => {
     length: { type: Sequelize.DECIMAL(12, 3), allowNull: true, defaultValue: 0 },
     start_station: { type: Sequelize.DECIMAL(12, 3), allowNull: true, defaultValue: 0 },
     end_station: { type: Sequelize.DECIMAL(12, 3), allowNull: true, defaultValue: 0 },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

@@ -8,5 +8,9 @@ module.exports = (sequelize, Sequelize) => {
     unit_price: { type: Sequelize.DECIMAL(14, 2), allowNull: true, defaultValue: 0 },
     category: { type: Sequelize.STRING(80), allowNull: true },
     remarks: { type: Sequelize.TEXT, allowNull: true },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

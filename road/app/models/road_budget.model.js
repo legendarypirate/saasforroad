@@ -24,5 +24,9 @@ module.exports = (sequelize, Sequelize) => {
     approved_by: { type: Sequelize.STRING(120), allowNull: true },
     approved_at: { type: Sequelize.DATE, allowNull: true },
     created_by: { type: Sequelize.INTEGER, allowNull: true },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

@@ -38,6 +38,10 @@ module.exports = (sequelize, Sequelize) => {
         key: 'id'
       }
     }
+        tenant_id: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        },
   });
 
   return Info;

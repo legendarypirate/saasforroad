@@ -3,9 +3,11 @@ module.exports = (sequelize, Sequelize) => {
       age: {
         type: Sequelize.STRING
       },
-    
-    
-    });
+        tenant_id: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        },
+  });
   
     return Age;
   };

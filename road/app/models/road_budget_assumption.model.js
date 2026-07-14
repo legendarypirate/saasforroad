@@ -5,5 +5,9 @@ module.exports = (sequelize, Sequelize) => {
     label: { type: Sequelize.STRING(150), allowNull: false },
     value: { type: Sequelize.STRING(120), allowNull: true },
     unit: { type: Sequelize.STRING(30), allowNull: true },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

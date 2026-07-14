@@ -18,5 +18,9 @@ module.exports = (sequelize, Sequelize) => {
     invoice_no: { type: Sequelize.STRING(80), allowNull: true },
     delivery_note: { type: Sequelize.STRING(120), allowNull: true },
     notes: { type: Sequelize.TEXT, allowNull: true },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

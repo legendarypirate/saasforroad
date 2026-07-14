@@ -21,7 +21,11 @@ module.exports = (sequelize, Sequelize) => {
       image: {
         type: Sequelize.STRING
       },
-    });
+        tenant_id: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        },
+  });
 
     return Product;
   };

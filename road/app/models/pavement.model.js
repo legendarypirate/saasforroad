@@ -8,5 +8,9 @@ module.exports = (sequelize, Sequelize) => {
     material: { type: Sequelize.STRING(100), allowNull: true },
     width: { type: Sequelize.DECIMAL(8, 3), allowNull: true },
     remarks: { type: Sequelize.TEXT, allowNull: true },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

@@ -26,6 +26,10 @@ module.exports = (sequelize, Sequelize) => {
     posted_at: { type: Sequelize.DATE },
     cancelled_at: { type: Sequelize.DATE },
     cancel_reason: { type: Sequelize.TEXT },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
   return InvDocument;
 };

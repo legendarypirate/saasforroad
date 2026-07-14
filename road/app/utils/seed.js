@@ -255,7 +255,10 @@ async function linkAdminUsers(adminRole) {
   if (!adminRole) return 0;
 
   const users = await db.users.findAll({
-    attributes: ["id", "username", "role", "role_id"],
+    attributes: ["id", "username", "role", "role_id", "tenant_id"],
+    where: adminRole.tenant_id
+      ? { tenant_id: adminRole.tenant_id }
+      : undefined,
   });
 
   let updated = 0;
@@ -362,21 +365,33 @@ async function seedPermissionsAndRoles() {
   const allPermissions = await db.permissions.findAll();
   const allPermissionIds = allPermissions.map((p) => p.id);
 
+  // Roles are per-tenant. Seed (or re-sync) for the default tenant only here;
+  // new tenants get roles via tenantBootstrap.seedRolesForTenant.
+  const defaultSlug = process.env.DEFAULT_TENANT_SLUG || "default";
+  const defaultTenant = await db.tenants.findOne({ where: { slug: defaultSlug } });
+  const tenantId = defaultTenant?.id || null;
+
   let adminRole = null;
 
   for (const roleDef of DEFAULT_ROLES) {
+    const where = tenantId
+      ? { name: roleDef.name, tenant_id: tenantId }
+      : { name: roleDef.name };
+
     const [role] = await db.roles.findOrCreate({
-      where: { name: roleDef.name },
+      where,
       defaults: {
         name: roleDef.name,
         description: roleDef.description,
         mobile_access: roleDef.mobile_access,
+        tenant_id: tenantId,
       },
     });
 
     await role.update({
       description: roleDef.description,
       mobile_access: roleDef.mobile_access,
+      tenant_id: tenantId ?? role.tenant_id,
     });
 
     const permissionIds =
@@ -409,8 +424,10 @@ async function seedPermissionsAndRoles() {
     }
   }
 
-  // Also grant full permissions to any other role named like admin (e.g. "Admin")
-  const extraAdminRoles = await db.roles.findAll();
+  // Also grant full permissions to any other admin-like role in this tenant
+  const extraAdminRoles = await db.roles.findAll({
+    where: tenantId ? { tenant_id: tenantId } : undefined,
+  });
   for (const role of extraAdminRoles) {
     if (!isAdminRoleName(role.name)) continue;
     if (adminRole && role.id === adminRole.id) continue;
@@ -424,7 +441,7 @@ async function seedPermissionsAndRoles() {
   await linkAdminUsers(adminRole);
 
   console.log(
-    `Roles and permissions seeded. (${allPermissions.length} permissions, ${DEFAULT_ROLES.length} default roles)`
+    `Roles and permissions seeded. (${allPermissions.length} permissions, ${DEFAULT_ROLES.length} default roles, tenant=${tenantId || "none"})`
   );
 }
 

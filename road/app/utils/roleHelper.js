@@ -38,7 +38,12 @@ async function resolveUserRole(user) {
   // Legacy: only string role, no role_id
   if (isAdminRoleName(user.role)) {
     const all = await db.permissions.findAll({ attributes: ["key"] });
-    const adminRole = await db.roles.findOne({ where: { name: "Админ" } });
+    const adminRole = await db.roles.findOne({
+      where: {
+        name: "Админ",
+        ...(user.tenant_id ? { tenant_id: user.tenant_id } : {}),
+      },
+    });
     return {
       role_id: adminRole?.id || null,
       role: adminRole?.name || user.role,

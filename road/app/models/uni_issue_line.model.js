@@ -6,5 +6,9 @@ module.exports = (sequelize, Sequelize) => {
     qty: { type: Sequelize.INTEGER, allowNull: false, defaultValue: 1 },
     qty_returned: { type: Sequelize.INTEGER, allowNull: false, defaultValue: 0 },
     condition_note: { type: Sequelize.STRING(255) },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

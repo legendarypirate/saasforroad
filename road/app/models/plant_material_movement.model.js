@@ -11,5 +11,9 @@ module.exports = (sequelize, Sequelize) => {
     ref_id: { type: Sequelize.INTEGER, allowNull: true },
     notes: { type: Sequelize.TEXT, allowNull: true },
     created_by: { type: Sequelize.INTEGER, allowNull: true },
+    tenant_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
 };

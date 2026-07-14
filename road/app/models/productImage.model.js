@@ -15,7 +15,11 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: false,
       }
-    });
+        tenant_id: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        },
+  });
   
     ProductImage.associate = function(models) {
       ProductImage.belongsTo(models.Product, {

@@ -15,7 +15,11 @@ module.exports = (sequelize, Sequelize) => {
       issuer: { type: Sequelize.STRING, allowNull: true },
       paid: { type: Sequelize.BOOLEAN, allowNull: true },
       notes: { type: Sequelize.TEXT, allowNull: true },
-    },
+      tenant_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
+  },
     { tableName: "equipment_documents" }
   );
   return EquipmentDocument;
