@@ -203,6 +203,18 @@ exports.updateTenant = async (req, res) => {
       );
       patch.domain = merged.domain;
       patch.domains = merged.domains;
+
+      const taken = await db.tenants.findOne({
+        where: {
+          domain: patch.domain,
+          id: { [Op.ne]: tenant.id },
+        },
+      });
+      if (taken) {
+        return res.status(409).json({
+          message: `Domain "${patch.domain}" is already used by tenant "${taken.name}" (slug: ${taken.slug}, id: ${taken.id}). Clear or change that tenant's primary domain first.`,
+        });
+      }
     }
     if (patch.domains && !patch.domain) {
       const merged = withSaasAlias(tenant.slug, tenant.domain, patch.domains);
@@ -216,6 +228,13 @@ exports.updateTenant = async (req, res) => {
     res.json({ success: true, tenant: serializeTenant(tenant) });
   } catch (err) {
     console.error(err);
+    if (err.name === "SequelizeUniqueConstraintError") {
+      const field = err.fields ? Object.keys(err.fields)[0] : "field";
+      return res.status(409).json({
+        message: `That ${field} is already used by another tenant.`,
+        fields: err.fields,
+      });
+    }
     res.status(500).json({ message: err.message || "Internal server error" });
   }
 };
