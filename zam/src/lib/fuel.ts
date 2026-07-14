@@ -61,7 +61,9 @@ export type FuelReports = {
   consumptions: Array<Record<string, unknown>>;
 };
 
-function toQs(query?: Record<string, string | undefined | null>) {
+type FuelQuery = Record<string, string | undefined | null>;
+
+function toQs(query?: FuelQuery) {
   if (!query) return '';
   const parts = Object.entries(query)
     .filter(([, v]) => v != null && v !== '')
@@ -73,11 +75,11 @@ export async function fetchFuelDashboard(): Promise<FuelDashboard | null> {
   return fuelFetch<FuelDashboard>('/dashboard');
 }
 
-export async function fetchFuelReports(query?: Record<string, string>): Promise<FuelReports | null> {
+export async function fetchFuelReports(query?: FuelQuery): Promise<FuelReports | null> {
   return fuelFetch<FuelReports>(`/reports${toQs(query)}`);
 }
 
-export async function fetchFuelList<T>(resource: string, query?: Record<string, string>): Promise<T[]> {
+export async function fetchFuelList<T>(resource: string, query?: FuelQuery): Promise<T[]> {
   return (await fuelFetch<T[]>(`/${resource}${toQs(query)}`)) || [];
 }
 
