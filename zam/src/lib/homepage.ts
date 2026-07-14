@@ -20,6 +20,7 @@ import {
   type SiteCustomPage,
   type SiteNavItem,
 } from './siteMenu';
+import { tenantHeaders } from '@/lib/tenant';
 
 export interface HomepageStat {
   value: string;
@@ -290,17 +291,26 @@ export function resolveImageUrl(path: string): string {
 
 export async function fetchPublicHomepage(): Promise<HomepageContent> {
   try {
-    const res = await fetch(`${API}/api/homepage/public`, { cache: 'no-store' });
+    const res = await fetch(`${API}/api/homepage/public`, {
+      cache: 'no-store',
+      headers: tenantHeaders(),
+    });
+    if (res.status === 404) {
+      throw new Error('TENANT_NOT_FOUND');
+    }
     const json = await res.json();
     return json.success ? mergeHomepageContent(json.data) : getDefaultHomepageContent();
-  } catch {
+  } catch (err) {
+    if (err instanceof Error && err.message === 'TENANT_NOT_FOUND') throw err;
     return getDefaultHomepageContent();
   }
 }
 
 export async function fetchAdminHomepage(): Promise<HomepageContent | null> {
   try {
-    const res = await fetch(`${API}/api/homepage`);
+    const res = await fetch(`${API}/api/homepage`, {
+      headers: tenantHeaders(),
+    });
     const json = await res.json();
     return json.success ? mergeHomepageContent(json.data) : null;
   } catch {
@@ -312,7 +322,7 @@ export async function saveHomepage(content: HomepageContent): Promise<HomepageCo
   try {
     const res = await fetch(`${API}/api/homepage`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: tenantHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(content),
     });
     const json = await res.json();
@@ -327,7 +337,11 @@ export async function uploadHomepageImage(file: File): Promise<string | null> {
   try {
     const form = new FormData();
     form.append('image', file);
-    const res = await fetch(`${API}/api/homepage/upload`, { method: 'POST', body: form });
+    const res = await fetch(`${API}/api/homepage/upload`, {
+      method: 'POST',
+      body: form,
+      headers: tenantHeaders(),
+    });
     const json = await res.json();
     if (!json.success) {
       throw new Error(json.message || 'Зураг байршуулахад алдаа гарлаа');

@@ -20,13 +20,17 @@ export default function Home() {
   const [content, setContent] = useState<HomepageContent>(getDefaultHomepageContent());
 
   useEffect(() => {
-    fetchPublicHomepage().then(setContent);
+    fetchPublicHomepage()
+      .then(setContent)
+      .catch(() => {
+        // Unknown tenant is handled by TenantProvider gate
+      });
   }, []);
 
   return (
     <main className="min-h-screen bg-white text-slate-900 antialiased selection:bg-[#3daf72]/25 selection:text-slate-900">
       <PublicSiteHeader
-        companyName={content.company_name || 'Үлэмжийн зам'}
+        companyName={content.company_name || 'Компани'}
         logo={content.logo}
         navItems={content.nav_menu}
       />

@@ -16,31 +16,92 @@ const upload = multer({
   },
 });
 
-async function getOrCreateRow() {
-  let row = await Homepage.findOne();
-  if (!row) {
-    row = await Homepage.create({ content: {} });
-  }
-  return row;
+function tenantIdFrom(req) {
+  return req.tenant?.id || null;
 }
 
-exports.getPublic = async (_req, res) => {
+async function getOrCreateRow(tenantId) {
+  let row = await Homepage.findOne({
+    where: { tenant_id: tenantId },
+  });
+  if (row) return row;
+
+  // Migrate legacy global homepage (no tenant) into this tenant once
+  const legacy = await Homepage.findOne({
+    where: { tenant_id: null },
+    order: [["id", "ASC"]],
+  });
+  if (legacy) {
+    await legacy.update({ tenant_id: tenantId });
+    return legacy;
+  }
+
+  return Homepage.create({
+    content: {},
+    tenant_id: tenantId,
+  });
+}
+
+exports.getPublic = async (req, res) => {
   try {
-    const row = await Homepage.findOne();
+    if (!req.tenant?.id) {
+      return res.status(404).json({
+        success: false,
+        message: "Tenant not found for this domain",
+      });
+    }
+
+    const row = await Homepage.findOne({
+      where: { tenant_id: req.tenant.id },
+    });
+    // Soft-migrate legacy row for public view without forcing write on every request
+    let effective = row;
+    if (!effective) {
+      const legacy = await Homepage.findOne({
+        where: { tenant_id: null },
+        order: [["id", "ASC"]],
+      });
+      if (legacy) {
+        await legacy.update({ tenant_id: req.tenant.id });
+        effective = legacy;
+      }
+    }
     const raw =
-      typeof row?.content === "string"
-        ? JSON.parse(row.content || "{}")
-        : row?.content;
+      typeof effective?.content === "string"
+        ? JSON.parse(effective.content || "{}")
+        : effective?.content;
     const content = mergeHomepageContent(raw);
-    res.json({ success: true, data: content });
+    // Prefer tenant company name when CMS has empty branding
+    if (!content.company_name && req.tenant.company_name) {
+      content.company_name = req.tenant.company_name;
+    } else if (!content.company_name && req.tenant.name) {
+      content.company_name = req.tenant.name;
+    }
+    res.json({
+      success: true,
+      data: content,
+      tenant: {
+        id: req.tenant.id,
+        name: req.tenant.name,
+        slug: req.tenant.slug,
+        domain: req.tenant.domain,
+        company_name: req.tenant.company_name,
+      },
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-exports.getAdmin = async (_req, res) => {
+exports.getAdmin = async (req, res) => {
   try {
-    const row = await getOrCreateRow();
+    if (!req.tenant?.id) {
+      return res.status(404).json({
+        success: false,
+        message: "Tenant not found for this domain",
+      });
+    }
+    const row = await getOrCreateRow(req.tenant.id);
     const raw =
       typeof row.content === "string"
         ? JSON.parse(row.content || "{}")
@@ -54,7 +115,13 @@ exports.getAdmin = async (_req, res) => {
 
 exports.update = async (req, res) => {
   try {
-    const row = await getOrCreateRow();
+    if (!req.tenant?.id) {
+      return res.status(404).json({
+        success: false,
+        message: "Tenant not found for this domain",
+      });
+    }
+    const row = await getOrCreateRow(req.tenant.id);
     const incoming = req.body.content ? JSON.parse(req.body.content) : req.body;
     const previous =
       typeof row.content === "string"
@@ -86,10 +153,16 @@ exports.uploadImage = (req, res) => {
       });
     }
     if (err) {
-      return res.status(400).json({ success: false, message: err.message || "Файл upload алдаа" });
+      return res.status(400).json({
+        success: false,
+        message: err.message || "Файл upload алдаа",
+      });
     }
     if (!req.file) {
-      return res.status(400).json({ success: false, message: "Зураг файл шаардлагатай" });
+      return res.status(400).json({
+        success: false,
+        message: "Зураг файл шаардлагатай",
+      });
     }
 
     try {
@@ -110,7 +183,8 @@ exports.uploadImage = (req, res) => {
     } catch (uploadErr) {
       res.status(500).json({
         success: false,
-        message: uploadErr.message || "Cloudinary руу зураг хадгалахад алдаа гарлаа",
+        message:
+          uploadErr.message || "Cloudinary руу зураг хадгалахад алдаа гарлаа",
       });
     }
   });
