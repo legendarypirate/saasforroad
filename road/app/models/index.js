@@ -130,6 +130,12 @@ db.uni_issue_lines = require("./uni_issue_line.model.js")(sequelize, Sequelize);
 db.uni_returns = require("./uni_return.model.js")(sequelize, Sequelize);
 db.uni_requests = require("./uni_request.model.js")(sequelize, Sequelize);
 
+db.fuel_suppliers = require("./fuel_supplier.model.js")(sequelize, Sequelize);
+db.fuel_tanks = require("./fuel_tank.model.js")(sequelize, Sequelize);
+db.fuel_purchases = require("./fuel_purchase.model.js")(sequelize, Sequelize);
+db.fuel_issues = require("./fuel_issue.model.js")(sequelize, Sequelize);
+db.fuel_consumptions = require("./fuel_consumption.model.js")(sequelize, Sequelize);
+
 db.angilals = require("./angilal.model.js")(sequelize, Sequelize);
 db.materials = require("./material.model.js")(sequelize, Sequelize);
 
@@ -763,6 +769,27 @@ db.uni_requests.belongsTo(db.users, { foreignKey: "user_id", as: "requester" });
 db.uni_requests.belongsTo(db.users, { foreignKey: "approved_by", as: "approver" });
 db.uni_requests.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
 db.uni_requests.belongsTo(db.uni_items, { foreignKey: "item_id", as: "item" });
+
+// Fuel management (Автопарк / шатахуун)
+db.fuel_purchases.belongsTo(db.fuel_suppliers, { foreignKey: "supplier_id", as: "supplier" });
+db.fuel_purchases.belongsTo(db.fuel_tanks, { foreignKey: "tank_id", as: "tank" });
+db.fuel_purchases.belongsTo(db.users, { foreignKey: "created_by", as: "creator" });
+db.fuel_suppliers.hasMany(db.fuel_purchases, { foreignKey: "supplier_id", as: "purchases" });
+db.fuel_tanks.hasMany(db.fuel_purchases, { foreignKey: "tank_id", as: "purchases" });
+
+db.fuel_issues.belongsTo(db.equipments, { foreignKey: "equipment_id", as: "equipment" });
+db.fuel_issues.belongsTo(db.users, { foreignKey: "driver_user_id", as: "driver" });
+db.fuel_issues.belongsTo(db.users, { foreignKey: "issued_by", as: "issuer" });
+db.fuel_issues.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
+db.fuel_issues.belongsTo(db.fuel_tanks, { foreignKey: "tank_id", as: "tank" });
+db.equipments.hasMany(db.fuel_issues, { foreignKey: "equipment_id", as: "fuelIssues" });
+db.fuel_tanks.hasMany(db.fuel_issues, { foreignKey: "tank_id", as: "issues" });
+
+db.fuel_consumptions.belongsTo(db.equipments, { foreignKey: "equipment_id", as: "equipment" });
+db.fuel_consumptions.belongsTo(db.users, { foreignKey: "driver_user_id", as: "driver" });
+db.fuel_consumptions.belongsTo(db.fuel_issues, { foreignKey: "previous_issue_id", as: "previousIssue" });
+db.fuel_consumptions.belongsTo(db.fuel_issues, { foreignKey: "closing_issue_id", as: "closingIssue" });
+db.equipments.hasMany(db.fuel_consumptions, { foreignKey: "equipment_id", as: "fuelConsumptions" });
 
 // Plant / factory (Үйлдвэр)
 db.plant_products.belongsTo(db.plant_sites, { foreignKey: "plant_id", as: "plant" });

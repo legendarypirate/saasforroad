@@ -45,6 +45,7 @@ export default function ModuleSubNav({ userPermissions, userRole }: ModuleSubNav
     mod.id === 'hr' ||
     mod.id === 'finance' ||
     mod.id === 'uniform-supply' ||
+    mod.id === 'fleet' ||
     mod.id === 'rental' ||
     mod.id === 'plant' ||
     mod.id === 'road-engineering' ||

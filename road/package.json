@@ -8,7 +8,8 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "ensure-schema": "node scripts/ensure-db-schema.js",
-    "seed:permissions": "node scripts/seed-permissions.js"
+    "seed:permissions": "node scripts/seed-permissions.js",
+    "test:fuel": "node scripts/test-fuel-api.js"
   },
   "keywords": [
     "nodejs",

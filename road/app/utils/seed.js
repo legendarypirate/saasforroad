@@ -58,6 +58,10 @@ const DEFAULT_PERMISSIONS = [
   { module: "uniform", action: "read", key: "uniform:read" },
   { module: "uniform", action: "write", key: "uniform:write" },
   { module: "uniform", action: "approve", key: "uniform:approve" },
+  { module: "fuel", action: "read", key: "fuel:read" },
+  { module: "fuel", action: "write", key: "fuel:write" },
+  { module: "fuel", action: "export", key: "fuel:export" },
+  { module: "fuel", action: "view", key: "fuel:view" },
   { module: "road", action: "view", key: "road:view" },
   { module: "road", action: "create", key: "road:create" },
   { module: "road", action: "update", key: "road:update" },
@@ -128,6 +132,10 @@ const DEFAULT_ROLES = [
       "plant:write",
       "uniform:read",
       "uniform:write",
+      "fuel:*",
+      "fuel:read",
+      "fuel:write",
+      "fuel:export",
       "road:view",
       "road:create",
       "road:update",
@@ -157,6 +165,8 @@ const DEFAULT_ROLES = [
       "finance:read",
       "plant:read",
       "uniform:read",
+      "fuel:read",
+      "fuel:view",
       "road:view",
       "budget:view",
       "budget:export",
@@ -190,6 +200,39 @@ const DEFAULT_ROLES = [
       "hse:audit",
       "accident:read",
       "project:read",
+    ],
+  },
+  {
+    name: "Шатахуун менежер",
+    description: "Автопарк — шатахуун удирдлага (бүрэн эрх)",
+    mobile_access: false,
+    permissionKeys: [
+      "admin:dashboard",
+      "fuel:*",
+      "fuel:read",
+      "fuel:write",
+      "fuel:export",
+      "equipment:read",
+      "project:read",
+    ],
+  },
+  {
+    name: "Шатахуун үзэгч",
+    description: "Автопарк — шатахуун зөвхөн үзэх",
+    mobile_access: false,
+    permissionKeys: [
+      "admin:dashboard",
+      "fuel:module",
+      "fuel.dashboard:read",
+      "fuel.purchases:read",
+      "fuel.tanks:read",
+      "fuel.issues:read",
+      "fuel.consumption:read",
+      "fuel.suppliers:read",
+      "fuel.reports:read",
+      "fuel:read",
+      "fuel:view",
+      "equipment:read",
     ],
   },
 ];
@@ -340,7 +383,20 @@ async function seedPermissionsAndRoles() {
       roleDef.permissionKeys == null
         ? allPermissionIds
         : allPermissions
-            .filter((p) => roleDef.permissionKeys.includes(p.key))
+            .filter((p) =>
+              roleDef.permissionKeys.some((k) => {
+                if (k === p.key) return true;
+                if (k.endsWith(":*")) {
+                  const index = k.slice(0, -2);
+                  return (
+                    p.key === `${index}:module` ||
+                    p.key.startsWith(`${index}:`) ||
+                    p.key.startsWith(`${index}.`)
+                  );
+                }
+                return false;
+              })
+            )
             .map((p) => p.id);
 
     await role.setPermissions(permissionIds);

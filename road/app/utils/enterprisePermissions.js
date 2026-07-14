@@ -106,6 +106,17 @@ const MODULES = [
     })),
   },
   {
+    index: 'fuel',
+    label: 'Автопарк — Шатахуун',
+    menus: ['dashboard', 'purchases', 'tanks', 'issues', 'consumption', 'suppliers', 'reports'].map((menuId) => ({
+      menuId,
+      label: menuId,
+      actions: menuId === 'reports' ? ['read', 'export'] : menuId === 'dashboard' || menuId === 'consumption'
+        ? ['read', 'create', 'update', 'delete', 'export']
+        : ['read', 'create', 'update', 'delete', 'export'],
+    })),
+  },
+  {
     index: 'daily_report',
     label: 'Daily Report',
     menus: [

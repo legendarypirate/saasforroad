@@ -254,6 +254,23 @@ export const ADMIN_MODULES: ModuleConfig[] = [
     ],
   },
   {
+    id: 'fleet',
+    index: 'fuel',
+    moduleKey: 'fuel:module',
+    label: 'Автопарк',
+    description: 'Шатахуун удирдлага — худалдан авалт, сав, олголт, зарцуулалт',
+    color: '#a16207',
+    items: [
+      { path: '/admin/fuel', label: 'Самбар', menuId: 'dashboard', permission: mk('fuel', 'dashboard'), actions: ['read', 'create', 'update', 'delete', 'export'] },
+      { path: '/admin/fuel/purchases', label: 'Худалдан авалт', menuId: 'purchases', permission: mk('fuel', 'purchases'), actions: ['read', 'create', 'update', 'delete', 'export'] },
+      { path: '/admin/fuel/tanks', label: 'Сав / танк', menuId: 'tanks', permission: mk('fuel', 'tanks'), actions: ['read', 'create', 'update', 'delete', 'export'] },
+      { path: '/admin/fuel/issues', label: 'Олголт', menuId: 'issues', permission: mk('fuel', 'issues'), actions: ['read', 'create', 'update', 'delete', 'export'] },
+      { path: '/admin/fuel/consumption', label: 'Зарцуулалт', menuId: 'consumption', permission: mk('fuel', 'consumption'), actions: ['read', 'create', 'update', 'delete', 'export'] },
+      { path: '/admin/fuel/suppliers', label: 'Нийлүүлэгч', menuId: 'suppliers', permission: mk('fuel', 'suppliers'), actions: ['read', 'create', 'update', 'delete', 'export'] },
+      { path: '/admin/fuel/reports', label: 'Тайлан', menuId: 'reports', permission: mk('fuel', 'reports'), actions: ['read', 'export'] },
+    ],
+  },
+  {
     id: 'daily-report',
     index: 'daily_report',
     moduleKey: 'daily_report:module',

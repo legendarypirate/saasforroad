@@ -49,6 +49,7 @@ function registerRoutes() {
   require("./app/routes/finance.routes")(app);
   require("./app/routes/plant.routes")(app);
   require("./app/routes/uniform.routes")(app);
+  require("./app/routes/fuel.routes")(app);
   require("./app/routes/notification.routes")(app);
   require("./app/routes/document.routes")(app);
   require("./app/routes/student.routes")(app);
