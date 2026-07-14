@@ -27,24 +27,22 @@ export default function LoginPage() {
   }
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        display: "grid",
-        placeItems: "center",
-        padding: "1.5rem",
-      }}
-    >
-      <form className="panel" style={{ width: "min(420px, 100%)" }} onSubmit={onSubmit}>
-        <div style={{ marginBottom: "1.25rem" }}>
-          <div style={{ fontSize: "0.8rem", color: "var(--muted)", fontWeight: 600 }}>
-            admin.rcos.mn
+    <main className="login-shell">
+      <form className="login-card" onSubmit={onSubmit}>
+        <div style={{ display: "flex", gap: "0.85rem", alignItems: "center", marginBottom: "1.35rem" }}>
+          <div className="brand-mark">R</div>
+          <div>
+            <div className="muted" style={{ fontSize: "0.78rem", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+              admin.rcos.mn
+            </div>
+            <h1 className="page-title" style={{ fontSize: "1.55rem" }}>
+              Platform Admin
+            </h1>
           </div>
-          <h1 style={{ margin: "0.2rem 0 0.35rem", fontSize: "1.6rem" }}>RCOS Platform</h1>
-          <p className="muted" style={{ margin: 0 }}>
-            Tenant registration and module control
-          </p>
         </div>
+        <p className="muted" style={{ margin: "0 0 1.25rem", lineHeight: 1.5 }}>
+          Register tenants, domains, modules, and superadmins for Road SaaS.
+        </p>
 
         <div className="field">
           <label htmlFor="username">Username</label>
@@ -70,7 +68,7 @@ export default function LoginPage() {
 
         {error ? <p className="error">{error}</p> : null}
 
-        <button className="btn" type="submit" disabled={loading} style={{ width: "100%" }}>
+        <button className="btn" type="submit" disabled={loading} style={{ width: "100%", marginTop: "0.35rem" }}>
           {loading ? "Signing in…" : "Sign in"}
         </button>
       </form>

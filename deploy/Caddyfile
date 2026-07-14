@@ -1,0 +1,46 @@
+# /etc/caddy/Caddyfile
+# One-time edge. New custom domains = DNS + admin DB only (on-demand TLS).
+#
+# Reuses certs you already have from certbot for rcos.mn hosts.
+# Custom domains (teensclub.mn, …) get certs automatically via on_demand + ask.
+
+{
+	email admin@rcos.mn
+
+	on_demand_tls {
+		ask http://127.0.0.1:3201/api/tenant/ssl-allowed
+	}
+}
+
+admin.rcos.mn {
+	tls /etc/letsencrypt/live/admin.rcos.mn/fullchain.pem /etc/letsencrypt/live/admin.rcos.mn/privkey.pem
+	reverse_proxy 127.0.0.1:3002
+}
+
+api.rcos.mn {
+	tls /etc/letsencrypt/live/api.rcos.mn/fullchain.pem /etc/letsencrypt/live/api.rcos.mn/privkey.pem
+	reverse_proxy 127.0.0.1:3201
+}
+
+# Wildcard: use the cert you already issued for *.rcos.mn + rcos.mn
+*.rcos.mn, rcos.mn {
+	tls /etc/letsencrypt/live/rcos.mn/fullchain.pem /etc/letsencrypt/live/rcos.mn/privkey.pem
+	reverse_proxy 127.0.0.1:3000
+}
+
+# Custom tenant domains — auto Let's Encrypt the first time someone visits HTTPS
+:443 {
+	tls {
+		on_demand
+	}
+
+	reverse_proxy 127.0.0.1:3000 {
+		header_up Host {host}
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Forwarded-For {remote_host}
+	}
+}
+
+:80 {
+	redir https://{host}{uri} permanent
+}

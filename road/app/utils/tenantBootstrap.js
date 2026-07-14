@@ -155,13 +155,8 @@ async function bootstrapTenant(data, { superadmin } = {}) {
     }
 
     // Default SaaS subdomain: tenant1 → tenant1.rcos.mn
-    const baseDomain = String(
-      process.env.TENANT_BASE_DOMAIN || "rcos.mn"
-    )
-      .trim()
-      .toLowerCase()
-      .replace(/^www\./, "");
-    const defaultDomain = `${slug}.${baseDomain}`;
+    const { withSaasAlias, saasSubdomainForSlug } = require("./tenantHelper");
+    const defaultDomain = saasSubdomainForSlug(slug);
 
     let domain = String(data.domain || "")
       .trim()
@@ -177,17 +172,15 @@ async function bootstrapTenant(data, { superadmin } = {}) {
       ? data.domains.map((d) => String(d).trim().toLowerCase().replace(/^www\./, "")).filter(Boolean)
       : [];
 
-    // Always keep the default subdomain as a reachable alias when custom domain is set
-    if (domain !== defaultDomain && !aliases.includes(defaultDomain)) {
-      aliases.push(defaultDomain);
-    }
+    const merged = withSaasAlias(slug, domain, aliases);
+    domain = merged.domain;
 
     const tenant = await db.tenants.create(
       {
         name: data.name,
         slug,
         domain,
-        domains: [...new Set(aliases.filter((d) => d !== domain))],
+        domains: merged.domains,
         company_name: data.company_name || data.name,
         contact_email: data.contact_email || null,
         contact_phone: data.contact_phone || null,

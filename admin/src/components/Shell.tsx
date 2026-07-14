@@ -5,6 +5,25 @@ import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect, useState } from "react";
 import { clearSession, getStoredAdmin, isLoggedIn, PlatformAdmin } from "@/lib/api";
 
+function IconGrid({ className = "nav-ico" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" />
+    </svg>
+  );
+}
+
+function IconPlus({ className = "nav-ico" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export default function Shell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -31,30 +50,37 @@ export default function Shell({ children }: { children: ReactNode }) {
     );
   }
 
+  const tenantsActive =
+    pathname.startsWith("/tenants") && pathname !== "/tenants/new";
+  const newActive = pathname === "/tenants/new";
+
   return (
     <div className="shell">
       <aside className="sidebar">
-        <h1>RCOS Platform</h1>
-        <p>admin.rcos.mn</p>
-        <nav>
-          <Link
-            href="/tenants"
-            className={`nav-link${pathname.startsWith("/tenants") ? " active" : ""}`}
-          >
+        <div style={{ display: "flex", gap: "0.85rem", alignItems: "center" }}>
+          <div className="brand-mark">R</div>
+          <div>
+            <h1>RCOS Platform</h1>
+            <p className="brand-sub">admin.rcos.mn</p>
+          </div>
+        </div>
+
+        <nav className="nav-stack">
+          <Link href="/tenants" className={`nav-link${tenantsActive ? " active" : ""}`}>
+            <IconGrid />
             Tenants
           </Link>
-          <Link
-            href="/tenants/new"
-            className={`nav-link${pathname === "/tenants/new" ? " active" : ""}`}
-          >
+          <Link href="/tenants/new" className={`nav-link${newActive ? " active" : ""}`}>
+            <IconPlus />
             Register tenant
           </Link>
         </nav>
-        <div style={{ marginTop: "auto", paddingTop: "2rem" }}>
-          <div style={{ fontSize: "0.85rem", color: "#9bb5ab", marginBottom: "0.75rem" }}>
+
+        <div className="sidebar-footer">
+          <div style={{ fontSize: "0.85rem", color: "var(--muted)", marginBottom: "0.75rem", fontWeight: 700 }}>
             {admin.name || admin.username}
           </div>
-          <button className="btn secondary" type="button" onClick={logout} style={{ width: "100%", color: "#e8f2ee", borderColor: "rgba(255,255,255,0.2)" }}>
+          <button className="btn secondary" type="button" onClick={logout} style={{ width: "100%" }}>
             Log out
           </button>
         </div>

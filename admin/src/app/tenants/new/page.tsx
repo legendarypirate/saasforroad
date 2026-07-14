@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Shell from "@/components/Shell";
 import { api, ModuleInfo } from "@/lib/api";
@@ -39,6 +40,13 @@ export default function NewTenantPage() {
     );
   }
 
+  const previewSlug =
+    (form.slug.trim() ||
+      form.name.trim().toLowerCase().replace(/\s+/g, "-") ||
+      "slug")
+      .replace(/[^a-z0-9-]/gi, "")
+      .toLowerCase();
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError("");
@@ -50,7 +58,6 @@ export default function NewTenantPage() {
       const body: Record<string, unknown> = {
         name: form.name.trim(),
         slug,
-        // Empty → API defaults to {slug}.rcos.mn
         domain: form.domain.trim().toLowerCase() || undefined,
         company_name: form.company_name.trim() || form.name.trim(),
         contact_email: form.contact_email.trim() || null,
@@ -77,21 +84,31 @@ export default function NewTenantPage() {
 
   return (
     <Shell>
-      <h1 style={{ marginTop: 0 }}>Register tenant</h1>
-      <p className="muted">
-        Creates a single-tenant workspace. If you leave domain empty, zam is hosted at{" "}
-        <strong>{"{slug}.rcos.mn"}</strong> (e.g. tenant1 → tenant1.rcos.mn). Optional custom
-        domain (tenant1.mn) can be set as primary; the .rcos.mn subdomain stays as an alias.
-      </p>
+      <div className="page-header">
+        <div>
+          <Link href="/tenants" className="muted" style={{ fontSize: "0.88rem", fontWeight: 700 }}>
+            ← Tenants
+          </Link>
+          <h1 className="page-title" style={{ marginTop: "0.45rem" }}>
+            Register tenant
+          </h1>
+          <p className="page-desc">
+            Empty domain → hosted at <code>{"{slug}.rcos.mn"}</code>. A custom domain can be
+            primary; the SaaS subdomain stays as an alias.
+          </p>
+        </div>
+      </div>
 
-      <form className="panel" onSubmit={onSubmit} style={{ maxWidth: 860 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem 1rem" }}>
+      <form className="panel stack" onSubmit={onSubmit} style={{ maxWidth: 880 }}>
+        <h2 className="panel-title">Company</h2>
+        <div className="grid-2">
           <div className="field">
             <label>Company / tenant name</label>
             <input
               required
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder="Acme LLC"
             />
           </div>
           <div className="field">
@@ -105,16 +122,12 @@ export default function NewTenantPage() {
           <div className="field">
             <label>Custom domain (optional)</label>
             <input
-              placeholder="tenant1.mn — leave empty for tenant1.rcos.mn"
+              placeholder="tenant1.mn — leave empty for default"
               value={form.domain}
               onChange={(e) => setForm({ ...form, domain: e.target.value })}
             />
             <span className="muted" style={{ fontSize: "0.8rem" }}>
-              Default:{" "}
-              {(form.slug.trim() || form.name.trim().toLowerCase().replace(/\s+/g, "-") || "slug")
-                .replace(/[^a-z0-9-]/gi, "")
-                .toLowerCase()}
-              .rcos.mn
+              Default: <code>{previewSlug}.rcos.mn</code>
             </span>
           </div>
           <div className="field">
@@ -150,8 +163,10 @@ export default function NewTenantPage() {
           />
         </div>
 
-        <h3 style={{ marginBottom: "0.5rem" }}>Enabled zam modules</h3>
-        <div className="module-grid" style={{ marginBottom: "1.25rem" }}>
+        <h2 className="panel-title" style={{ marginTop: "0.5rem" }}>
+          Enabled zam modules
+        </h2>
+        <div className="module-grid" style={{ marginBottom: "0.5rem" }}>
           {modules.map((m) => (
             <label key={m.id} className="module-item">
               <input
@@ -169,11 +184,13 @@ export default function NewTenantPage() {
           ))}
         </div>
 
-        <h3 style={{ marginBottom: "0.5rem" }}>Tenant superadmin (one)</h3>
-        <p className="muted" style={{ marginTop: 0 }}>
+        <h2 className="panel-title" style={{ marginTop: "0.75rem" }}>
+          Tenant superadmin (one)
+        </h2>
+        <p className="muted" style={{ marginTop: 0, marginBottom: "0.85rem" }}>
           This user can manage every role &amp; permission inside their tenant on zam.
         </p>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem 1rem" }}>
+        <div className="grid-2">
           <div className="field">
             <label>Username</label>
             <input
@@ -208,9 +225,14 @@ export default function NewTenantPage() {
 
         {error ? <p className="error">{error}</p> : null}
 
-        <button className="btn" type="submit" disabled={loading}>
-          {loading ? "Creating…" : "Create tenant"}
-        </button>
+        <div style={{ display: "flex", gap: "0.65rem", flexWrap: "wrap", marginTop: "0.35rem" }}>
+          <button className="btn" type="submit" disabled={loading}>
+            {loading ? "Creating…" : "Create tenant"}
+          </button>
+          <Link href="/tenants" className="btn secondary">
+            Cancel
+          </Link>
+        </div>
       </form>
     </Shell>
   );

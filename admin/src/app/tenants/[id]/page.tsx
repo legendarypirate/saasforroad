@@ -171,32 +171,57 @@ export default function TenantDetailPage() {
     return (
       <Shell>
         <p className="error">{error}</p>
-        <Link href="/tenants">Back</Link>
+        <Link href="/tenants" className="link-accent">
+          ← Back to tenants
+        </Link>
       </Shell>
     );
   }
 
+  const saasUrl = tenant.saas_url || `https://${tenant.slug}.rcos.mn`;
+  const saasDomain = tenant.saas_domain || `${tenant.slug}.rcos.mn`;
+
   return (
     <Shell>
-      <div style={{ marginBottom: "1rem" }}>
-        <Link href="/tenants" className="muted">
-          ← Tenants
-        </Link>
-        <h1 style={{ margin: "0.4rem 0 0.2rem" }}>{tenant.name}</h1>
-        <p className="muted" style={{ margin: 0 }}>
-          zam · {tenant.domain} · slug {tenant.slug}
-        </p>
+      <div className="page-header">
+        <div>
+          <Link href="/tenants" className="muted" style={{ fontSize: "0.88rem", fontWeight: 700 }}>
+            ← Tenants
+          </Link>
+          <h1 className="page-title" style={{ marginTop: "0.45rem" }}>
+            {tenant.name}
+          </h1>
+          <p className="page-desc">
+            SaaS:{" "}
+            <a className="link-accent" href={saasUrl} target="_blank" rel="noreferrer">
+              {saasUrl}
+            </a>
+            {" · "}
+            custom: <code>{tenant.domain}</code>
+            {" · "}
+            <span className={`badge ${tenant.is_active ? "on" : "off"}`}>
+              {tenant.is_active ? "Active" : "Off"}
+            </span>
+          </p>
+        </div>
       </div>
 
-      {message ? (
-        <p style={{ color: "var(--accent)", fontWeight: 600 }}>{message}</p>
-      ) : null}
+      {message ? <p className="flash-ok">{message}</p> : null}
       {error ? <p className="error">{error}</p> : null}
 
-      <div style={{ display: "grid", gap: "1rem" }}>
+      <div className="stack">
         <form className="panel" onSubmit={saveTenantMeta}>
-          <h2 style={{ marginTop: 0, fontSize: "1.1rem" }}>Tenant details</h2>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem 1rem" }}>
+          <div className="panel-head">
+            <div>
+              <h2 className="panel-title">Tenant details</h2>
+              <p className="muted" style={{ margin: "0.35rem 0 0", maxWidth: "62ch", lineHeight: 1.5 }}>
+                No VPS edit per tenant. <code>{saasDomain}</code> is covered by wildcard SSL. For a
+                custom domain, point DNS (Cloudflare proxy recommended) at your VPS — saving keeps
+                the <code>.rcos.mn</code> subdomain as an alias.
+              </p>
+            </div>
+          </div>
+          <div className="grid-2">
             <div className="field">
               <label>Name</label>
               <input
@@ -205,11 +230,20 @@ export default function TenantDetailPage() {
               />
             </div>
             <div className="field">
-              <label>Domain</label>
+              <label>Custom / primary domain</label>
               <input
                 value={tenant.domain}
                 onChange={(e) => setTenant({ ...tenant, domain: e.target.value })}
+                placeholder="teensclub.mn or leave as slug.rcos.mn"
               />
+            </div>
+            <div className="field">
+              <label>SaaS URL (auto)</label>
+              <input value={saasDomain} readOnly />
+            </div>
+            <div className="field">
+              <label>Aliases</label>
+              <input value={(tenant.domains || []).join(", ") || "—"} readOnly />
             </div>
             <div className="field">
               <label>Company</label>
@@ -239,9 +273,9 @@ export default function TenantDetailPage() {
         </form>
 
         <section className="panel">
-          <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", alignItems: "center" }}>
+          <div className="panel-head">
             <div>
-              <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Zam modules</h2>
+              <h2 className="panel-title">Zam modules</h2>
               <p className="muted" style={{ margin: "0.3rem 0 0" }}>
                 Disabled modules are hidden for this tenant and stripped from login permissions.
               </p>
@@ -250,7 +284,7 @@ export default function TenantDetailPage() {
               Save modules
             </button>
           </div>
-          <div className="module-grid" style={{ marginTop: "1rem" }}>
+          <div className="module-grid">
             {modules.map((m) => (
               <label key={m.id} className="module-item">
                 <input
@@ -270,13 +304,11 @@ export default function TenantDetailPage() {
         </section>
 
         <form className="panel" onSubmit={saveSuperadmin}>
-          <h2 style={{ marginTop: 0, fontSize: "1.1rem" }}>
-            Tenant superadmin (exactly one)
-          </h2>
-          <p className="muted">
+          <h2 className="panel-title">Tenant superadmin (exactly one)</h2>
+          <p className="muted" style={{ marginTop: "0.35rem" }}>
             Current: <strong>{tenant.superadmin?.username || "none"}</strong>
           </p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem 1rem" }}>
+          <div className="grid-2">
             <div className="field">
               <label>Username</label>
               <input
@@ -323,19 +355,17 @@ export default function TenantDetailPage() {
         </form>
 
         <section className="panel">
-          <h2 style={{ marginTop: 0, fontSize: "1.1rem" }}>
-            Role permissions (tenant-scoped)
-          </h2>
-          <p className="muted">
-            Platform admin can assign any permission inside this tenant. Tenant
-            superadmin can also manage roles from zam.
+          <h2 className="panel-title">Role permissions</h2>
+          <p className="muted" style={{ marginTop: "0.35rem" }}>
+            Assign permissions for this tenant. The tenant superadmin can also manage roles from
+            zam.
           </p>
-          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1rem" }}>
+          <div className="chip-row">
             {roles.map((r) => (
               <button
                 key={r.id}
                 type="button"
-                className={`btn ${activeRoleId === r.id ? "" : "secondary"}`}
+                className={`btn chip ${activeRoleId === r.id ? "" : "secondary"}`}
                 onClick={() => {
                   setActiveRoleId(r.id);
                   setRoleKeys(r.permission_keys || []);

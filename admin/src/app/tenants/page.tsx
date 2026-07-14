@@ -18,13 +18,15 @@ export default function TenantsPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const activeCount = tenants.filter((t) => t.is_active).length;
+
   return (
     <Shell>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", alignItems: "end", marginBottom: "1.25rem" }}>
+      <div className="page-header">
         <div>
-          <h1 style={{ margin: 0, fontSize: "1.7rem" }}>Tenants</h1>
-          <p className="muted" style={{ margin: "0.35rem 0 0" }}>
-            Each tenant runs zam on its own domain (tenant1.mn, …) as a single-tenant ERP.
+          <h1 className="page-title">Tenants</h1>
+          <p className="page-desc">
+            Each tenant runs zam on its own domain as a single-tenant ERP.
           </p>
         </div>
         <Link href="/tenants/new" className="btn">
@@ -32,56 +34,77 @@ export default function TenantsPage() {
         </Link>
       </div>
 
+      <div className="stat-row">
+        <div className="stat-card">
+          <div className="label">Total</div>
+          <div className="value">{loading ? "—" : tenants.length}</div>
+        </div>
+        <div className="stat-card">
+          <div className="label">Active</div>
+          <div className="value">{loading ? "—" : activeCount}</div>
+        </div>
+        <div className="stat-card">
+          <div className="label">Offline</div>
+          <div className="value">{loading ? "—" : tenants.length - activeCount}</div>
+        </div>
+      </div>
+
       <div className="panel">
         {loading ? <p className="muted">Loading…</p> : null}
         {error ? <p className="error">{error}</p> : null}
         {!loading && !error ? (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Domain</th>
-                <th>Status</th>
-                <th>Users</th>
-                <th>Superadmin</th>
-                <th>Modules</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {tenants.map((t) => (
-                <tr key={t.id}>
-                  <td>
-                    <strong>{t.name}</strong>
-                    <div className="muted" style={{ fontSize: "0.8rem" }}>
-                      {t.slug}
-                    </div>
-                  </td>
-                  <td>{t.domain}</td>
-                  <td>
-                    <span className={`badge ${t.is_active ? "on" : "off"}`}>
-                      {t.is_active ? "Active" : "Off"}
-                    </span>
-                  </td>
-                  <td>{t.user_count ?? 0}</td>
-                  <td>{t.superadmin?.username || "—"}</td>
-                  <td>{(t.modules || []).length}</td>
-                  <td>
-                    <Link href={`/tenants/${t.id}`} className="btn secondary">
-                      Manage
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-              {tenants.length === 0 ? (
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
                 <tr>
-                  <td colSpan={7} className="muted">
-                    No tenants yet. Register the first one.
-                  </td>
+                  <th>Name</th>
+                  <th>Domain</th>
+                  <th>Status</th>
+                  <th>Users</th>
+                  <th>Superadmin</th>
+                  <th>Modules</th>
+                  <th />
                 </tr>
-              ) : null}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {tenants.map((t) => (
+                  <tr key={t.id}>
+                    <td>
+                      <strong>{t.name}</strong>
+                      <div className="muted" style={{ fontSize: "0.8rem", marginTop: 2 }}>
+                        {t.slug}
+                      </div>
+                    </td>
+                    <td>
+                      <code style={{ fontSize: "0.82rem" }}>{t.domain}</code>
+                    </td>
+                    <td>
+                      <span className={`badge ${t.is_active ? "on" : "off"}`}>
+                        {t.is_active ? "Active" : "Off"}
+                      </span>
+                    </td>
+                    <td>{t.user_count ?? 0}</td>
+                    <td>{t.superadmin?.username || "—"}</td>
+                    <td>{(t.modules || []).length}</td>
+                    <td>
+                      <Link href={`/tenants/${t.id}`} className="btn secondary chip">
+                        Manage
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+                {tenants.length === 0 ? (
+                  <tr>
+                    <td colSpan={7}>
+                      <div className="empty-state">
+                        No tenants yet. Register the first one.
+                      </div>
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
         ) : null}
       </div>
     </Shell>

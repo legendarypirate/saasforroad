@@ -2,7 +2,12 @@ const bcrypt = require("bcryptjs");
 const db = require("../models");
 const { Op } = require("sequelize");
 const { signPlatformToken } = require("../middleware/tenant");
-const { serializeTenant, normalizeModules } = require("../utils/tenantHelper");
+const {
+  serializeTenant,
+  normalizeModules,
+  withSaasAlias,
+  normalizeHost,
+} = require("../utils/tenantHelper");
 const { MODULE_CATALOG, allModuleIds } = require("../utils/moduleCatalog");
 const {
   bootstrapTenant,
@@ -190,7 +195,18 @@ exports.updateTenant = async (req, res) => {
       if (req.body[key] !== undefined) patch[key] = req.body[key];
     }
     if (patch.domain) {
-      patch.domain = String(patch.domain).trim().toLowerCase().replace(/^www\./, "");
+      patch.domain = normalizeHost(patch.domain);
+      const merged = withSaasAlias(
+        tenant.slug,
+        patch.domain,
+        patch.domains !== undefined ? patch.domains : tenant.domains
+      );
+      patch.domain = merged.domain;
+      patch.domains = merged.domains;
+    }
+    if (patch.domains && !patch.domain) {
+      const merged = withSaasAlias(tenant.slug, tenant.domain, patch.domains);
+      patch.domains = merged.domains;
     }
     if (patch.modules) {
       patch.modules = normalizeModules(patch.modules);

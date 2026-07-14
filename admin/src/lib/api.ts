@@ -16,6 +16,8 @@ export type Tenant = {
   slug: string;
   domain: string;
   domains: string[];
+  saas_domain?: string | null;
+  saas_url?: string | null;
   is_active: boolean;
   modules: string[];
   company_name?: string | null;
