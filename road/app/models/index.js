@@ -175,6 +175,10 @@ db.platform_landing_settings = require("./platform_landing.model.js")(
   sequelize,
   Sequelize
 );
+db.platform_data_entries = require("./platform_data_entry.model.js")(
+  sequelize,
+  Sequelize
+);
 db.tender_packages = require("./tender_package.model.js")(sequelize, Sequelize);
 db.tender_documents = require("./tender_document.model.js")(sequelize, Sequelize);
 db.equipment_rentals = require("./equipment_rental.model.js")(sequelize, Sequelize);

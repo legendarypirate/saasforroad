@@ -455,151 +455,24 @@ exports.findOne = async (req, res) => {
   }
 };
 
+const { rejectPlatformOwned } = require("../utils/platformDataReadonly");
+
 exports.create = async (req, res) => {
-  try {
-    const payload = buildBrigadePayload(req.body);
-    if (!payload.name) {
-      return res.status(400).json({ success: false, message: "Бригадын нэр заавал" });
-    }
-    if (payload.skills === undefined) payload.skills = [];
-    if (payload.is_active === undefined) payload.is_active = true;
-    payload.leader_user_id = null;
-    payload.reputation_score = calculateReputationScore(payload);
-
-    // Optional credentials when admin creates a brigade with login
-    if (req.body.password && payload.username) {
-      const bcrypt = require("bcryptjs");
-      payload.password = await bcrypt.hash(String(req.body.password), 10);
-    }
-
-    const row = await Brigade.create(payload);
-    await addTimeline(
-      row.id,
-      "created",
-      "Бригад үүсгэгдлээ",
-      `${row.name} бүртгэгдлээ`,
-      parseOptionalInt(req.body.actor_user_id)
-    );
-
-    if (payload.leader_name || payload.username) {
-      await BrigadeMember.create({
-        brigade_id: row.id,
-        full_name: payload.leader_name || payload.username,
-        phone: payload.phone || payload.contact_phone || null,
-        user_id: null,
-        position: "leader",
-        status: "active",
-        skills: [],
-      });
-    }
-
-    const full = await Brigade.findByPk(row.id, { include: DETAIL_INCLUDE });
-    res.json({ success: true, data: sanitizeBrigade(full) });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+  return rejectPlatformOwned(res);
 };
 
 exports.update = async (req, res) => {
-  try {
-    const row = await Brigade.findByPk(req.params.id);
-    if (!row) {
-      return res.status(404).json({ success: false, message: "Бригад олдсонгүй" });
-    }
-    // Protect computed fields from manual edit
-    const body = { ...req.body };
-    delete body.average_rating;
-    delete body.reputation_score;
-    delete body.completed_tasks;
-    delete body.active_tasks;
-    delete body.cancelled_tasks;
-
-    const payload = buildBrigadePayload(body);
-    await row.update(payload);
-    await refreshBrigadeStats(row.id);
-    const full = await Brigade.findByPk(row.id, { include: DETAIL_INCLUDE });
-    res.json({ success: true, data: sanitizeBrigade(full) });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+  return rejectPlatformOwned(res);
 };
 
 exports.setStatus = async (req, res) => {
-  try {
-    const row = await Brigade.findByPk(req.params.id);
-    if (!row) {
-      return res.status(404).json({ success: false, message: "Бригад олдсонгүй" });
-    }
-    const status = req.body.status;
-    if (!["active", "suspended", "inactive"].includes(status)) {
-      return res.status(400).json({ success: false, message: "Буруу статус" });
-    }
-    const prev = row.status;
-    await row.update({
-      status,
-      is_active: status === "active",
-      availability: status === "suspended" ? "unavailable" : row.availability,
-    });
-    await addTimeline(
-      row.id,
-      "status_changed",
-      status === "suspended" ? "Бригад түдгэлзүүлэгдлээ" : "Бригад идэвхжүүлэгдлээ",
-      `${prev} → ${status}`,
-      parseOptionalInt(req.body.actor_user_id)
-    );
-    const full = await Brigade.findByPk(row.id, { include: DETAIL_INCLUDE });
-    res.json({ success: true, data: full });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+  return rejectPlatformOwned(res);
 };
 
-exports.uploadLogo = (req, res) => {
-  const id = req.params.id;
-  photoUpload(req, res, async (err) => {
-    if (err instanceof multer.MulterError) {
-      return res.status(400).json({
-        success: false,
-        message: err.code === "LIMIT_FILE_SIZE" ? "Файл 5MB-аас их байна" : "Файл upload алдаа",
-      });
-    }
-    if (err) {
-      return res.status(400).json({ success: false, message: err.message || "Файл upload алдаа" });
-    }
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: "image файл шаардлагатай" });
-    }
-    try {
-      const existing = await Brigade.findByPk(id);
-      if (!existing) {
-        return res.status(404).json({ success: false, message: "Бригад олдсонгүй" });
-      }
-      const result = await uploadImage(req.file.buffer, req.file.mimetype, {
-        folder: "rd_zam/brigades",
-        public_id: `brigade_${id}`,
-        overwrite: true,
-        invalidate: true,
-      });
-      await existing.update({ logo: result.secure_url });
-      const full = await Brigade.findByPk(id, { include: DETAIL_INCLUDE });
-      res.json({ success: true, data: full, logo: result.secure_url });
-    } catch (uploadErr) {
-      res.status(500).json({
-        success: false,
-        message: uploadErr.message || "Зураг хадгалахад алдаа",
-      });
-    }
-  });
-};
+exports.uploadLogo = (req, res) => rejectPlatformOwned(res);
 
 exports.delete = async (req, res) => {
-  try {
-    const num = await Brigade.destroy({ where: { id: req.params.id } });
-    if (num === 1) return res.json({ success: true, message: "Устгагдлаа" });
-    return res.status(404).json({ success: false, message: "Бригад олдсонгүй" });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+  return rejectPlatformOwned(res);
 };
 
 // ─── Members ─────────────────────────────────────────────

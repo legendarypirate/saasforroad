@@ -2,8 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ReactNode, useEffect, useState } from "react";
-import { clearSession, getStoredAdmin, isLoggedIn, PlatformAdmin } from "@/lib/api";
+import { ReactNode, useEffect, useMemo, useState } from "react";
+import {
+  clearSession,
+  getStoredAdmin,
+  isLoggedIn,
+  PLATFORM_DATA_KINDS,
+  PlatformAdmin,
+} from "@/lib/api";
 import { ThemeToggle } from "@/components/ThemeProvider";
 
 function IconGrid({ className = "nav-ico" }: { className?: string }) {
@@ -34,10 +40,36 @@ function IconPage({ className = "nav-ico" }: { className?: string }) {
   );
 }
 
+function IconData({ className = "nav-ico" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <ellipse cx="12" cy="5" rx="8" ry="3" />
+      <path d="M4 5v6c0 1.66 3.58 3 8 3s8-1.34 8-3V5" />
+      <path d="M4 11v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6" />
+    </svg>
+  );
+}
+
+function IconChevron({ open }: { open: boolean }) {
+  return (
+    <svg
+      className={`nav-chevron${open ? " open" : ""}`}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export default function Shell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [admin, setAdmin] = useState<PlatformAdmin | null>(null);
+  const dataActive = pathname.startsWith("/data");
+  const [dataOpen, setDataOpen] = useState(dataActive);
 
   useEffect(() => {
     if (!isLoggedIn()) {
@@ -47,10 +79,19 @@ export default function Shell({ children }: { children: ReactNode }) {
     setAdmin(getStoredAdmin());
   }, [router]);
 
+  useEffect(() => {
+    if (dataActive) setDataOpen(true);
+  }, [dataActive]);
+
   function logout() {
     clearSession();
     router.replace("/login");
   }
+
+  const activeKind = useMemo(() => {
+    const m = pathname.match(/^\/data\/([^/]+)/);
+    return m?.[1] || "";
+  }, [pathname]);
 
   if (!admin) {
     return (
@@ -89,6 +130,32 @@ export default function Shell({ children }: { children: ReactNode }) {
             <IconPage />
             Landing
           </Link>
+
+          <div className="nav-group">
+            <button
+              type="button"
+              className={`nav-link nav-group-toggle${dataActive ? " active" : ""}`}
+              onClick={() => setDataOpen((v) => !v)}
+              aria-expanded={dataOpen}
+            >
+              <IconData />
+              <span style={{ flex: 1, textAlign: "left" }}>Дата</span>
+              <IconChevron open={dataOpen} />
+            </button>
+            {dataOpen ? (
+              <div className="nav-sub">
+                {PLATFORM_DATA_KINDS.map((k) => (
+                  <Link
+                    key={k.id}
+                    href={`/data/${k.id}`}
+                    className={`nav-sublink${activeKind === k.id ? " active" : ""}`}
+                  >
+                    {k.label}
+                  </Link>
+                ))}
+              </div>
+            ) : null}
+          </div>
         </nav>
 
         <div className="sidebar-footer">

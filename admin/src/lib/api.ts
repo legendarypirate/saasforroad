@@ -103,6 +103,40 @@ export type Permission = {
   level?: string;
 };
 
+export type PlatformDataKind = {
+  id: string;
+  label: string;
+  labelEn: string;
+};
+
+export type PlatformDataEntry = {
+  id: number;
+  kind: string;
+  name: string;
+  contact_name?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  province?: string | null;
+  location?: string | null;
+  description?: string | null;
+  meta?: Record<string, unknown>;
+  image?: string | null;
+  status: string;
+  is_active: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export const PLATFORM_DATA_KINDS: PlatformDataKind[] = [
+  { id: "brigada", label: "Бригад", labelEn: "Brigade" },
+  { id: "job-seeker", label: "Ажил горилогч", labelEn: "Job seeker" },
+  { id: "factory", label: "Үйлдвэр", labelEn: "Factory" },
+  { id: "student", label: "Оюутан", labelEn: "Student" },
+  { id: "laboratory", label: "Лаборатори", labelEn: "Laboratory" },
+  { id: "technique", label: "Техник", labelEn: "Technique" },
+  { id: "road-sign", label: "Замын тэмдэг", labelEn: "Road sign" },
+];
+
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem(TOKEN_KEY);
@@ -252,4 +286,30 @@ export const api = {
       data: { url: string; path: string };
     };
   },
+
+  listData: (kind?: string) => {
+    const q = kind ? `?kind=${encodeURIComponent(kind)}` : "";
+    return request<{
+      success: boolean;
+      kinds: PlatformDataKind[];
+      entries: PlatformDataEntry[];
+    }>(`/api/platform/data${q}`);
+  },
+
+  createData: (body: Partial<PlatformDataEntry> & { kind: string; name: string }) =>
+    request<{ success: boolean; entry: PlatformDataEntry }>("/api/platform/data", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  updateData: (id: number, body: Partial<PlatformDataEntry>) =>
+    request<{ success: boolean; entry: PlatformDataEntry }>(
+      `/api/platform/data/${id}`,
+      { method: "PUT", body: JSON.stringify(body) }
+    ),
+
+  deleteData: (id: number) =>
+    request<{ success: boolean }>(`/api/platform/data/${id}`, {
+      method: "DELETE",
+    }),
 };

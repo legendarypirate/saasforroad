@@ -10,6 +10,8 @@ const TENANT_SKIP_KEYS = new Set([
   "sequelize",
   "tenants",
   "platform_admins",
+  "platform_landing_settings",
+  "platform_data_entries",
   "permissions",
   "role_permissions",
   "district",
@@ -19,6 +21,8 @@ const TENANT_SKIP_KEYS = new Set([
 const TENANT_SKIP_TABLES = new Set([
   "tenants",
   "platform_admins",
+  "platform_landing_settings",
+  "platform_data_entries",
   "permissions",
   "role_permissions",
   "districts",

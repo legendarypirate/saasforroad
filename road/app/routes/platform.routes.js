@@ -1,7 +1,8 @@
 module.exports = (app) => {
   const platform = require("../controllers/platform.controller");
   const platformLanding = require("../controllers/platformLanding.controller");
-  const { verifyPlatformToken } = require("../middleware/tenant");
+  const platformData = require("../controllers/platformData.controller");
+  const { verifyPlatformToken, requireTenant } = require("../middleware/tenant");
   const router = require("express").Router();
 
   router.post("/auth/login", platform.login);
@@ -16,6 +17,13 @@ module.exports = (app) => {
     verifyPlatformToken,
     platformLanding.uploadImage
   );
+
+  // Platform-owned Дата catalog (CRUD)
+  router.get("/data", verifyPlatformToken, platformData.list);
+  router.get("/data/:id", verifyPlatformToken, platformData.getOne);
+  router.post("/data", verifyPlatformToken, platformData.create);
+  router.put("/data/:id", verifyPlatformToken, platformData.update);
+  router.delete("/data/:id", verifyPlatformToken, platformData.remove);
 
   router.get("/modules", verifyPlatformToken, platform.listModules);
   router.get("/permissions", verifyPlatformToken, platform.listPermissions);
@@ -42,4 +50,9 @@ module.exports = (app) => {
   publicRouter.get("/current", platform.getCurrentTenantPublic);
   publicRouter.get("/ssl-allowed", platform.sslAllowed);
   app.use("/api/tenant", publicRouter);
+
+  // Tenant read-only Дата catalog
+  const catalogRouter = require("express").Router();
+  catalogRouter.get("/", platformData.listPublic);
+  app.use("/api/data-catalog", catalogRouter);
 };

@@ -1,4 +1,5 @@
 const db = require("../models");
+const { rejectPlatformOwned } = require("../utils/platformDataReadonly");
 const { Op } = db.Sequelize;
 const { todayISO, makeCrud } = require("../utils/plantCrud");
 
@@ -211,35 +212,14 @@ const siteCrud = makeCrud(Plant, {
 
 exports.listSites = siteCrud.findAll;
 exports.getSite = siteCrud.findOne;
-exports.deleteSite = siteCrud.delete;
+exports.deleteSite = async (req, res) => rejectPlatformOwned(res);
 
 exports.createSite = async (req, res) => {
-  try {
-    if (!req.body.name) {
-      return res.status(400).json({ success: false, message: "Нэр заавал" });
-    }
-    const row = await Plant.create(buildSitePayload(req.body));
-    await syncProducts(row.id, req.body.products);
-    const full = await Plant.findByPk(row.id, { include: siteProductInc });
-    res.json({ success: true, data: full });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+  return rejectPlatformOwned(res);
 };
 
 exports.updateSite = async (req, res) => {
-  try {
-    const row = await Plant.findByPk(req.params.id);
-    if (!row) return res.status(404).json({ success: false, message: "Олдсонгүй" });
-    await row.update(buildSitePayload({ ...row.toJSON(), ...req.body }));
-    if (Array.isArray(req.body.products)) {
-      await syncProducts(row.id, req.body.products, { replace: true });
-    }
-    const full = await Plant.findByPk(row.id, { include: siteProductInc });
-    res.json({ success: true, data: full });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+  return rejectPlatformOwned(res);
 };
 
 /* ── Products ──────────────────────────────────────────── */

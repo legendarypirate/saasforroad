@@ -353,10 +353,10 @@ export const ADMIN_DATA_FOLDERS: ModuleConfig[] = [
     index: 'plant',
     moduleKey: 'plant:module',
     label: 'Үйлдвэр',
-    description: 'Үйлдвэрийн байршил, бүтээгдэхүүн — газрын зураг',
+    description: 'Үйлдвэрийн мэдээлэл — зөвхөн харах / холбогдох',
     color: '#b45309',
     items: [
-      { path: '/admin/data/factory', label: 'Газрын зураг', menuId: 'factory_map', permission: mk('plant', 'factory_map') },
+      { path: '/admin/data/factory', label: 'Жагсаалт', menuId: 'factory_map', permission: mk('plant', 'factory_map') },
     ],
   },
   {
@@ -364,20 +364,21 @@ export const ADMIN_DATA_FOLDERS: ModuleConfig[] = [
     index: 'technique',
     moduleKey: 'technique:module',
     label: 'Техник',
-    description: 'Техникийн мэдээлэл, тоног төхөөрөмжийн дата',
+    description: 'Техникийн мэдээлэл — зөвхөн харах / холбогдох',
     color: '#096dd9',
-    items: [],
-    comingSoon: true,
+    items: [
+      { path: '/admin/data/technique', label: 'Жагсаалт', menuId: 'list', permission: mk('technique', 'list') },
+    ],
   },
   {
     id: 'data-brigade',
     index: 'brigada',
     moduleKey: 'brigada:module',
     label: 'Бригад',
-    description: 'Бригад, багийн бүтэц, гүйцэтгэл',
+    description: 'Бригад — зөвхөн харах / холбогдох',
     color: '#531dab',
     items: [
-      { path: '/admin/data/brigada', label: 'Бригадын жагсаалт', menuId: 'list', permission: mk('brigada', 'list') },
+      { path: '/admin/data/brigada', label: 'Жагсаалт', menuId: 'list', permission: mk('brigada', 'list') },
     ],
   },
   {
@@ -385,26 +386,21 @@ export const ADMIN_DATA_FOLDERS: ModuleConfig[] = [
     index: 'laboratory',
     moduleKey: 'laboratory:module',
     label: 'Лаборатори',
-    description: 'Лабораторийн шинжилгээ, дүн',
+    description: 'Лаборатори — зөвхөн харах / холбогдох',
     color: '#08979c',
-    items: [],
-    comingSoon: true,
+    items: [
+      { path: '/admin/data/laboratory', label: 'Жагсаалт', menuId: 'list', permission: mk('laboratory', 'list') },
+    ],
   },
   {
     id: 'data-job-seeker',
     index: 'job_seeker',
     moduleKey: 'job_seeker:module',
     label: 'Ажил горилогч',
-    description: 'Анкет (rcos) ажил горилогчид — авах хүсэлт',
+    description: 'Ажил горилогч — зөвхөн харах / холбогдох',
     color: '#d48806',
     items: [
       { path: '/admin/data/job-seeker', label: 'Жагсаалт', menuId: 'list', permission: mk('job_seeker', 'list') },
-      {
-        path: '/admin/data/job-seeker/hire-requests',
-        label: 'Авах хүсэлт',
-        menuId: 'hire_requests',
-        permission: mk('job_seeker', 'hire_requests'),
-      },
     ],
   },
   {
@@ -412,7 +408,7 @@ export const ADMIN_DATA_FOLDERS: ModuleConfig[] = [
     index: 'student',
     moduleKey: 'student:module',
     label: 'Оюутан',
-    description: 'Оюутан, дадлагажигчдын бүртгэл',
+    description: 'Оюутан — зөвхөн харах / холбогдох',
     color: '#7c3aed',
     items: [
       { path: '/admin/data/student', label: 'Жагсаалт', menuId: 'list', permission: mk('student', 'list') },
@@ -423,10 +419,11 @@ export const ADMIN_DATA_FOLDERS: ModuleConfig[] = [
     index: 'road_sign',
     moduleKey: 'road_sign:module',
     label: 'Замын тэмдэг',
-    description: 'Замын тэмдэг, тэмдэглэгээний дата',
+    description: 'Замын тэмдэг — зөвхөн харах / холбогдох',
     color: '#ea580c',
-    items: [],
-    comingSoon: true,
+    items: [
+      { path: '/admin/data/road-sign', label: 'Жагсаалт', menuId: 'list', permission: mk('road_sign', 'list') },
+    ],
   },
 ];
 
