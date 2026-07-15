@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   enabledItems,
   FALLBACK_PLATFORM_LANDING,
@@ -14,11 +14,20 @@ import {
 } from "@/components/platform/PlatformTheme";
 import "./PlatformLanding.css";
 
+function resolveHeroSlides(content: PlatformLandingContent): string[] {
+  const slides = Array.isArray(content.hero_images)
+    ? content.hero_images.filter(Boolean)
+    : [];
+  if (slides.length) return slides.slice(0, 3);
+  return content.hero_image ? [content.hero_image] : [];
+}
+
 export default function PlatformLanding() {
   const [content, setContent] = useState<PlatformLandingContent>(
     FALLBACK_PLATFORM_LANDING
   );
   const [ready, setReady] = useState(false);
+  const [slide, setSlide] = useState(0);
   const { theme, toggle } = usePlatformTheme();
 
   useEffect(() => {
@@ -38,15 +47,22 @@ export default function PlatformLanding() {
     };
   }, []);
 
+  const slides = useMemo(() => resolveHeroSlides(content), [content]);
+
+  useEffect(() => {
+    if (slides.length <= 1) return;
+    const id = window.setInterval(() => {
+      setSlide((s) => (s + 1) % slides.length);
+    }, 5500);
+    return () => window.clearInterval(id);
+  }, [slides.length]);
+
+  useEffect(() => {
+    setSlide(0);
+  }, [slides.join("|")]);
+
   const modules = enabledItems(content.modules);
   const dataItems = enabledItems(content.data_items);
-  const heroOverlay =
-    theme === "light"
-      ? "linear-gradient(105deg, rgba(247,250,251,0.94) 0%, rgba(247,250,251,0.72) 48%, rgba(247,250,251,0.45) 100%)"
-      : "linear-gradient(105deg, rgba(9,13,17,0.92) 0%, rgba(9,13,17,0.55) 45%, rgba(9,13,17,0.35) 100%)";
-  const heroStyle = content.hero_image
-    ? { backgroundImage: `${heroOverlay}, url(${content.hero_image})` }
-    : undefined;
 
   return (
     <main
@@ -72,7 +88,7 @@ export default function PlatformLanding() {
             {content.modules_title || "Модуль"}
           </a>
           <a className="pl-link" href="#data">
-            {content.data_title || "Өгөгдөл"}
+            {content.data_title || "Дата мэдээлэл"}
           </a>
           <PlatformThemeToggle theme={theme} onToggle={toggle} />
           <a
@@ -84,7 +100,18 @@ export default function PlatformLanding() {
         </div>
       </header>
 
-      <section className="pl-hero" style={heroStyle}>
+      <section className="pl-hero">
+        <div className="pl-hero-slides" aria-hidden>
+          {slides.map((url, i) => (
+            <div
+              key={`${url}-${i}`}
+              className={`pl-hero-slide${i === slide ? " is-active" : ""}`}
+              style={{ backgroundImage: `url(${url})` }}
+            />
+          ))}
+          <div className="pl-hero-wash" />
+        </div>
+
         <div className="pl-hero-inner">
           {content.hero_eyebrow ? (
             <p className="pl-eyebrow">{content.hero_eyebrow}</p>
@@ -111,6 +138,19 @@ export default function PlatformLanding() {
               </a>
             ) : null}
           </div>
+          {slides.length > 1 ? (
+            <div className="pl-hero-dots">
+              {slides.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  className={`pl-hero-dot${i === slide ? " is-active" : ""}`}
+                  aria-label={`Slide ${i + 1}`}
+                  onClick={() => setSlide(i)}
+                />
+              ))}
+            </div>
+          ) : null}
         </div>
       </section>
 

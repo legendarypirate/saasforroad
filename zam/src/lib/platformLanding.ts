@@ -26,6 +26,7 @@ export type PlatformLandingContent = {
   hero_title: string;
   hero_subtitle: string;
   hero_image: string;
+  hero_images: string[];
   cta_primary_label: string;
   cta_primary_url: string;
   cta_secondary_label: string;
@@ -55,6 +56,7 @@ export const FALLBACK_PLATFORM_LANDING: PlatformLandingContent = {
   hero_subtitle:
     'Замын компани бүрт өөрийн ERP — {slug}.rcos.mn эсвэл захиалгат домэйн.',
   hero_image: '',
+  hero_images: [],
   cta_primary_label: 'Платформ нэвтрэх',
   cta_primary_url: 'https://admin.rcos.mn',
   cta_secondary_label: 'Модуль үзэх',
@@ -68,7 +70,7 @@ export const FALLBACK_PLATFORM_LANDING: PlatformLandingContent = {
   modules_title: 'ERP модулиуд',
   modules_subtitle: 'Платформ админ компани бүрт модулийг асааж/унтраана.',
   modules: [],
-  data_title: 'Өгөгдлийн сангууд',
+  data_title: 'Дата мэдээлэл',
   data_subtitle: 'Салбарын нийтлэг өгөгдөл.',
   data_items: [],
   steps_title: 'Хэрхэн ажилладаг вэ',
@@ -90,7 +92,17 @@ export async function fetchPlatformLanding(): Promise<PlatformLandingContent> {
     if (!res.ok) return FALLBACK_PLATFORM_LANDING;
     const data = await res.json();
     if (!data.success || !data.data) return FALLBACK_PLATFORM_LANDING;
-    return { ...FALLBACK_PLATFORM_LANDING, ...data.data } as PlatformLandingContent;
+    const merged = {
+      ...FALLBACK_PLATFORM_LANDING,
+      ...data.data,
+    } as PlatformLandingContent;
+    const slides = Array.isArray(merged.hero_images)
+      ? merged.hero_images.filter(Boolean).slice(0, 3)
+      : [];
+    if (!slides.length && merged.hero_image) slides.push(merged.hero_image);
+    merged.hero_images = slides;
+    merged.hero_image = slides[0] || '';
+    return merged;
   } catch {
     return FALLBACK_PLATFORM_LANDING;
   }

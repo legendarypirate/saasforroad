@@ -76,6 +76,7 @@ export type PlatformLandingContent = {
   hero_title: string;
   hero_subtitle: string;
   hero_image: string;
+  hero_images: string[];
   cta_primary_label: string;
   cta_primary_url: string;
   cta_secondary_label: string;

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import Shell from "@/components/Shell";
 import {
   api,
@@ -27,6 +27,14 @@ function emptyStep(): PlatformLandingStep {
   return { title: "", text: "" };
 }
 
+function normalizeHeroImages(content: PlatformLandingContent): string[] {
+  const slides = Array.isArray(content.hero_images)
+    ? content.hero_images.filter(Boolean)
+    : [];
+  if (slides.length) return slides.slice(0, 3);
+  return content.hero_image ? [content.hero_image] : [];
+}
+
 type ItemKey = "modules" | "data_items";
 
 export default function LandingEditorPage() {
@@ -36,11 +44,22 @@ export default function LandingEditorPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     api
       .getLanding()
-      .then((res) => setContent(res.data))
+      .then((res) => {
+        const data = res.data;
+        const hero_images = normalizeHeroImages(data);
+        setContent({
+          ...data,
+          hero_images,
+          hero_image: hero_images[0] || "",
+        });
+      })
       .catch((err) =>
         setError(err instanceof Error ? err.message : "Failed to load")
       )
@@ -54,7 +73,21 @@ export default function LandingEditorPage() {
     setContent((prev) => (prev ? { ...prev, [key]: value } : prev));
   }
 
-  function updateItem(listKey: ItemKey, index: number, field: keyof PlatformLandingItem, value: string | boolean) {
+  function setHeroImages(images: string[]) {
+    const next = images.filter(Boolean).slice(0, 3);
+    setContent((prev) =>
+      prev
+        ? { ...prev, hero_images: next, hero_image: next[0] || "" }
+        : prev
+    );
+  }
+
+  function updateItem(
+    listKey: ItemKey,
+    index: number,
+    field: keyof PlatformLandingItem,
+    value: string | boolean
+  ) {
     setContent((prev) => {
       if (!prev) return prev;
       const list = [...prev[listKey]];
@@ -81,19 +114,55 @@ export default function LandingEditorPage() {
     });
   }
 
-  async function onUpload(file: File | null) {
-    if (!file || !content) return;
+  async function uploadFiles(files: FileList | File[]) {
+    if (!content) return;
+    const list = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    if (!list.length) {
+      setError("Зөвхөн зураг файл оруулна уу");
+      return;
+    }
+    const current = normalizeHeroImages(content);
+    const room = 3 - current.length;
+    if (room <= 0) {
+      setError("Хамгийн ихдээ 3 зураг");
+      return;
+    }
+    const toUpload = list.slice(0, room);
     setUploading(true);
     setError("");
     try {
-      const res = await api.uploadLandingImage(file);
-      patch("hero_image", res.data.url || res.data.path);
-      setMessage("Hero image uploaded");
+      const urls: string[] = [];
+      for (const file of toUpload) {
+        const res = await api.uploadLandingImage(file);
+        urls.push(res.data.url || res.data.path);
+      }
+      setHeroImages([...current, ...urls]);
+      setMessage(
+        toUpload.length === 1
+          ? "Hero slide uploaded"
+          : `${toUpload.length} slides uploaded`
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setUploading(false);
     }
+  }
+
+  function onHeroDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragOver(false);
+    if (e.dataTransfer.files?.length) {
+      void uploadFiles(e.dataTransfer.files);
+    }
+  }
+
+  function reorderHero(from: number, to: number) {
+    if (!content || from === to) return;
+    const slides = [...normalizeHeroImages(content)];
+    const [item] = slides.splice(from, 1);
+    slides.splice(to, 0, item);
+    setHeroImages(slides);
   }
 
   async function onSubmit(e: FormEvent) {
@@ -103,8 +172,18 @@ export default function LandingEditorPage() {
     setMessage("");
     setError("");
     try {
-      const res = await api.updateLanding(content);
-      setContent(res.data);
+      const payload = {
+        ...content,
+        hero_images: normalizeHeroImages(content),
+        hero_image: normalizeHeroImages(content)[0] || "",
+      };
+      const res = await api.updateLanding(payload);
+      const hero_images = normalizeHeroImages(res.data);
+      setContent({
+        ...res.data,
+        hero_images,
+        hero_image: hero_images[0] || "",
+      });
       setMessage("Landing page saved — live on rcos.mn");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed");
@@ -128,6 +207,8 @@ export default function LandingEditorPage() {
       </Shell>
     );
   }
+
+  const heroSlides = normalizeHeroImages(content);
 
   return (
     <Shell>
@@ -207,29 +288,109 @@ export default function LandingEditorPage() {
           <div className="field">
             <label>Subtitle</label>
             <textarea
-              rows={3}
+              rows={2}
               value={content.hero_subtitle}
               onChange={(e) => patch("hero_subtitle", e.target.value)}
             />
           </div>
-          <div className="field">
-            <label>Hero image URL</label>
-            <input
-              value={content.hero_image}
-              onChange={(e) => patch("hero_image", e.target.value)}
-              placeholder="https://… or upload below"
-            />
+
+          <div className="field" style={{ marginBottom: "0.35rem" }}>
+            <label>Background slides (1–3)</label>
+            <p className="muted" style={{ margin: 0, fontSize: "0.85rem" }}>
+              Drag &amp; drop images below, or reorder thumbnails. Max 3.
+            </p>
           </div>
-          <div className="field">
-            <label>Upload hero image</label>
+
+          <div
+            className={`hero-dropzone${dragOver ? " is-over" : ""}${uploading ? " is-busy" : ""}`}
+            onDragEnter={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault();
+              setDragOver(false);
+            }}
+            onDrop={onHeroDrop}
+            onClick={() => {
+              if (!uploading && heroSlides.length < 3) fileInputRef.current?.click();
+            }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                if (heroSlides.length < 3) fileInputRef.current?.click();
+              }
+            }}
+          >
             <input
+              ref={fileInputRef}
               type="file"
               accept="image/*"
-              disabled={uploading}
-              onChange={(e) => onUpload(e.target.files?.[0] || null)}
+              multiple
+              hidden
+              disabled={uploading || heroSlides.length >= 3}
+              onChange={(e) => {
+                if (e.target.files?.length) void uploadFiles(e.target.files);
+                e.target.value = "";
+              }}
             />
+            <div className="hero-dropzone-inner">
+              <strong>
+                {uploading
+                  ? "Uploading…"
+                  : heroSlides.length >= 3
+                    ? "Slide limit reached (3)"
+                    : "Drop images here"}
+              </strong>
+              <span>
+                {heroSlides.length}/3 · PNG, JPG, WebP · click to browse
+              </span>
+            </div>
           </div>
-          <div className="grid-2">
+
+          {heroSlides.length ? (
+            <ul className="hero-thumbs">
+              {heroSlides.map((url, i) => (
+                <li
+                  key={`${url}-${i}`}
+                  className={`hero-thumb${dragIndex === i ? " is-dragging" : ""}`}
+                  draggable
+                  onDragStart={() => setDragIndex(i)}
+                  onDragEnd={() => setDragIndex(null)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (dragIndex !== null) reorderHero(dragIndex, i);
+                    setDragIndex(null);
+                  }}
+                >
+                  <img src={url} alt={`Slide ${i + 1}`} />
+                  <div className="hero-thumb-meta">
+                    <span>#{i + 1}</span>
+                    <button
+                      type="button"
+                      className="btn ghost chip"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setHeroImages(heroSlides.filter((_, j) => j !== i));
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
+          <div className="grid-2" style={{ marginTop: "0.75rem" }}>
             <div className="field">
               <label>Primary CTA label</label>
               <input
@@ -336,7 +497,9 @@ export default function LandingEditorPage() {
           onSubtitle={(v) => patch("data_subtitle", v)}
           items={content.data_items}
           onAdd={() => patch("data_items", [...content.data_items, emptyItem()])}
-          onChange={(i, field, value) => updateItem("data_items", i, field, value)}
+          onChange={(i, field, value) =>
+            updateItem("data_items", i, field, value)
+          }
           onMove={(i, dir) => moveItem("data_items", i, dir)}
           onRemove={(i) => removeItem("data_items", i)}
         />
@@ -345,7 +508,10 @@ export default function LandingEditorPage() {
           <div className="panel-head">
             <div>
               <h2 className="panel-title">How it works</h2>
-              <div className="field" style={{ marginTop: "0.75rem", marginBottom: 0 }}>
+              <div
+                className="field"
+                style={{ marginTop: "0.75rem", marginBottom: 0 }}
+              >
                 <label>Section title</label>
                 <input
                   value={content.steps_title}
@@ -460,7 +626,11 @@ function ItemListEditor({
   onSubtitle: (v: string) => void;
   items: PlatformLandingItem[];
   onAdd: () => void;
-  onChange: (i: number, field: keyof PlatformLandingItem, value: string | boolean) => void;
+  onChange: (
+    i: number,
+    field: keyof PlatformLandingItem,
+    value: string | boolean
+  ) => void;
   onMove: (i: number, dir: -1 | 1) => void;
   onRemove: (i: number) => void;
 }) {
@@ -493,8 +663,23 @@ function ItemListEditor({
             marginTop: "0.5rem",
           }}
         >
-          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.5rem" }}>
-            <label className="muted" style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontWeight: 700 }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "0.5rem",
+              flexWrap: "wrap",
+              marginBottom: "0.5rem",
+            }}
+          >
+            <label
+              className="muted"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.4rem",
+                fontWeight: 700,
+              }}
+            >
               <input
                 type="checkbox"
                 checked={item.enabled}
@@ -502,24 +687,42 @@ function ItemListEditor({
               />
               Visible
             </label>
-            <button type="button" className="btn ghost chip" onClick={() => onMove(i, -1)}>
+            <button
+              type="button"
+              className="btn ghost chip"
+              onClick={() => onMove(i, -1)}
+            >
               Up
             </button>
-            <button type="button" className="btn ghost chip" onClick={() => onMove(i, 1)}>
+            <button
+              type="button"
+              className="btn ghost chip"
+              onClick={() => onMove(i, 1)}
+            >
               Down
             </button>
-            <button type="button" className="btn ghost chip" onClick={() => onRemove(i)}>
+            <button
+              type="button"
+              className="btn ghost chip"
+              onClick={() => onRemove(i)}
+            >
               Remove
             </button>
           </div>
           <div className="grid-2">
             <div className="field">
               <label>Id</label>
-              <input value={item.id} onChange={(e) => onChange(i, "id", e.target.value)} />
+              <input
+                value={item.id}
+                onChange={(e) => onChange(i, "id", e.target.value)}
+              />
             </div>
             <div className="field">
               <label>Label</label>
-              <input value={item.label} onChange={(e) => onChange(i, "label", e.target.value)} />
+              <input
+                value={item.label}
+                onChange={(e) => onChange(i, "label", e.target.value)}
+              />
             </div>
           </div>
           <div className="field">

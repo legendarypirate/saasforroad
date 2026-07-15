@@ -129,6 +129,7 @@ const DEFAULT_PLATFORM_LANDING = {
   hero_subtitle:
     "Замын компани бүрт өөрийн ERP — {slug}.rcos.mn эсвэл захиалгат домэйн. Модуль, эрх, өгөгдлийг платформоос удирдана.",
   hero_image: "",
+  hero_images: [],
   cta_primary_label: "Платформ нэвтрэх",
   cta_primary_url: "https://admin.rcos.mn",
   cta_secondary_label: "Модуль үзэх",
@@ -143,7 +144,7 @@ const DEFAULT_PLATFORM_LANDING = {
   modules_subtitle:
     "Платформ админ компани бүрт эдгээр модулийг асааж/унтраана. Систем {slug}.rcos.mn эсвэл захиалгат домэйн дээр ажиллана.",
   modules: DEFAULT_MODULES,
-  data_title: "Өгөгдлийн сангууд",
+  data_title: "Дата мэдээлэл",
   data_subtitle:
     "Салбарын нийтлэг өгөгдөл — үйлдвэр, техник, бригад, лаборатори. Модуль эрхээр нээгдэнэ.",
   data_items: DEFAULT_DATA_ITEMS,
@@ -167,7 +168,16 @@ const DEFAULT_PLATFORM_LANDING = {
   admin_url: "https://admin.rcos.mn",
 };
 
-const ARRAY_FIELDS = ["stats", "modules", "data_items", "steps"];
+const ARRAY_FIELDS = ["stats", "modules", "data_items", "steps", "hero_images"];
+
+function normalizeHeroImages(list, legacySingle) {
+  const fromList = Array.isArray(list)
+    ? list.map((u) => String(u || "").trim()).filter(Boolean)
+    : [];
+  if (fromList.length) return fromList.slice(0, 3);
+  const single = String(legacySingle || "").trim();
+  return single ? [single] : [];
+}
 
 function normalizeItemList(list, fallback) {
   if (!Array.isArray(list)) return fallback.map((x) => ({ ...x }));
@@ -202,6 +212,7 @@ function mergePlatformLandingContent(stored) {
   const merged = { ...base, ...stored };
 
   for (const key of ARRAY_FIELDS) {
+    if (key === "hero_images") continue;
     if (Array.isArray(stored[key])) {
       if (key === "stats") merged.stats = normalizeStats(stored.stats, base.stats);
       else if (key === "modules")
@@ -212,6 +223,9 @@ function mergePlatformLandingContent(stored) {
         merged.steps = normalizeSteps(stored.steps, base.steps);
     }
   }
+
+  merged.hero_images = normalizeHeroImages(stored.hero_images, stored.hero_image);
+  merged.hero_image = merged.hero_images[0] || "";
 
   return merged;
 }

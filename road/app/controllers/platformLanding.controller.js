@@ -71,6 +71,13 @@ exports.update = async (req, res) => {
     if (Array.isArray(parsed.modules)) merged.modules = parsed.modules;
     if (Array.isArray(parsed.data_items)) merged.data_items = parsed.data_items;
     if (Array.isArray(parsed.steps)) merged.steps = parsed.steps;
+    if (Array.isArray(parsed.hero_images)) {
+      merged.hero_images = parsed.hero_images
+        .map((u) => String(u || "").trim())
+        .filter(Boolean)
+        .slice(0, 3);
+      merged.hero_image = merged.hero_images[0] || "";
+    }
 
     const finalContent = mergePlatformLandingContent(merged);
     row.set("content", JSON.parse(JSON.stringify(finalContent)));
