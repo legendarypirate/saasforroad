@@ -28,7 +28,10 @@ export default function Home() {
   useEffect(() => {
     if (!ready || isPlatform) return;
     fetchPublicHomepage()
-      .then(setContent)
+      .then((data) => {
+        setContent(data);
+        document.title = data.company_name || 'Company title';
+      })
       .catch(() => {
         // Unknown tenant is handled by TenantProvider gate
       });
@@ -45,7 +48,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-white text-slate-900 antialiased selection:bg-[#3daf72]/25 selection:text-slate-900">
       <PublicSiteHeader
-        companyName={content.company_name || 'Компани'}
+        companyName={content.company_name || 'Company title'}
         logo={content.logo}
         navItems={content.nav_menu}
       />

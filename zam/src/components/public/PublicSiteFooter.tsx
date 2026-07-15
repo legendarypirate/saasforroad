@@ -64,12 +64,16 @@ export default function PublicSiteFooter({ content }: { content: HomepageContent
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={logoSrc}
-                alt={content.company_name}
+                alt={content.company_name || 'Company logo'}
                 className="h-8 w-auto max-w-[100px] object-contain"
               />
-            ) : null}
+            ) : (
+              <span className="inline-flex h-8 items-center rounded border border-dashed border-slate-600 px-2 text-[10px] font-bold tracking-wide text-slate-500">
+                Your logo
+              </span>
+            )}
             <p className="text-sm font-extrabold tracking-tight text-white md:text-[15px]">
-              {content.company_name}
+              {content.company_name || 'Company title'}
             </p>
           </div>
           <p className="max-w-xs text-sm leading-relaxed text-slate-400">{content.company_tagline}</p>

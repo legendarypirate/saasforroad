@@ -137,104 +137,49 @@ const ARRAY_FIELDS: (keyof HomepageContent)[] = [
 ];
 
 export const DEFAULT_HOMEPAGE_CONTENT: HomepageContent = {
-  company_name: 'Үлэмжийн зам LLC',
-  company_tagline: 'Замын удирдлагын систем',
-  logo: '/logo.jpeg',
-  hero_badge: 'Зам бүтээдэг хүч — Ирээдүйг бүтээгч бид',
-  hero_title: 'Авто зам, гүүр, дэд бүтцийн төслүүд',
-  hero_title_highlight: 'дэд бүтцийн',
+  company_name: 'Company title',
+  company_tagline: 'Your company tagline',
+  logo: '',
+  hero_badge: 'Your badge',
+  hero_title: 'Your headline goes here',
+  hero_title_highlight: 'headline',
   hero_subtitle:
-    'Бид чанар, аюулгүй байдал, хугацааны стандартыг баримталж үндэсний хэмжээний замын төслүүдийг гүйцэтгэдэг.',
-  hero_bg_image: '/bg.png',
-  about_label: 'Бидний тухай',
-  about_title: 'Үлэмжийн зам LLC',
+    'Add your company story, services, and strengths from the homepage editor.',
+  hero_bg_image: '',
+  about_label: 'About',
+  about_title: 'Company title',
   about_text1:
-    '2008 оноос хойш авто зам, гүүрийн барилга угсралт, засвар арчлалтаар мэргэшсэн үндэсний хэмжээний компани.',
+    'Introduce your company here. Edit this text from Admin → Homepage.',
   about_text2:
-    'Манай системээр төсөл, ажилтан, материал, ирц, аюулгүй байдлыг нэг дороос хянах боломжтой.',
-  about_image: '/back.png',
-  features_label: 'Удирдлагын систем',
-  features_title: 'Нэг платформ — бүх үйл явдал',
-  features_subtitle: 'Замын компанид зориулсан админ болон ажилчны апп.',
-  projects_label: 'Төслүүд',
-  projects_title: 'Гүйцэтгэсэн & явагдаж буй ажлууд',
-  app_download_title: 'Ажилчны апп татах',
-  app_download_text: 'Төслийн мэдээ, ирц бүртгэл — гар утаснаасаа.',
-  login_title: 'Админ нэвтрэх',
-  login_subtitle: 'Замын удирдлагын системд нэвтэрнэ үү',
-  login_bg_image: '/zs.png',
-  phone: '7000-0000',
-  email: 'info@ulemjin-zam.mn',
-  address: 'Улаанбаатар, Сүхбаатар дүүрэг',
-  footer_copyright: 'Бүх эрх хуулиар хамгаалагдсан.',
+    'Add a second paragraph about projects, people, and quality.',
+  about_image: '',
+  features_label: 'Platform',
+  features_title: 'One platform — every workflow',
+  features_subtitle: 'Projects, attendance, HSE, HR, and more — enable modules for your company.',
+  projects_label: 'Projects',
+  projects_title: 'Featured projects',
+  app_download_title: 'Worker app',
+  app_download_text: 'Project news, attendance, and safety alerts on mobile.',
+  login_title: 'Sign in',
+  login_subtitle: 'Sign in to your company workspace',
+  login_bg_image: '',
+  phone: '',
+  email: '',
+  address: '',
+  footer_copyright: 'All rights reserved.',
   stats: [
-    { value: '15+', label: 'Жилийн туршлага' },
-    { value: '120+', label: 'Гүйцэтгэсэн төсөл' },
-    { value: '500+', label: 'Мэргэшсэн ажилтан' },
-    { value: '24/7', label: 'Төслийн хяналт' },
+    { value: '—', label: 'Experience' },
+    { value: '—', label: 'Projects' },
+    { value: '—', label: 'People' },
+    { value: '—', label: 'Support' },
   ],
   features: [
-    { title: 'Төслийн удирдлага', desc: 'Төсөл, даалгавар, явцын нэгдсэн хяналт.', icon: 'project' },
-    { title: 'Аюулгүй байдал', desc: 'Ослын мэдээлэл, заавар, бодит цагийн бүртгэл.', icon: 'safety' },
-    { title: 'Ирцийн систем', desc: 'Ажилчин өдөр бүр ирсэн, явсан цагаа бүртгэнэ.', icon: 'clock' },
-    { title: 'Хүний нөөц', desc: 'Эрх, хэрэглэгч, багийн бүтцийг уян хатан удирдах.', icon: 'team' },
+    { title: 'Project management', desc: 'Projects, tasks, and progress in one place.', icon: 'project' },
+    { title: 'Safety', desc: 'Incidents, briefings, and live registers.', icon: 'safety' },
+    { title: 'Attendance', desc: 'Daily check-in and check-out for crews.', icon: 'clock' },
+    { title: 'Human resources', desc: 'Roles, users, and org structure.', icon: 'team' },
   ],
-  projects: [
-    {
-      image: '/p1.png',
-      title: 'Улаанбаатар — Дархан чиглэлийн зам',
-      desc: '30 км авто замын шинэчлэлт, хатуу хучилттай замын ажил. 2024 онд ашиглалтад орсон.',
-      tag: 'Дууссан',
-    },
-    {
-      image: '/p2.png',
-      title: 'Орон нутгийн холболтын зам',
-      desc: 'Дэд бүтэц, гүүрийн барилга угсралтын төсөл. Одоогоор үндсэн ажил явагдаж байна.',
-      tag: 'Явагдаж буй',
-    },
-    {
-      image: '/p3.png',
-      title: 'Хотын дотоод замын сүлжээ',
-      desc: 'Замын засвар, арчилгаа, аюулгүй байдлын стандартын шинэчлэлт.',
-      tag: 'Төлөвлөгдсөн',
-    },
-    {
-      image: '/p1.png',
-      title: 'Хөшгийн хөндий — Улаанбаатар зам',
-      desc: 'Шинэ нисэх онгоцны буудал хүртэлх 3.2 км хатуу хучилттай авто замын төсөл.',
-      tag: 'Дууссан',
-    },
-    {
-      image: '/p2.png',
-      title: 'Баянхонгор — Алтай чиглэлийн зам',
-      desc: '126.7 км хатуу хучилттай авто замын барилгын ажил.',
-      tag: 'Явагдаж буй',
-    },
-    {
-      image: '/p3.png',
-      title: 'Өндөрхаан — Чойбалсан чиглэл',
-      desc: '25 км хатуу хучилттай авто замын IIIA, IVA хэсгийн барилга.',
-      tag: 'Явагдаж буй',
-    },
-    {
-      image: '/p1.png',
-      title: 'Чойр — Сайншанд чиглэлийн зам',
-      desc: '50 км хатуу хучилттай авто замын төсөл.',
-      tag: 'Төлөвлөгдсөн',
-    },
-    {
-      image: '/p2.png',
-      title: 'Чингисийн өргөн чөлөө — Нарны зам',
-      desc: '1.6 км хатуу хучилттай авто замын холболтын төсөл.',
-      tag: 'Дууссан',
-    },
-    {
-      image: '/p3.png',
-      title: 'Баруун-Урт хотын замын сүлжээ',
-      desc: 'Хотын төвийн зам, уулзварын өргөтгөл шинэчлэлтийн ажил.',
-      tag: 'Төлөвлөгдсөн',
-    },
-  ],
+  projects: [],
   ...DEFAULT_LANDING_PAGE_FIELDS,
   nav_menu: getDefaultNavMenu(),
   custom_pages: [],
@@ -278,11 +223,16 @@ export function mergeHomepageContent(stored?: Partial<HomepageContent> | null): 
     ];
   }
 
+  const logo = String(stored.logo || '').trim();
+  if (!logo || logo === '/logo.jpeg' || logo === 'logo.jpeg') {
+    merged.logo = '';
+  }
+
   return merged;
 }
 
 export function resolveImageUrl(path: string): string {
-  if (!path) return '/logo.jpeg';
+  if (!path) return '';
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
   if (path.startsWith('/assets/')) return `${API}${path}`;
   if (path.startsWith('/')) return path;

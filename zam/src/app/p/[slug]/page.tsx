@@ -61,7 +61,7 @@ export default function CustomPageView() {
     return (
       <main className="min-h-screen bg-white text-slate-900">
         <PublicSiteHeader
-          companyName={content.company_name || 'Үлэмжийн зам'}
+          companyName={content.company_name || 'Company title'}
           logo={content.logo}
           navItems={content.nav_menu}
         />
@@ -80,7 +80,7 @@ export default function CustomPageView() {
   return (
     <main className="min-h-screen bg-white text-slate-900">
       <PublicSiteHeader
-        companyName={content.company_name || 'Үлэмжийн зам'}
+        companyName={content.company_name || 'Company title'}
         logo={content.logo}
         activeHref={`/p/${page.slug}`}
         navItems={content.nav_menu}

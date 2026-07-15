@@ -97,7 +97,7 @@ export function getLandingAdminTabs(_form?: {
   return [
     {
       key: 'home',
-      label: 'Үлэмжийн зам LLC',
+      label: 'Company title',
       children: (
         <SubTabs
           defaultKey="brand"

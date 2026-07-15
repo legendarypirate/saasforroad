@@ -38,7 +38,7 @@ export default function NewsDetailPage() {
     return (
       <main className="min-h-screen bg-white">
         <PublicSiteHeader
-          companyName={content.company_name || 'Үлэмжийн зам'}
+          companyName={content.company_name || 'Company title'}
           logo={content.logo}
           activeHref="/news"
           navItems={content.nav_menu}
@@ -57,7 +57,7 @@ export default function NewsDetailPage() {
   return (
     <main className="min-h-screen bg-white text-slate-900">
       <PublicSiteHeader
-        companyName={content.company_name || 'Үлэмжийн зам'}
+        companyName={content.company_name || 'Company title'}
         logo={content.logo}
         activeHref="/news"
         navItems={content.nav_menu}

@@ -42,7 +42,7 @@ export default function AboutPage() {
   return (
     <main className="min-h-screen bg-white text-slate-900">
       <PublicSiteHeader
-        companyName={content.company_name || 'Үлэмжийн зам'}
+        companyName={content.company_name || 'Company title'}
         logo={content.logo}
         activeHref="/about"
         navItems={content.nav_menu}

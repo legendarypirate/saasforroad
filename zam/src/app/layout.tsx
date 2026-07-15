@@ -11,8 +11,11 @@ const nunito = Nunito({
 });
 
 export const metadata = {
-  title: 'Үлэмжийн зам LLC — Замын удирдлагын систем',
-  description: 'Авто зам, гүүр, дэд бүтцийн төслүүдийн удирдлага',
+  title: {
+    default: 'Company title',
+    template: '%s',
+  },
+  description: 'Company portal',
 };
 
 export default function RootLayout({

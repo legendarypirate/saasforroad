@@ -1,6 +1,6 @@
 const db = require("../models");
 const multer = require("multer");
-const { mergeHomepageContent } = require("../utils/homepageDefaults");
+const { mergeHomepageContent, applyTenantBranding } = require("../utils/homepageDefaults");
 const { uploadImage } = require("../utils/cloudinary");
 
 const Homepage = db.homepage_settings;
@@ -26,16 +26,7 @@ async function getOrCreateRow(tenantId) {
   });
   if (row) return row;
 
-  // Migrate legacy global homepage (no tenant) into this tenant once
-  const legacy = await Homepage.findOne({
-    where: { tenant_id: null },
-    order: [["id", "ASC"]],
-  });
-  if (legacy) {
-    await legacy.update({ tenant_id: tenantId });
-    return legacy;
-  }
-
+  // Never steal a global/legacy homepage row for another tenant
   return Homepage.create({
     content: {},
     tenant_id: tenantId,
@@ -54,29 +45,12 @@ exports.getPublic = async (req, res) => {
     const row = await Homepage.findOne({
       where: { tenant_id: req.tenant.id },
     });
-    // Soft-migrate legacy row for public view without forcing write on every request
-    let effective = row;
-    if (!effective) {
-      const legacy = await Homepage.findOne({
-        where: { tenant_id: null },
-        order: [["id", "ASC"]],
-      });
-      if (legacy) {
-        await legacy.update({ tenant_id: req.tenant.id });
-        effective = legacy;
-      }
-    }
     const raw =
-      typeof effective?.content === "string"
-        ? JSON.parse(effective.content || "{}")
-        : effective?.content;
-    const content = mergeHomepageContent(raw);
-    // Prefer tenant company name when CMS has empty branding
-    if (!content.company_name && req.tenant.company_name) {
-      content.company_name = req.tenant.company_name;
-    } else if (!content.company_name && req.tenant.name) {
-      content.company_name = req.tenant.name;
-    }
+      typeof row?.content === "string"
+        ? JSON.parse(row.content || "{}")
+        : row?.content || {};
+    let content = mergeHomepageContent(raw);
+    content = applyTenantBranding(content, req.tenant, raw);
     res.json({
       success: true,
       data: content,

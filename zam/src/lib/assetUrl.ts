@@ -10,6 +10,6 @@ export function resolveAssetUrl(path?: string | null): string | undefined {
 
 /** @deprecated use resolveAssetUrl — kept for homepage image helper compatibility */
 export function resolveImageUrl(path: string): string {
-  if (!path) return '/logo.jpeg';
+  if (!path) return '';
   return resolveAssetUrl(path) || path;
 }

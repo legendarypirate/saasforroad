@@ -39,7 +39,7 @@ export default function TechnologyPage() {
   return (
     <main className="min-h-screen bg-white text-slate-900">
       <PublicSiteHeader
-        companyName={content.company_name || 'Үлэмжийн зам'}
+        companyName={content.company_name || 'Company title'}
         logo={content.logo}
         activeHref="/technology"
         navItems={content.nav_menu}

@@ -41,7 +41,7 @@ export default function StandartPage() {
   return (
     <main className="min-h-screen bg-white text-slate-900">
       <PublicSiteHeader
-        companyName={content.company_name || 'Үлэмжийн зам'}
+        companyName={content.company_name || 'Company title'}
         logo={content.logo}
         activeHref="/standart"
         navItems={content.nav_menu}

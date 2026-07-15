@@ -46,7 +46,7 @@ export default function HrPage() {
     fetchPublicHomepage().then(setContent);
   }, []);
 
-  const company = content.company_name || 'Үлэмжийн зам';
+  const company = content.company_name || 'Company title';
 
   return (
     <main className="min-h-screen bg-white text-slate-900">

@@ -57,7 +57,7 @@ type LandingPageKey =
 
 const PAGES: Array<{ key: LandingPageKey; label: string; href: string }> = [
   { key: 'menu', label: 'Цэс & Виджет', href: '/' },
-  { key: 'home', label: 'Үлэмжийн зам LLC', href: '/' },
+  { key: 'home', label: 'Company title', href: '/' },
   { key: 'about', label: 'Бидний тухай', href: '/about' },
   { key: 'technology', label: 'Технологи', href: '/technology' },
   { key: 'projects', label: 'Төслүүд', href: '/projects' },
@@ -212,7 +212,7 @@ export default function HomepageAdminPage() {
           <>
             <EditableSection title="Брэнд / Header" onEdit={() => openEdit('brand')}>
               <PublicSiteHeader
-                companyName={content.company_name || 'Үлэмжийн зам'}
+                companyName={content.company_name || 'Company title'}
                 logo={content.logo}
                 navItems={content.nav_menu}
                 sticky={false}
@@ -243,7 +243,7 @@ export default function HomepageAdminPage() {
           <>
             <EditableSection title="Header" onEdit={() => openEdit('brand')}>
               <PublicSiteHeader
-                companyName={content.company_name || 'Үлэмжийн зам'}
+                companyName={content.company_name || 'Company title'}
                 logo={content.logo}
                 activeHref="/about"
                 navItems={content.nav_menu}
@@ -330,7 +330,7 @@ export default function HomepageAdminPage() {
           <>
             <EditableSection title="Header" onEdit={() => openEdit('brand')}>
               <PublicSiteHeader
-                companyName={content.company_name || 'Үлэмжийн зам'}
+                companyName={content.company_name || 'Company title'}
                 logo={content.logo}
                 activeHref="/technology"
                 navItems={content.nav_menu}
@@ -405,7 +405,7 @@ export default function HomepageAdminPage() {
           <>
             <EditableSection title="Header" onEdit={() => openEdit('brand')}>
               <PublicSiteHeader
-                companyName={content.company_name || 'Үлэмжийн зам'}
+                companyName={content.company_name || 'Company title'}
                 logo={content.logo}
                 activeHref="/projects"
                 navItems={content.nav_menu}
@@ -450,7 +450,7 @@ export default function HomepageAdminPage() {
           <>
             <EditableSection title="Header" onEdit={() => openEdit('brand')}>
               <PublicSiteHeader
-                companyName={content.company_name || 'Үлэмжийн зам'}
+                companyName={content.company_name || 'Company title'}
                 logo={content.logo}
                 activeHref="/hr"
                 navItems={content.nav_menu}
@@ -525,7 +525,7 @@ export default function HomepageAdminPage() {
           <>
             <EditableSection title="Header" onEdit={() => openEdit('brand')}>
               <PublicSiteHeader
-                companyName={content.company_name || 'Үлэмжийн зам'}
+                companyName={content.company_name || 'Company title'}
                 logo={content.logo}
                 activeHref="/news"
                 navItems={content.nav_menu}
@@ -568,7 +568,7 @@ export default function HomepageAdminPage() {
           <>
             <EditableSection title="Header" onEdit={() => openEdit('brand')}>
               <PublicSiteHeader
-                companyName={content.company_name || 'Үлэмжийн зам'}
+                companyName={content.company_name || 'Company title'}
                 logo={content.logo}
                 activeHref="/standart"
                 navItems={content.nav_menu}

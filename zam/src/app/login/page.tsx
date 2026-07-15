@@ -40,11 +40,14 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<{ username?: string; password?: string }>({});
 
   useEffect(() => {
-    document.title = 'Нэвтрэх | Үлэмжийн зам';
     let cancelled = false;
 
     (async () => {
-      await fetchCurrentTenant();
+      const tenant = await fetchCurrentTenant();
+      if (!cancelled) {
+        const brand = tenant?.company_name || tenant?.name || 'Company title';
+        document.title = `Нэвтрэх | ${brand}`;
+      }
       const token = localStorage.getItem('token');
       if (!token) {
         clearAuthSession();

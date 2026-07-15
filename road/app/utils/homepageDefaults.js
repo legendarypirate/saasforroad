@@ -1,88 +1,83 @@
+/** Neutral multi-tenant defaults — never another company's branding. */
 const DEFAULT_HOMEPAGE = {
-  company_name: "Үлэмжийн зам LLC",
-  company_tagline: "Замын удирдлагын систем",
-  logo: "/logo.jpeg",
-  hero_badge: "Зам бүтээдэг хүч — Ирээдүйг бүтээгч бид",
-  hero_title: "Авто зам, гүүр, дэд бүтцийн төслүүд",
-  hero_title_highlight: "дэд бүтцийн",
+  company_name: "Company title",
+  company_tagline: "Your company tagline",
+  logo: "",
+  hero_badge: "Your badge",
+  hero_title: "Your headline goes here",
+  hero_title_highlight: "headline",
   hero_subtitle:
-    "Бид чанар, аюулгүй байдал, хугацааны стандартыг баримталж үндэсний хэмжээний замын төслүүдийг гүйцэтгэдэг.",
-  hero_bg_image: "/bg.png",
-  about_label: "Бидний тухай",
-  about_title: "Үлэмжийн зам LLC",
+    "Add your company story, services, and strengths from the homepage editor.",
+  hero_bg_image: "",
+  about_label: "About",
+  about_title: "Company title",
   about_text1:
-    "2008 оноос хойш авто зам, гүүрийн барилга угсралт, засвар арчлалтаар мэргэшсэн үндэсний хэмжээний компани. Бид төслийн бүх үе шатыг нэг платформоор удирдана.",
+    "Introduce your company here. Edit this text from Admin → Homepage.",
   about_text2:
-    "Манай системээр төсөл, ажилтан, материал, ирц, аюулгүй байдлыг нэг дороос хянах боломжтой.",
-  about_image: "/back.png",
-  director_image: "/p1.png",
-  features_label: "Удирдлагын систем",
-  features_title: "Нэг платформ — бүх үйл явдал",
+    "Add a second paragraph about projects, people, and quality.",
+  about_image: "",
+  director_image: "",
+  features_label: "Platform",
+  features_title: "One platform — every workflow",
   features_subtitle:
-    "Замын компанид зориулсан админ болон ажилчны апп — төсөл, ирц, аюулгүй байдал.",
-  projects_label: "Төслүүд",
-  projects_title: "Гүйцэтгэсэн & явагдаж буй ажлууд",
-  app_download_title: "Ажилчны апп татах",
-  app_download_text:
-    "Төслийн мэдээ, ирц бүртгэл, аюулгүй байдлын мэдэгдэл — гар утаснаасаа.",
-  login_title: "Админ нэвтрэх",
-  login_subtitle: "Замын удирдлагын системд нэвтэрнэ үү",
-  login_bg_image: "/zs.png",
-  phone: "7000-0000",
-  email: "info@ulemjin-zam.mn",
-  address: "Улаанбаатар, Сүхбаатар дүүрэг",
-  footer_copyright: "Бүх эрх хуулиар хамгаалагдсан.",
+    "Projects, attendance, HSE, HR, and more — enable modules for your company.",
+  projects_label: "Projects",
+  projects_title: "Featured projects",
+  app_download_title: "Worker app",
+  app_download_text: "Project news, attendance, and safety alerts on mobile.",
+  login_title: "Sign in",
+  login_subtitle: "Sign in to your company workspace",
+  login_bg_image: "",
+  phone: "",
+  email: "",
+  address: "",
+  footer_copyright: "All rights reserved.",
   nav_menu: [],
   custom_pages: [],
   stats: [
-    { value: "15+", label: "Жилийн туршлага" },
-    { value: "120+", label: "Гүйцэтгэсэн төсөл" },
-    { value: "500+", label: "Мэргэшсэн ажилтан" },
-    { value: "24/7", label: "Төслийн хяналт" },
+    { value: "—", label: "Experience" },
+    { value: "—", label: "Projects" },
+    { value: "—", label: "People" },
+    { value: "—", label: "Support" },
   ],
   features: [
     {
-      title: "Төслийн удирдлага",
-      desc: "Төсөл, даалгавар, явцын нэгдсэн хяналт.",
+      title: "Project management",
+      desc: "Projects, tasks, and progress in one place.",
       icon: "project",
     },
     {
-      title: "Аюулгүй байдал",
-      desc: "Ослын мэдээлэл, заавар, бодит цагийн бүртгэл.",
+      title: "Safety",
+      desc: "Incidents, briefings, and live registers.",
       icon: "safety",
     },
     {
-      title: "Ирцийн систем",
-      desc: "Ажилчин өдөр бүр ирсэн, явсан цагаа бүртгэнэ.",
+      title: "Attendance",
+      desc: "Daily check-in and check-out for crews.",
       icon: "clock",
     },
     {
-      title: "Хүний нөөц",
-      desc: "Эрх, хэрэглэгч, багийн бүтцийг уян хатан удирдах.",
+      title: "Human resources",
+      desc: "Roles, users, and org structure.",
       icon: "team",
     },
   ],
-  projects: [
-    {
-      image: "/p1.png",
-      title: "Улаанбаатар — Дархан чиглэлийн зам",
-      desc: "30 км авто замын шинэчлэлт, 2024 онд ашиглалтад орсон.",
-      tag: "Дууссан",
-    },
-    {
-      image: "/p2.png",
-      title: "Орон нутгийн холболтын зам",
-      desc: "Дэд бүтэц, гүүрийн барилга угсралтын төсөл.",
-      tag: "Явагдаж буй",
-    },
-    {
-      image: "/p3.png",
-      title: "Хотын дотоод замын сүлжээ",
-      desc: "Замын засвар, арчилгаа, аюулгүй байдлын стандарт.",
-      tag: "Төлөвлөгдсөн",
-    },
-  ],
+  projects: [],
 };
+
+const PLACEHOLDER_BRANDS = new Set([
+  "",
+  "company title",
+  "your company",
+  "your logo",
+  "компани",
+  "үлэмжийн зам",
+  "үлэмжийн зам llc",
+]);
+
+function isPlaceholderBrand(value) {
+  return PLACEHOLDER_BRANDS.has(String(value || "").trim().toLowerCase());
+}
 
 const ARRAY_FIELDS = [
   "stats",
@@ -131,7 +126,32 @@ function mergeHomepageContent(stored) {
     }
   }
 
+  // Empty / shared demo logo stays empty so tenants don't inherit another brand mark
+  const logo = String(stored.logo || "").trim();
+  if (!logo || logo === "/logo.jpeg" || logo === "logo.jpeg") {
+    merged.logo = "";
+  }
+
   return merged;
 }
 
-module.exports = { DEFAULT_HOMEPAGE, mergeHomepageContent };
+/** Prefer real tenant name over CMS placeholders. */
+function applyTenantBranding(content, tenant, raw) {
+  if (!content || !tenant) return content;
+  const rawName = raw && typeof raw === "object" ? raw.company_name : undefined;
+  if (isPlaceholderBrand(rawName) || isPlaceholderBrand(content.company_name)) {
+    content.company_name =
+      tenant.company_name || tenant.name || "Company title";
+  }
+  if (isPlaceholderBrand(content.about_title)) {
+    content.about_title = content.company_name;
+  }
+  return content;
+}
+
+module.exports = {
+  DEFAULT_HOMEPAGE,
+  mergeHomepageContent,
+  applyTenantBranding,
+  isPlaceholderBrand,
+};

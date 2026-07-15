@@ -40,12 +40,16 @@ export default function PublicSiteHeader({
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={logoSrc}
-              alt={companyName}
+              alt={companyName || 'Company logo'}
               className="h-8 w-auto max-w-[120px] object-contain transition group-hover:opacity-90 md:h-9"
             />
-          ) : null}
+          ) : (
+            <span className="inline-flex h-9 items-center rounded-md border border-dashed border-slate-300 bg-slate-50 px-2.5 text-[11px] font-bold tracking-wide text-slate-400">
+              Your logo
+            </span>
+          )}
           <span className="truncate text-sm font-extrabold tracking-tight text-slate-900 md:text-[15px]">
-            {companyName}
+            {companyName || 'Company title'}
           </span>
         </Link>
 
