@@ -24,6 +24,15 @@ function IconPlus({ className = "nav-ico" }: { className?: string }) {
   );
 }
 
+function IconPage({ className = "nav-ico" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M4 4h10l6 6v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
+      <path d="M14 4v6h6" />
+    </svg>
+  );
+}
+
 export default function Shell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -53,6 +62,7 @@ export default function Shell({ children }: { children: ReactNode }) {
   const tenantsActive =
     pathname.startsWith("/tenants") && pathname !== "/tenants/new";
   const newActive = pathname === "/tenants/new";
+  const landingActive = pathname.startsWith("/landing");
 
   return (
     <div className="shell">
@@ -73,6 +83,10 @@ export default function Shell({ children }: { children: ReactNode }) {
           <Link href="/tenants/new" className={`nav-link${newActive ? " active" : ""}`}>
             <IconPlus />
             Register tenant
+          </Link>
+          <Link href="/landing" className={`nav-link${landingActive ? " active" : ""}`}>
+            <IconPage />
+            Landing
           </Link>
         </nav>
 

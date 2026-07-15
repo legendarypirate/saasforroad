@@ -171,6 +171,10 @@ db.stocks = require("./stock.model.js")(sequelize, Sequelize);
 db.transactions = require("./transaction.model.js")(sequelize, Sequelize);
 db.suppliers = require("./supplier.model.js")(sequelize, Sequelize);
 db.homepage_settings = require("./homepage.model.js")(sequelize, Sequelize);
+db.platform_landing_settings = require("./platform_landing.model.js")(
+  sequelize,
+  Sequelize
+);
 db.tender_packages = require("./tender_package.model.js")(sequelize, Sequelize);
 db.tender_documents = require("./tender_document.model.js")(sequelize, Sequelize);
 db.equipment_rentals = require("./equipment_rental.model.js")(sequelize, Sequelize);

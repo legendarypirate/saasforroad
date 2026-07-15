@@ -50,6 +50,50 @@ export type TenantRole = {
   permission_ids: number[];
 };
 
+export type PlatformLandingItem = {
+  id: string;
+  label: string;
+  blurb: string;
+  enabled: boolean;
+};
+
+export type PlatformLandingStat = {
+  value: string;
+  label: string;
+};
+
+export type PlatformLandingStep = {
+  title: string;
+  text: string;
+};
+
+export type PlatformLandingContent = {
+  brand_name: string;
+  tagline: string;
+  meta_title: string;
+  meta_description: string;
+  hero_eyebrow: string;
+  hero_title: string;
+  hero_subtitle: string;
+  hero_image: string;
+  cta_primary_label: string;
+  cta_primary_url: string;
+  cta_secondary_label: string;
+  cta_secondary_url: string;
+  stats: PlatformLandingStat[];
+  modules_title: string;
+  modules_subtitle: string;
+  modules: PlatformLandingItem[];
+  data_title: string;
+  data_subtitle: string;
+  data_items: PlatformLandingItem[];
+  steps_title: string;
+  steps: PlatformLandingStep[];
+  footer_text: string;
+  contact_email: string;
+  admin_url: string;
+};
+
 export type Permission = {
   id: number;
   key: string;
@@ -177,4 +221,34 @@ export const api = {
     request<{ success: boolean; users: Array<Record<string, unknown>> }>(
       `/api/platform/tenants/${id}/users`
     ),
+
+  getLanding: () =>
+    request<{ success: boolean; data: PlatformLandingContent }>(
+      "/api/platform/landing/admin"
+    ),
+
+  updateLanding: (content: PlatformLandingContent) =>
+    request<{ success: boolean; data: PlatformLandingContent }>(
+      "/api/platform/landing",
+      { method: "PUT", body: JSON.stringify(content) }
+    ),
+
+  uploadLandingImage: async (file: File) => {
+    const token = getToken();
+    const form = new FormData();
+    form.append("image", file);
+    const res = await fetch(`${API}/api/platform/landing/upload`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      body: form,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.message || `Upload failed (${res.status})`);
+    }
+    return data as {
+      success: boolean;
+      data: { url: string; path: string };
+    };
+  },
 };

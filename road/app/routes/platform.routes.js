@@ -1,10 +1,21 @@
 module.exports = (app) => {
   const platform = require("../controllers/platform.controller");
+  const platformLanding = require("../controllers/platformLanding.controller");
   const { verifyPlatformToken } = require("../middleware/tenant");
   const router = require("express").Router();
 
   router.post("/auth/login", platform.login);
   router.get("/auth/me", verifyPlatformToken, platform.me);
+
+  // Public platform marketing page (rcos.mn)
+  router.get("/landing", platformLanding.getPublic);
+  router.get("/landing/admin", verifyPlatformToken, platformLanding.getAdmin);
+  router.put("/landing", verifyPlatformToken, platformLanding.update);
+  router.post(
+    "/landing/upload",
+    verifyPlatformToken,
+    platformLanding.uploadImage
+  );
 
   router.get("/modules", verifyPlatformToken, platform.listModules);
   router.get("/permissions", verifyPlatformToken, platform.listPermissions);
