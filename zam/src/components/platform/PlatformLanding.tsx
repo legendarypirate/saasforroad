@@ -7,6 +7,11 @@ import {
   fetchPlatformLanding,
   type PlatformLandingContent,
 } from "@/lib/platformLanding";
+import {
+  DataItemIcon,
+  PlatformThemeToggle,
+  usePlatformTheme,
+} from "@/components/platform/PlatformTheme";
 import "./PlatformLanding.css";
 
 export default function PlatformLanding() {
@@ -14,6 +19,7 @@ export default function PlatformLanding() {
     FALLBACK_PLATFORM_LANDING
   );
   const [ready, setReady] = useState(false);
+  const { theme, toggle } = usePlatformTheme();
 
   useEffect(() => {
     let cancelled = false;
@@ -34,14 +40,19 @@ export default function PlatformLanding() {
 
   const modules = enabledItems(content.modules);
   const dataItems = enabledItems(content.data_items);
+  const heroOverlay =
+    theme === "light"
+      ? "linear-gradient(105deg, rgba(247,250,251,0.94) 0%, rgba(247,250,251,0.72) 48%, rgba(247,250,251,0.45) 100%)"
+      : "linear-gradient(105deg, rgba(9,13,17,0.92) 0%, rgba(9,13,17,0.55) 45%, rgba(9,13,17,0.35) 100%)";
   const heroStyle = content.hero_image
-    ? {
-        backgroundImage: `linear-gradient(105deg, rgba(9,13,17,0.92) 0%, rgba(9,13,17,0.55) 45%, rgba(9,13,17,0.35) 100%), url(${content.hero_image})`,
-      }
+    ? { backgroundImage: `${heroOverlay}, url(${content.hero_image})` }
     : undefined;
 
   return (
-    <main className={`pl-root${ready ? " pl-ready" : ""}`}>
+    <main
+      className={`pl-root${ready ? " pl-ready" : ""}`}
+      data-theme={theme}
+    >
       <div className="pl-atmosphere" aria-hidden />
 
       <header className="pl-nav">
@@ -63,6 +74,7 @@ export default function PlatformLanding() {
           <a className="pl-link" href="#data">
             {content.data_title || "Өгөгдөл"}
           </a>
+          <PlatformThemeToggle theme={theme} onToggle={toggle} />
           <a
             className="pl-btn pl-btn-ghost"
             href={content.admin_url || "https://admin.rcos.mn"}
@@ -137,11 +149,16 @@ export default function PlatformLanding() {
             <p className="pl-section-desc">{content.data_subtitle}</p>
           ) : null}
         </div>
-        <ul className="pl-rail">
+        <ul className="pl-data-grid">
           {dataItems.map((m) => (
-            <li key={m.id} className="pl-rail-item">
-              <strong>{m.label}</strong>
-              <span>{m.blurb}</span>
+            <li key={m.id} className="pl-data-card">
+              <div className="pl-data-icon" aria-hidden>
+                <DataItemIcon id={m.id} />
+              </div>
+              <div className="pl-data-copy">
+                <strong>{m.label}</strong>
+                <p>{m.blurb}</p>
+              </div>
             </li>
           ))}
         </ul>
@@ -154,7 +171,9 @@ export default function PlatformLanding() {
         <ol className="pl-steps">
           {(content.steps || []).map((step, i) => (
             <li key={i}>
-              <span className="pl-step-num">{String(i + 1).padStart(2, "0")}</span>
+              <span className="pl-step-num">
+                {String(i + 1).padStart(2, "0")}
+              </span>
               <div>
                 <strong>{step.title}</strong>
                 <p>{step.text}</p>
@@ -167,7 +186,9 @@ export default function PlatformLanding() {
       <footer className="pl-foot">
         <span>{content.footer_text || content.brand_name}</span>
         {content.admin_url ? (
-          <a href={content.admin_url}>{content.admin_url.replace(/^https?:\/\//, "")}</a>
+          <a href={content.admin_url}>
+            {content.admin_url.replace(/^https?:\/\//, "")}
+          </a>
         ) : null}
         {content.contact_email ? (
           <a href={`mailto:${content.contact_email}`}>{content.contact_email}</a>

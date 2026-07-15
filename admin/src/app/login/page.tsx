@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, setSession } from "@/lib/api";
+import { ThemeToggle } from "@/components/ThemeProvider";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -29,16 +30,35 @@ export default function LoginPage() {
   return (
     <main className="login-shell">
       <form className="login-card" onSubmit={onSubmit}>
-        <div style={{ display: "flex", gap: "0.85rem", alignItems: "center", marginBottom: "1.35rem" }}>
-          <div className="brand-mark">R</div>
-          <div>
-            <div className="muted" style={{ fontSize: "0.78rem", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase" }}>
-              admin.rcos.mn
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: "1rem",
+            alignItems: "flex-start",
+            marginBottom: "1.35rem",
+          }}
+        >
+          <div style={{ display: "flex", gap: "0.85rem", alignItems: "center" }}>
+            <div className="brand-mark">R</div>
+            <div>
+              <div
+                className="muted"
+                style={{
+                  fontSize: "0.78rem",
+                  fontWeight: 800,
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                }}
+              >
+                admin.rcos.mn
+              </div>
+              <h1 className="page-title" style={{ fontSize: "1.55rem" }}>
+                Platform Admin
+              </h1>
             </div>
-            <h1 className="page-title" style={{ fontSize: "1.55rem" }}>
-              Platform Admin
-            </h1>
           </div>
+          <ThemeToggle className="theme-toggle-compact" />
         </div>
         <p className="muted" style={{ margin: "0 0 1.25rem", lineHeight: 1.5 }}>
           Register tenants, domains, modules, and superadmins for Road SaaS.
@@ -68,7 +88,12 @@ export default function LoginPage() {
 
         {error ? <p className="error">{error}</p> : null}
 
-        <button className="btn" type="submit" disabled={loading} style={{ width: "100%", marginTop: "0.35rem" }}>
+        <button
+          className="btn"
+          type="submit"
+          disabled={loading}
+          style={{ width: "100%", marginTop: "0.35rem" }}
+        >
           {loading ? "Signing in…" : "Sign in"}
         </button>
       </form>

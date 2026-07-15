@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect, useState } from "react";
 import { clearSession, getStoredAdmin, isLoggedIn, PlatformAdmin } from "@/lib/api";
+import { ThemeToggle } from "@/components/ThemeProvider";
 
 function IconGrid({ className = "nav-ico" }: { className?: string }) {
   return (
@@ -94,6 +95,7 @@ export default function Shell({ children }: { children: ReactNode }) {
           <div style={{ fontSize: "0.85rem", color: "var(--muted)", marginBottom: "0.75rem", fontWeight: 700 }}>
             {admin.name || admin.username}
           </div>
+          <ThemeToggle />
           <button className="btn secondary" type="button" onClick={logout} style={{ width: "100%" }}>
             Log out
           </button>
