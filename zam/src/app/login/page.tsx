@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Image from 'next/image';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -20,14 +19,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { clearAuthSession, refreshAuthSession, setAuthSession } from '@/lib/auth';
+import {
+  fetchPublicHomepage,
+  getDefaultHomepageContent,
+  resolveImageUrl,
+  type HomepageContent,
+} from '@/lib/homepage';
 import { fetchCurrentTenant, setStoredTenant, tenantHeaders } from '@/lib/tenant';
 import { uiToast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 
-const STATS = [
-  { value: '400+ км', label: 'Хатуу хучилттай зам' },
-  { value: '15+ жил', label: 'Тогтвортой үйл ажиллагаа' },
-  { value: 'ISO 9001', label: 'Чанарын менежмент' },
+const FALLBACK_STATS = [
+  { value: '—', label: 'Experience' },
+  { value: '—', label: 'Projects' },
+  { value: '—', label: 'Support' },
 ];
 
 export default function LoginPage() {
@@ -38,24 +43,36 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ username?: string; password?: string }>({});
+  const [content, setContent] = useState<HomepageContent>(getDefaultHomepageContent());
+  const [brandName, setBrandName] = useState('Company title');
 
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
-      const tenant = await fetchCurrentTenant();
-      if (!cancelled) {
-        const brand = tenant?.company_name || tenant?.name || 'Company title';
-        document.title = `Нэвтрэх | ${brand}`;
-      }
+      const [tenant, homepage] = await Promise.all([
+        fetchCurrentTenant(),
+        fetchPublicHomepage().catch(() => getDefaultHomepageContent()),
+      ]);
+
+      if (cancelled) return;
+
+      const brand =
+        homepage.company_name ||
+        tenant?.company_name ||
+        tenant?.name ||
+        'Company title';
+      setBrandName(brand);
+      setContent(homepage);
+      document.title = `Нэвтрэх | ${brand}`;
+
       const token = localStorage.getItem('token');
       if (!token) {
         clearAuthSession();
-        if (!cancelled) setCheckingSession(false);
+        setCheckingSession(false);
         return;
       }
 
-      // Validate token — do NOT trust a leftover token / stale permissions
       const session = await refreshAuthSession();
       if (cancelled) return;
 
@@ -64,7 +81,6 @@ export default function LoginPage() {
         return;
       }
 
-      // Invalid/expired token was cleared — show login form
       setCheckingSession(false);
     })();
 
@@ -72,6 +88,25 @@ export default function LoginPage() {
       cancelled = true;
     };
   }, [router]);
+
+  const bgUrl = useMemo(() => {
+    const path = content.login_bg_image || content.hero_bg_image || '';
+    return resolveImageUrl(path);
+  }, [content.login_bg_image, content.hero_bg_image]);
+
+  const stats =
+    content.stats?.filter((s) => s.value || s.label).slice(0, 3) || FALLBACK_STATS;
+
+  const panelTitle =
+    content.login_title || content.hero_title || 'Системд нэвтрэх';
+  const panelSubtitle =
+    content.login_subtitle ||
+    content.company_tagline ||
+    'Ажилтны нэвтрэх нэр, нууц үгээ оруулна уу.';
+  const heroLead =
+    content.hero_subtitle ||
+    content.company_tagline ||
+    'Edit company branding from Admin → Homepage.';
 
   const validate = () => {
     const next: { username?: string; password?: string } = {};
@@ -87,7 +122,6 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      // Always wipe previous session before writing a new one
       clearAuthSession();
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
@@ -140,14 +174,22 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
       <div className="relative flex min-h-[280px] flex-1 flex-col justify-between overflow-hidden lg:min-h-screen">
-        <Image
-          src="/bg.png"
-          alt="Замын төсөл"
-          fill
-          priority
-          className="object-cover"
-          sizes="(max-width: 1024px) 100vw, 50vw"
-        />
+        {bgUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={bgUrl}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : (
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                'radial-gradient(900px 480px at 20% 10%, rgba(61,214,165,0.25), transparent 55%), linear-gradient(160deg, #0d151d 0%, #0a1219 50%, #071018 100%)',
+            }}
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-br from-[#0a1219]/95 via-[#0a1219]/85 to-[#0a1219]/70" />
 
         <div className="relative z-10 flex flex-1 flex-col justify-between p-6 md:p-10 lg:p-12">
@@ -159,22 +201,21 @@ export default function LoginPage() {
               <ArrowLeft className="size-4" />
               Нүүр хуудас
             </Link>
-            <p className="mt-8 text-xs font-bold tracking-[0.2em] text-emerald-300">
-              ҮЛЭМЖИЙН ЗАМ ХХК
+            <p className="mt-8 text-xs font-bold tracking-[0.2em] text-emerald-300 uppercase">
+              {brandName}
             </p>
             <h1 className="mt-3 max-w-lg text-2xl font-extrabold leading-tight text-white md:text-3xl lg:text-4xl">
-              Зам барилгын салбарт найдвартай түнш
+              {content.hero_title || panelTitle}
             </h1>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-slate-300 md:text-base">
-              Монгол Улсын авто замын салбарт тогтвортой ажиллаж буй мэргэжлийн хамт олон.
-              Удирдлагын системээр төслийн бүх үе шатыг нэг дороос хянаарай.
+              {heroLead}
             </p>
           </div>
 
           <div className="mt-8 hidden gap-6 sm:grid sm:grid-cols-3 lg:mt-0">
-            {STATS.map((stat) => (
+            {stats.map((stat) => (
               <div
-                key={stat.label}
+                key={`${stat.value}-${stat.label}`}
                 className="rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm"
               >
                 <p className="text-lg font-extrabold text-white md:text-xl">{stat.value}</p>
@@ -184,14 +225,21 @@ export default function LoginPage() {
           </div>
 
           <div className="mt-6 flex flex-wrap gap-4 text-sm text-slate-400 lg:mt-8">
-            <span className="inline-flex items-center gap-2">
-              <Phone className="size-4" />
-              (+976) 7777-0000
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <Mail className="size-4" />
-              info@ulemjinzam.mn
-            </span>
+            {content.phone ? (
+              <span className="inline-flex items-center gap-2">
+                <Phone className="size-4" />
+                {content.phone}
+              </span>
+            ) : null}
+            {content.email ? (
+              <span className="inline-flex items-center gap-2">
+                <Mail className="size-4" />
+                {content.email}
+              </span>
+            ) : null}
+            {!content.phone && !content.email ? (
+              <span className="text-slate-500">Add phone &amp; email in Homepage settings</span>
+            ) : null}
           </div>
         </div>
       </div>
@@ -202,9 +250,11 @@ export default function LoginPage() {
             <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--road-accent)] text-white">
               <ShieldCheck className="size-6" />
             </div>
-            <h2 className="text-2xl font-extrabold text-slate-900">Системд нэвтрэх</h2>
+            <h2 className="text-2xl font-extrabold text-slate-900">
+              {content.login_title || 'Системд нэвтрэх'}
+            </h2>
             <p className="mt-2 text-sm text-slate-500">
-              Ажилтны нэвтрэх нэр, нууц үгээ оруулна уу.
+              {content.login_subtitle || 'Ажилтны нэвтрэх нэр, нууц үгээ оруулна уу.'}
             </p>
           </div>
 
