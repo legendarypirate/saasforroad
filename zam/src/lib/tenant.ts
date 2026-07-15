@@ -11,6 +11,20 @@ export type TenantInfo = {
   is_active?: boolean;
 };
 
+const PLATFORM_BASE =
+  (process.env.NEXT_PUBLIC_PLATFORM_DOMAIN || 'rcos.mn')
+    .toLowerCase()
+    .replace(/^www\./, '');
+
+/** Apex marketing host — not a tenant (rcos.mn / www.rcos.mn). */
+export function isPlatformHost(hostname?: string): boolean {
+  const host = (hostname || getTenantDomain())
+    .toLowerCase()
+    .replace(/^www\./, '');
+  if (!host) return false;
+  return host === PLATFORM_BASE;
+}
+
 /** Current browser host used as tenant domain (prod: tenant1.mn). */
 export function getTenantDomain(): string {
   if (typeof window === 'undefined') {
