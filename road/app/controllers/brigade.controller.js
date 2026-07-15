@@ -347,7 +347,13 @@ exports.findAll = async (req, res) => {
     }
     if (province) where.province = { [Op.iLike]: `%${province}%` };
     if (availability) where.availability = availability;
-    if (status) where.status = status;
+    if (status) {
+      where.status = status;
+    } else if (req.query.include_inactive !== "1" && req.query.include_inactive !== "true") {
+      // Platform-deactivated brigades stay hidden from company hire lists
+      where.status = "active";
+      where.is_active = true;
+    }
     if (leader_user_id) where.leader_user_id = parseOptionalInt(leader_user_id);
     if (min_rating) where.average_rating = { ...(where.average_rating || {}), [Op.gte]: Number(min_rating) };
     if (max_rating) where.average_rating = { ...(where.average_rating || {}), [Op.lte]: Number(max_rating) };

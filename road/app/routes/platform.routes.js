@@ -25,6 +25,16 @@ module.exports = (app) => {
   router.put("/data/:id", verifyPlatformToken, platformData.update);
   router.delete("/data/:id", verifyPlatformToken, platformData.remove);
 
+  // Real brigades marketplace (registered via brigad app)
+  const platformBrigades = require("../controllers/platformBrigades.controller");
+  router.get("/brigades", verifyPlatformToken, platformBrigades.list);
+  router.get("/brigades/:id", verifyPlatformToken, platformBrigades.getOne);
+  router.patch(
+    "/brigades/:id/status",
+    verifyPlatformToken,
+    platformBrigades.setStatus
+  );
+
   router.get("/modules", verifyPlatformToken, platform.listModules);
   router.get("/permissions", verifyPlatformToken, platform.listPermissions);
 

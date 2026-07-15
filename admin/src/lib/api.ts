@@ -127,6 +127,30 @@ export type PlatformDataEntry = {
   updatedAt?: string;
 };
 
+export type PlatformBrigade = {
+  id: number;
+  name: string;
+  username?: string | null;
+  leader_name?: string | null;
+  phone?: string | null;
+  contact_phone?: string | null;
+  contact_email?: string | null;
+  province?: string | null;
+  location?: string | null;
+  description?: string | null;
+  skills?: string[];
+  availability?: string;
+  status: string;
+  is_active: boolean;
+  logo?: string | null;
+  average_rating?: number;
+  reputation_score?: number;
+  completed_tasks?: number;
+  active_tasks?: number;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 export const PLATFORM_DATA_KINDS: PlatformDataKind[] = [
   { id: "brigada", label: "Бригад", labelEn: "Brigade" },
   { id: "job-seeker", label: "Ажил горилогч", labelEn: "Job seeker" },
@@ -312,4 +336,25 @@ export const api = {
     request<{ success: boolean }>(`/api/platform/data/${id}`, {
       method: "DELETE",
     }),
+
+  listBrigades: (params?: { q?: string; status?: string }) => {
+    const sp = new URLSearchParams();
+    if (params?.q) sp.set("q", params.q);
+    if (params?.status) sp.set("status", params.status);
+    const q = sp.toString() ? `?${sp}` : "";
+    return request<{
+      success: boolean;
+      brigades: PlatformBrigade[];
+      total: number;
+    }>(`/api/platform/brigades${q}`);
+  },
+
+  setBrigadeStatus: (
+    id: number,
+    body: { status?: "active" | "inactive" | "suspended"; is_active?: boolean }
+  ) =>
+    request<{ success: boolean; brigade: PlatformBrigade }>(
+      `/api/platform/brigades/${id}/status`,
+      { method: "PATCH", body: JSON.stringify(body) }
+    ),
 };
