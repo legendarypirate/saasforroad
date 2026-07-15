@@ -375,10 +375,16 @@ export const ADMIN_DATA_FOLDERS: ModuleConfig[] = [
     index: 'brigada',
     moduleKey: 'brigada:module',
     label: 'Бригад',
-    description: 'Бригад — зөвхөн харах / холбогдох',
+    description: 'Платформын бригад — ажилд авах, үнэлгээ (бүртгэл app / admin.rcos.mn)',
     color: '#531dab',
     items: [
       { path: '/admin/data/brigada', label: 'Жагсаалт', menuId: 'list', permission: mk('brigada', 'list') },
+      {
+        path: '/admin/data/brigada/hires',
+        label: 'Hire хүсэлт',
+        menuId: 'hires',
+        permission: mk('brigada', 'list'),
+      },
     ],
   },
   {

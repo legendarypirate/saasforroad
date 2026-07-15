@@ -32,8 +32,11 @@ function isPlatformHost(host) {
   const configured = String(process.env.PLATFORM_ADMIN_DOMAIN || "admin.rcos.mn")
     .toLowerCase()
     .replace(/^www\./, "");
+  const apiHost = String(process.env.PLATFORM_API_DOMAIN || "api.rcos.mn")
+    .toLowerCase()
+    .replace(/^www\./, "");
   if (!h) return false;
-  if (h === configured) return true;
+  if (h === configured || h === apiHost) return true;
   if (h === "localhost" || h === "127.0.0.1") {
     return false;
   }

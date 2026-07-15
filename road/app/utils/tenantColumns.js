@@ -16,6 +16,16 @@ const TENANT_SKIP_KEYS = new Set([
   "role_permissions",
   "district",
   "horooBoundary",
+  // Platform-shared brigade marketplace (app register on api.rcos.mn;
+  // any tenant can hire / review)
+  "brigades",
+  "brigade_members",
+  "brigade_equipment",
+  "brigade_reviews",
+  "brigade_documents",
+  "brigade_timeline_events",
+  "brigade_progress_reports",
+  "brigade_notifications",
 ]);
 
 const TENANT_SKIP_TABLES = new Set([
@@ -28,6 +38,14 @@ const TENANT_SKIP_TABLES = new Set([
   "districts",
   "horoo_boundaries",
   "horooboundaries",
+  "brigades",
+  "brigade_members",
+  "brigade_equipment",
+  "brigade_reviews",
+  "brigade_documents",
+  "brigade_timeline_events",
+  "brigade_progress_reports",
+  "brigade_notifications",
 ]);
 
 function isSequelizeModel(model) {
