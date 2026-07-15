@@ -74,6 +74,7 @@ declare module '@/components/admin/primitives' {
   export const Breadcrumb: any;
   export const Empty: any;
   export const List: any;
+  export const Rate: any;
 
   export const Header: any;
   export const Content: any;
