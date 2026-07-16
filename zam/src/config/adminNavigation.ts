@@ -364,10 +364,10 @@ export const ADMIN_DATA_FOLDERS: ModuleConfig[] = [
     index: 'technique',
     moduleKey: 'technique:module',
     label: 'Техник',
-    description: 'Техникийн мэдээлэл — зөвхөн харах / холбогдох',
+    description: 'Түрээслэх боломжтой техник — жагсаалт / холбогдох',
     color: '#096dd9',
     items: [
-      { path: '/admin/data/technique', label: 'Жагсаалт', menuId: 'list', permission: mk('technique', 'list') },
+      { path: '/admin/data/technique', label: 'Түрээсийн техник', menuId: 'list', permission: mk('technique', 'list') },
     ],
   },
   {

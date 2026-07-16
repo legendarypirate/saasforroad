@@ -170,6 +170,7 @@ export interface EquipmentItem {
   photo_right?: string;
   certificate_image?: string;
   notes?: string;
+  images?: EquipmentImageRecord[];
   oilChanges?: OilChangeRecord[];
   serviceLogs?: ServiceLogRecord[];
   documents?: EquipmentDocRecord[];
@@ -179,6 +180,37 @@ export interface EquipmentItem {
   operatorUser?: { id: number; username: string; position?: string; phone?: string };
   project_id?: number;
   link_id?: number;
+}
+
+export interface EquipmentImageRecord {
+  id: number;
+  equipment_id: number;
+  url: string;
+  public_id?: string | null;
+  sort_order?: number;
+  caption?: string | null;
+}
+
+/** Prefer gallery; fall back to legacy side photos. */
+export function equipmentCoverUrl(item?: EquipmentItem | null): string | null {
+  if (!item) return null;
+  const gallery = item.images?.map((i) => i.url).filter(Boolean) ?? [];
+  if (gallery.length) return assetUrl(gallery[0]) || gallery[0];
+  const legacy = [item.photo_front, item.photo_back, item.photo_left, item.photo_right].find(
+    Boolean
+  );
+  return legacy ? assetUrl(legacy) || legacy : null;
+}
+
+export function equipmentAllImageUrls(item?: EquipmentItem | null): string[] {
+  if (!item) return [];
+  const fromGallery = (item.images ?? []).map((i) => i.url).filter(Boolean);
+  if (fromGallery.length) {
+    return fromGallery.map((u) => assetUrl(u) || u).filter(Boolean) as string[];
+  }
+  return [item.photo_front, item.photo_back, item.photo_left, item.photo_right]
+    .filter(Boolean)
+    .map((u) => assetUrl(u!) || u!) as string[];
 }
 
 /** Expiry traffic-light: red expired, orange ≤90 days, green ok */

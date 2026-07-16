@@ -29,6 +29,10 @@ module.exports = (app) => {
   router.post("/:id/finances", equipment.upsertFinance);
   router.delete("/:id/finances/:finId", equipment.deleteFinance);
 
+  router.get("/:id/images", equipment.listImages);
+  router.post("/:id/images", equipment.uploadGalleryImages);
+  router.delete("/:id/images/:imageId", equipment.deleteImage);
+
   router.get("/:id", equipment.findOne);
   router.put("/:id", equipment.update);
   router.delete("/:id", equipment.delete);

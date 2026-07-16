@@ -1,5 +1,6 @@
 const db = require("../models");
 const Equipment = db.equipments;
+const EquipmentImage = db.equipment_images;
 const EquipmentOilChange = db.equipment_oil_changes;
 const EquipmentServiceLog = db.equipment_service_logs;
 const EquipmentDocument = db.equipment_documents;
@@ -9,13 +10,23 @@ const Project = db.projects;
 const { memoryUpload } = require("../utils/multerMemory");
 const { uploadMulterFile } = require("../utils/cloudinary");
 
+const MAX_GALLERY_IMAGES = 12;
+
 const uploadImages = memoryUpload().fields([
   { name: "photo_front", maxCount: 1 },
   { name: "photo_back", maxCount: 1 },
   { name: "photo_left", maxCount: 1 },
   { name: "photo_right", maxCount: 1 },
   { name: "certificate_image", maxCount: 1 },
+  { name: "images", maxCount: MAX_GALLERY_IMAGES },
 ]);
+
+const uploadGalleryOnly = memoryUpload({
+  fileFilter: (_req, file, cb) => {
+    const ok = file.mimetype?.startsWith("image/");
+    cb(ok ? null : new Error("Зөвхөн зураг оруулна"), ok);
+  },
+}).array("images", MAX_GALLERY_IMAGES);
 
 const PROFILE_FIELDS = [
   "asset_no",
@@ -112,6 +123,30 @@ async function applyUploadedFiles(body, files) {
     }
   }
   return body;
+}
+
+async function saveGalleryImages(equipmentId, files, tenantId = null) {
+  const list = Array.isArray(files) ? files : files?.images;
+  if (!list?.length) return [];
+  const existingCount = await EquipmentImage.count({
+    where: { equipment_id: equipmentId },
+  });
+  const created = [];
+  let order = existingCount;
+  for (const file of list) {
+    if (order >= MAX_GALLERY_IMAGES) break;
+    const result = await uploadMulterFile(file, "equipment");
+    const row = await EquipmentImage.create({
+      equipment_id: equipmentId,
+      url: result.secure_url,
+      public_id: result.public_id || null,
+      sort_order: order,
+      tenant_id: tenantId ?? null,
+    });
+    created.push(row);
+    order += 1;
+  }
+  return created;
 }
 
 function pickBody(src) {
@@ -217,6 +252,15 @@ const equipmentInclude = [
   },
   { ...userBrief, as: "responsibleUser", required: false },
   { ...userBrief, as: "operatorUser", required: false },
+  {
+    model: EquipmentImage,
+    as: "images",
+    separate: true,
+    order: [
+      ["sort_order", "ASC"],
+      ["id", "ASC"],
+    ],
+  },
 ];
 
 exports.findAll = async (req, res) => {
@@ -294,6 +338,7 @@ exports.create = (req, res) => {
       await applyUploadedFiles(payload, req.files);
       await syncWorkerNames(payload);
       const data = await Equipment.create(payload);
+      await saveGalleryImages(data.id, req.files, data.tenant_id);
       const full = await Equipment.findByPk(data.id, { include: equipmentInclude });
       res.json({ success: true, data: full });
     } catch (e) {
@@ -316,6 +361,7 @@ exports.update = (req, res) => {
       await applyUploadedFiles(updates, req.files);
       await syncWorkerNames(updates);
       await item.update(updates);
+      await saveGalleryImages(item.id, req.files, item.tenant_id);
       const full = await Equipment.findByPk(item.id, { include: equipmentInclude });
       res.json({ success: true, data: full });
     } catch (e) {
@@ -332,11 +378,73 @@ exports.delete = async (req, res) => {
     await EquipmentServiceLog.destroy({ where: { equipment_id: id } });
     await EquipmentDocument.destroy({ where: { equipment_id: id } });
     await EquipmentMonthlyFinance.destroy({ where: { equipment_id: id } });
+    await EquipmentImage.destroy({ where: { equipment_id: id } });
     const num = await Equipment.destroy({ where: { id } });
     if (num === 1) {
       return res.json({ success: true, message: "Equipment deleted" });
     }
     return res.status(404).json({ success: false, message: "Equipment not found" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// —— Gallery images (Cloudinary) ——
+exports.listImages = async (req, res) => {
+  try {
+    const data = await EquipmentImage.findAll({
+      where: { equipment_id: req.params.id },
+      order: [
+        ["sort_order", "ASC"],
+        ["id", "ASC"],
+      ],
+    });
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.uploadGalleryImages = (req, res) => {
+  uploadGalleryOnly(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+    try {
+      const equipment = await Equipment.findByPk(req.params.id);
+      if (!equipment) {
+        return res.status(404).json({ success: false, message: "Equipment not found" });
+      }
+      const created = await saveGalleryImages(
+        equipment.id,
+        req.files,
+        equipment.tenant_id
+      );
+      if (!created.length) {
+        return res.status(400).json({
+          success: false,
+          message: "Зураг илгээнэ үү (images)",
+        });
+      }
+      res.json({ success: true, data: created });
+    } catch (e) {
+      res.status(500).json({ success: false, message: e.message });
+    }
+  });
+};
+
+exports.deleteImage = async (req, res) => {
+  try {
+    const num = await EquipmentImage.destroy({
+      where: {
+        id: req.params.imageId,
+        equipment_id: req.params.id,
+      },
+    });
+    if (num === 1) {
+      return res.json({ success: true, message: "Image deleted" });
+    }
+    return res.status(404).json({ success: false, message: "Image not found" });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
