@@ -55,13 +55,10 @@ export default function RentableTechniqueDetailPage() {
     (async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${EQUIPMENT_API}/${id}`);
+        const res = await fetch(`${EQUIPMENT_API}/marketplace/${id}`);
         const json = await res.json();
         if (!json.success) throw new Error(json.message || 'Олдсонгүй');
         const data = json.data as EquipmentItem;
-        if (!data?.is_rentable) {
-          throw new Error('Энэ техник түрээслэх жагсаалтад байхгүй');
-        }
         if (!cancelled) {
           setItem(data);
           document.title = data.name || 'Техник';

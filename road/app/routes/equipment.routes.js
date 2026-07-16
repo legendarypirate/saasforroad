@@ -12,6 +12,10 @@ module.exports = (app) => {
   router.get("/", equipment.findAll);
   router.post("/", equipment.create);
 
+  // Cross-tenant rentable marketplace (Дата → Техник)
+  router.get("/marketplace", equipment.findMarketplace);
+  router.get("/marketplace/:id", equipment.findMarketplaceOne);
+
   router.get("/:id/oil_change", equipment.listOilChanges);
   router.post("/:id/oil_change", equipment.createOilChange);
   router.delete("/:id/oil_change/:oilId", equipment.deleteOilChange);

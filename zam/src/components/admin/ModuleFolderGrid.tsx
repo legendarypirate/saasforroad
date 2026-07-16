@@ -337,6 +337,7 @@ export default function ModuleFolderGrid({ userPermissions, userRole }: ModuleFo
         description="Компанийн мэдээллийн сан, дата модулууд"
         folders={dataFolders}
         userPermissions={userPermissions}
+        userRole={userRole}
         onOpen={(path) => router.push(path)}
         onReorder={handleReorder}
       />

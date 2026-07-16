@@ -39,7 +39,7 @@ export default function RentableTechniquePage() {
   const load = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${EQUIPMENT_API}?is_rentable=true`);
+      const res = await fetch(`${EQUIPMENT_API}/marketplace`);
       const json = await res.json();
       if (!json.success) throw new Error(json.message || 'Ачаалахад алдаа');
       setRows((json.data || []) as EquipmentItem[]);

@@ -263,6 +263,100 @@ const equipmentInclude = [
   },
 ];
 
+const marketplaceInclude = [
+  {
+    model: db.equipment_categories,
+    as: "equipmentCategory",
+    attributes: ["id", "name", "code"],
+    required: false,
+  },
+  {
+    model: EquipmentImage,
+    as: "images",
+    separate: true,
+    skipTenantScope: true,
+    order: [
+      ["sort_order", "ASC"],
+      ["id", "ASC"],
+    ],
+  },
+];
+
+const MARKETPLACE_ATTRIBUTES = [
+  "id",
+  "asset_no",
+  "name",
+  "model",
+  "registration_number",
+  "serial_number",
+  "year_manufactured",
+  "site",
+  "category",
+  "equipment_category_id",
+  "unit",
+  "default_daily_rate",
+  "is_rentable",
+  "status",
+  "motor_hours",
+  "owner_name",
+  "phone",
+  "notes",
+  "photo_front",
+  "photo_back",
+  "photo_left",
+  "photo_right",
+  "createdAt",
+  "updatedAt",
+];
+
+/** Shared Дата → Техник: all tenants see every rentable device. */
+exports.findMarketplace = async (req, res) => {
+  const q = req.query.q;
+  const where = { is_rentable: true };
+  if (q) {
+    where[db.Sequelize.Op.or] = [
+      { name: { [db.Sequelize.Op.iLike]: `%${q}%` } },
+      { model: { [db.Sequelize.Op.iLike]: `%${q}%` } },
+      { registration_number: { [db.Sequelize.Op.iLike]: `%${q}%` } },
+      { owner_name: { [db.Sequelize.Op.iLike]: `%${q}%` } },
+      { phone: { [db.Sequelize.Op.iLike]: `%${q}%` } },
+      { site: { [db.Sequelize.Op.iLike]: `%${q}%` } },
+    ];
+  }
+  try {
+    const data = await Equipment.findAll({
+      where,
+      attributes: MARKETPLACE_ATTRIBUTES,
+      include: marketplaceInclude,
+      order: [["createdAt", "DESC"]],
+      skipTenantScope: true,
+    });
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.findMarketplaceOne = async (req, res) => {
+  try {
+    const item = await Equipment.findOne({
+      where: { id: req.params.id, is_rentable: true },
+      attributes: MARKETPLACE_ATTRIBUTES,
+      include: marketplaceInclude,
+      skipTenantScope: true,
+    });
+    if (!item) {
+      return res.status(404).json({
+        success: false,
+        message: "Rentable equipment not found",
+      });
+    }
+    res.json({ success: true, data: item });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 exports.findAll = async (req, res) => {
   const q = req.query.q;
   const category = req.query.category;
