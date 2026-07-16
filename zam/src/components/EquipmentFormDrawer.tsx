@@ -64,7 +64,7 @@ export default function EquipmentFormDrawer({
         status: 'in_service',
         category: 'machine',
         unit: 'ширхэг',
-        is_rentable: true,
+        is_rentable: false,
         motor_hours: 0,
         default_daily_rate: 0,
       });

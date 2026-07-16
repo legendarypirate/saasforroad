@@ -22,6 +22,8 @@ import {
   EyeOutlined,
   PlusOutlined,
   ReloadOutlined,
+  DollarOutlined,
+  StopOutlined,
 } from '@/components/admin/icons';
 import EquipmentFormDrawer from '@/components/EquipmentFormDrawer';
 import {
@@ -45,11 +47,13 @@ function EquipmentPageContent() {
   const [list, setList] = useState<EquipmentItem[]>([]);
   const [categories, setCategories] = useState<EquipmentCategory[]>([]);
   const [loading, setLoading] = useState(false);
+  const [rentingId, setRentingId] = useState<number | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<EquipmentItem | null>(null);
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<string | undefined>();
   const [categoryId, setCategoryId] = useState<number | undefined>();
+  const [rentableFilter, setRentableFilter] = useState<string | undefined>();
 
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -58,6 +62,7 @@ function EquipmentPageContent() {
       if (q.trim()) params.set('q', q.trim());
       if (status) params.set('status', status);
       if (categoryId) params.set('equipment_category_id', String(categoryId));
+      if (rentableFilter) params.set('is_rentable', rentableFilter);
       const res = await fetch(`${EQUIPMENT_API}?${params}`);
       const result = await res.json();
       if (result.success) setList(result.data);
@@ -67,7 +72,7 @@ function EquipmentPageContent() {
     } finally {
       setLoading(false);
     }
-  }, [q, status, categoryId]);
+  }, [q, status, categoryId, rentableFilter]);
 
   useEffect(() => {
     document.title = 'Техник';
@@ -91,6 +96,41 @@ function EquipmentPageContent() {
       message.success('Устгагдлаа');
       fetchList();
     } else message.error(result.message || 'Алдаа');
+  };
+
+  const setRentable = async (record: EquipmentItem, next: boolean) => {
+    setRentingId(record.id);
+    try {
+      const res = await fetch(`${EQUIPMENT_API}/${record.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          is_rentable: next,
+          ...(next && record.status === 'in_service' ? { status: 'available' } : {}),
+        }),
+      });
+      const result = await res.json();
+      if (!result.success) {
+        message.error(result.message || 'Алдаа');
+        return;
+      }
+      message.success(
+        next
+          ? 'Түрээслэх жагсаалтад нэмэгдлээ (Дата → Техник)'
+          : 'Түрээсийн жагсаалтаас хаслаа'
+      );
+      setList((prev) =>
+        prev.map((row) =>
+          row.id === record.id
+            ? { ...row, ...(result.data as EquipmentItem) }
+            : row
+        )
+      );
+    } catch {
+      message.error('Түрээсийн төлөв солиход алдаа');
+    } finally {
+      setRentingId(null);
+    }
   };
 
   const columns: ColumnsType<EquipmentItem> = [
@@ -138,6 +178,13 @@ function EquipmentPageContent() {
       ),
     },
     {
+      title: 'Түрээс',
+      dataIndex: 'is_rentable',
+      width: 110,
+      render: (v: boolean | undefined) =>
+        v === true ? <Tag color="green">Тийм</Tag> : <Tag>Үгүй</Tag>,
+    },
+    {
       title: 'Даатгал',
       dataIndex: 'insurance_expiry',
       width: 120,
@@ -151,31 +198,56 @@ function EquipmentPageContent() {
     {
       title: 'Үйлдэл',
       key: 'actions',
-      width: 220,
+      width: 320,
       fixed: 'right',
-      render: (_, record) => (
-        <Space>
-          <Button
-            type="primary"
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => router.push(`/admin/equipment/${record.id}`)}
-          >
-            Дэлгэрэнгүй
-          </Button>
-          <Button
-            type="text"
-            icon={<EditOutlined />}
-            onClick={() => {
-              setEditing(record);
-              setFormOpen(true);
-            }}
-          />
-          <Popconfirm title="Устгах уу?" onConfirm={() => handleDelete(record.id)}>
-            <Button type="text" danger icon={<DeleteOutlined />} />
-          </Popconfirm>
-        </Space>
-      ),
+      render: (_, record) => {
+        const rentable = record.is_rentable === true;
+        return (
+          <Space wrap>
+            <Button
+              type="primary"
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => router.push(`/admin/equipment/${record.id}`)}
+            >
+              Дэлгэрэнгүй
+            </Button>
+            {rentable ? (
+              <Button
+                size="small"
+                danger
+                icon={<StopOutlined />}
+                loading={rentingId === record.id}
+                onClick={() => setRentable(record, false)}
+              >
+                Түрээсээс хасах
+              </Button>
+            ) : (
+              <Button
+                size="small"
+                type="default"
+                icon={<DollarOutlined />}
+                loading={rentingId === record.id}
+                onClick={() => setRentable(record, true)}
+                style={{ borderColor: '#21cda8', color: '#009778' }}
+              >
+                Түрээслэх
+              </Button>
+            )}
+            <Button
+              type="text"
+              icon={<EditOutlined />}
+              onClick={() => {
+                setEditing(record);
+                setFormOpen(true);
+              }}
+            />
+            <Popconfirm title="Устгах уу?" onConfirm={() => handleDelete(record.id)}>
+              <Button type="text" danger icon={<DeleteOutlined />} />
+            </Popconfirm>
+          </Space>
+        );
+      },
     },
   ];
 
@@ -220,6 +292,18 @@ function EquipmentPageContent() {
               }))}
             />
           </div>
+          <div style={{ width: 150, flexShrink: 0 }}>
+            <Select
+              allowClear
+              placeholder="Түрээс"
+              value={rentableFilter}
+              onChange={setRentableFilter}
+              options={[
+                { value: 'true', label: 'Түрээслэх' },
+                { value: 'false', label: 'Түрээсгүй' },
+              ]}
+            />
+          </div>
           <Button icon={<ReloadOutlined />} onClick={fetchList} />
           <Button
             type="primary"
@@ -241,7 +325,7 @@ function EquipmentPageContent() {
           dataSource={list}
           columns={columns}
           pagination={{ pageSize: 15 }}
-          scroll={{ x: 1000 }}
+          scroll={{ x: 1180 }}
         />
       </Card>
 

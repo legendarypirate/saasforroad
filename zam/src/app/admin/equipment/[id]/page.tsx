@@ -13,7 +13,7 @@ import {
   Typography,
   message,
 } from '@/components/admin/primitives';
-import { ArrowLeftOutlined, EditOutlined } from '@/components/admin/icons';
+import { ArrowLeftOutlined, EditOutlined, DollarOutlined, StopOutlined } from '@/components/admin/icons';
 import EquipmentFormDrawer from '@/components/EquipmentFormDrawer';
 import {
   CertificateTab,
@@ -44,6 +44,7 @@ export default function EquipmentDetailPage() {
   const [item, setItem] = useState<EquipmentItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
+  const [renting, setRenting] = useState(false);
   const [tab, setTab] = useState('general');
 
   const load = useCallback(async () => {
@@ -78,12 +79,43 @@ export default function EquipmentDetailPage() {
     [load]
   );
 
+  const setRentable = async (next: boolean) => {
+    if (!item) return;
+    setRenting(true);
+    try {
+      const res = await fetch(`${EQUIPMENT_API}/${item.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          is_rentable: next,
+          ...(next && item.status === 'in_service' ? { status: 'available' } : {}),
+        }),
+      });
+      const json = await res.json();
+      if (!json.success) {
+        message.error(json.message || 'Алдаа');
+        return;
+      }
+      setItem(json.data);
+      message.success(
+        next
+          ? 'Түрээслэх жагсаалтад нэмэгдлээ (Дата → Техник)'
+          : 'Түрээсийн жагсаалтаас хаслаа'
+      );
+    } catch {
+      message.error('Түрээсийн төлөв солиход алдаа');
+    } finally {
+      setRenting(false);
+    }
+  };
+
   if (loading && !item) {
     return <Spin style={{ display: 'block', margin: '64px auto' }} />;
   }
   if (!item) return null;
 
   const status = (item.status || 'in_service') as EquipmentStatus;
+  const rentable = item.is_rentable === true;
 
   return (
     <div>
@@ -116,6 +148,9 @@ export default function EquipmentDetailPage() {
               <Tag color={EQUIPMENT_STATUS_COLORS[status] || 'default'}>
                 {EQUIPMENT_STATUS_LABELS[status] || item.status}
               </Tag>
+              <Tag color={rentable ? 'green' : 'default'}>
+                {rentable ? 'Түрээслэх боломжтой' : 'Түрээсгүй'}
+              </Tag>
               <Tag color={expiryTone(item.insurance_expiry)}>
                 Даатгал {item.insurance_expiry || '—'}
               </Tag>
@@ -129,9 +164,30 @@ export default function EquipmentDetailPage() {
               </Text>
             )}
           </div>
-          <Button icon={<EditOutlined />} onClick={() => setEditOpen(true)}>
-            Ерөнхий засах
-          </Button>
+          <Space wrap>
+            {rentable ? (
+              <Button
+                danger
+                icon={<StopOutlined />}
+                loading={renting}
+                onClick={() => setRentable(false)}
+              >
+                Түрээсээс хасах
+              </Button>
+            ) : (
+              <Button
+                icon={<DollarOutlined />}
+                loading={renting}
+                onClick={() => setRentable(true)}
+                style={{ borderColor: '#21cda8', color: '#009778', background: '#fff' }}
+              >
+                Түрээслэх
+              </Button>
+            )}
+            <Button icon={<EditOutlined />} onClick={() => setEditOpen(true)}>
+              Ерөнхий засах
+            </Button>
+          </Space>
         </div>
       </Card>
 
