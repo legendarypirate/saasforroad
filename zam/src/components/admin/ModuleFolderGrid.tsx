@@ -18,6 +18,7 @@ import {
   Home,
   Layers,
   MapPin,
+  Mountain,
   NotebookPen,
   ShieldAlert,
   Signpost,
@@ -48,8 +49,8 @@ import { CSS } from '@dnd-kit/utilities';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import {
-  filterModules,
-  filterDataFolders,
+  ADMIN_FOLDER_SECTIONS,
+  filterFoldersForSection,
   getDefaultModulePath,
   type ModuleConfig,
 } from '@/config/adminNavigation';
@@ -68,6 +69,8 @@ import { getEnabledModuleIds } from '@/lib/tenant';
 const MODULE_ICONS: Record<string, LucideIcon> = {
   'road-engineering': Construction,
   budget: Calculator,
+  material: Layers,
+  geodesy: Mountain,
   operations: Briefcase,
   inventory: Layers,
   hr: Briefcase,
@@ -85,11 +88,11 @@ const MODULE_ICONS: Record<string, LucideIcon> = {
   plant: Factory,
   rental: Wrench,
   equipment: Wrench,
+  'system-access': Briefcase,
   'data-technique': Wrench,
   'data-brigade': Users,
   'data-laboratory': Beaker,
   'data-job-seeker': UserSearch,
-  'data-production': Factory,
   'data-factory': Factory,
   'data-student': GraduationCap,
   'data-road-sign': Signpost,
@@ -241,6 +244,8 @@ function FolderSection({
     );
   };
 
+  if (!folders.length) return null;
+
   return (
     <section>
       <h2 className="mb-2 text-2xl font-semibold text-primary dark:text-[var(--neon-green)]">
@@ -272,21 +277,12 @@ function FolderSection({
 export default function ModuleFolderGrid({ userPermissions, userRole }: ModuleFolderGridProps) {
   const router = useRouter();
   const enabledModules = useMemo(() => getEnabledModuleIds(), []);
-  const baseModules = useMemo(
-    () => filterModules(userPermissions, userRole, enabledModules),
-    [userPermissions, userRole, enabledModules],
-  );
-  const baseData = useMemo(
-    () => filterDataFolders(userPermissions, userRole, enabledModules),
-    [userPermissions, userRole, enabledModules],
-  );
 
   const [order, setOrder] = useState<FolderOrderMap>({});
 
   useEffect(() => {
     setOrder(readLocalFolderOrder(getStoredUserId()));
 
-    // Prefer server order from latest /auth/me user blob
     try {
       const userStr = localStorage.getItem('user');
       if (!userStr) return;
@@ -301,14 +297,20 @@ export default function ModuleFolderGrid({ userPermissions, userRole }: ModuleFo
     }
   }, [userPermissions, userRole]);
 
-  const modules = useMemo(
-    () => applyFolderOrder(baseModules, order.modules),
-    [baseModules, order.modules],
-  );
-  const dataFolders = useMemo(
-    () => applyFolderOrder(baseData, order.data),
-    [baseData, order.data],
-  );
+  const sections = useMemo(() => {
+    return ADMIN_FOLDER_SECTIONS.map((section) => {
+      const base = filterFoldersForSection(
+        section,
+        userPermissions,
+        userRole,
+        enabledModules,
+      );
+      return {
+        ...section,
+        folders: applyFolderOrder(base, order[section.id]),
+      };
+    }).filter((s) => s.folders.length > 0);
+  }, [userPermissions, userRole, enabledModules, order]);
 
   const handleReorder = (sectionKey: FolderSectionKey, orderedIds: string[]) => {
     setOrder((prev) => {
@@ -321,26 +323,19 @@ export default function ModuleFolderGrid({ userPermissions, userRole }: ModuleFo
 
   return (
     <div className="space-y-12">
-      <FolderSection
-        sectionKey="modules"
-        title="Модуль сонгох"
-        description="ERP системийн модулуудыг сонгон ажиллана уу"
-        folders={modules}
-        userPermissions={userPermissions}
-        userRole={userRole}
-        onOpen={(path) => router.push(path)}
-        onReorder={handleReorder}
-      />
-      <FolderSection
-        sectionKey="data"
-        title="Дата"
-        description="Компанийн мэдээллийн сан, дата модулууд"
-        folders={dataFolders}
-        userPermissions={userPermissions}
-        userRole={userRole}
-        onOpen={(path) => router.push(path)}
-        onReorder={handleReorder}
-      />
+      {sections.map((section) => (
+        <FolderSection
+          key={section.id}
+          sectionKey={section.id}
+          title={section.title}
+          description={section.description}
+          folders={section.folders}
+          userPermissions={userPermissions}
+          userRole={userRole}
+          onOpen={(path) => router.push(path)}
+          onReorder={handleReorder}
+        />
+      ))}
     </div>
   );
 }

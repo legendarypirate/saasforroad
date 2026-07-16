@@ -1,8 +1,9 @@
 import { getToken } from '@/lib/auth';
+import type { AdminFolderSectionId } from '@/config/adminNavigation';
 
 const API = process.env.NEXT_PUBLIC_API_URL || '';
 
-export type FolderSectionKey = 'modules' | 'data';
+export type FolderSectionKey = AdminFolderSectionId | 'modules' | 'data';
 
 export type FolderOrderMap = Partial<Record<FolderSectionKey, string[]>>;
 
@@ -78,44 +79,38 @@ export function writeLocalFolderOrder(order: FolderOrderMap, userId?: number | n
 /** Reorder items by saved id list; unknown/new ids append at the end. */
 export function applyFolderOrder<T extends { id: string }>(
   items: T[],
-  orderIds?: string[] | null,
+  orderedIds?: string[] | null,
 ): T[] {
-  if (!orderIds?.length) return items;
-  const map = new Map(items.map((item) => [item.id, item]));
-  const ordered: T[] = [];
-  for (const id of orderIds) {
-    const item = map.get(id);
-    if (item) {
-      ordered.push(item);
-      map.delete(id);
-    }
+  if (!orderedIds?.length) return items;
+  const byId = new Map(items.map((item) => [item.id, item]));
+  const next: T[] = [];
+  const seen = new Set<string>();
+  for (const id of orderedIds) {
+    const item = byId.get(id);
+    if (!item || seen.has(id)) continue;
+    next.push(item);
+    seen.add(id);
   }
   for (const item of items) {
-    if (map.has(item.id)) ordered.push(item);
+    if (seen.has(item.id)) continue;
+    next.push(item);
   }
-  return ordered;
+  return next;
 }
 
-export async function saveFolderOrderToServer(order: FolderOrderMap): Promise<boolean> {
+export async function saveFolderOrderToServer(order: FolderOrderMap) {
   const token = getToken();
-  if (!token) return false;
+  if (!token || !API) return;
   try {
-    const res = await fetch(`${API}/api/auth/preferences`, {
-      method: 'PATCH',
+    await fetch(`${API}/api/auth/me/preferences`, {
+      method: 'PUT',
       headers: {
-        Authorization: token,
         'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ folderOrder: order }),
     });
-    const json = await res.json();
-    return Boolean(res.ok && json.success);
   } catch {
-    return false;
+    // non-blocking
   }
-}
-
-export function folderOrderFromPreferences(prefs?: UiPreferences | null): FolderOrderMap {
-  if (!prefs?.folderOrder || typeof prefs.folderOrder !== 'object') return {};
-  return prefs.folderOrder;
 }

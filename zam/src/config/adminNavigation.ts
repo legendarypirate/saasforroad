@@ -36,8 +36,8 @@ export const ADMIN_MODULES: ModuleConfig[] = [
     id: 'road-engineering',
     index: 'road',
     moduleKey: 'road:module',
-    label: 'Замын инженеринг',
-    description: 'Тэнхлэг, профиль, шороо, хөндлөн огтлол',
+    label: 'Замын инженеринг /Талбай/',
+    description: 'Талбай, тэнхлэг, профиль, шороо, хөндлөн огтлол',
     color: '#0f766e',
     items: [
       { path: '/admin/road-engineering', label: 'Самбар', menuId: 'dashboard', permission: mk('road', 'dashboard'), actions: ['read', 'create', 'update', 'delete', 'approve', 'export'] },
@@ -62,7 +62,7 @@ export const ADMIN_MODULES: ModuleConfig[] = [
     id: 'operations',
     index: 'operations',
     moduleKey: 'operations:module',
-    label: 'Төсөл / Ажил',
+    label: 'Төсөл/Ажил',
     description: 'Төсөл, даалгавар, календар',
     color: '#1890ff',
     items: [
@@ -237,27 +237,10 @@ export const ADMIN_MODULES: ModuleConfig[] = [
     comingSoon: true,
   },
   {
-    id: 'uniform-supply',
-    index: 'uniform',
-    moduleKey: 'uniform:module',
-    label: 'Хувцас хэрэглэл хангамж',
-    description: 'Ажилчдын хувцас, хэрэгслийн хангамж',
-    color: '#d4380d',
-    items: [
-      { path: '/admin/uniform', label: 'Самбар', menuId: 'dashboard', permission: mk('uniform', 'dashboard'), actions: ['read', 'create', 'update', 'delete', 'approve'] },
-      { path: '/admin/uniform/items', label: 'Барааны бүртгэл', menuId: 'items', permission: mk('uniform', 'items'), actions: ['read', 'create', 'update', 'delete', 'approve'] },
-      { path: '/admin/uniform/stock', label: 'Үлдэгдэл', menuId: 'stock', permission: mk('uniform', 'stock'), actions: ['read', 'create', 'update', 'delete', 'approve'] },
-      { path: '/admin/uniform/issues', label: 'Олголтын бүртгэл', menuId: 'issues', permission: mk('uniform', 'issues'), actions: ['read', 'create', 'update', 'delete', 'approve'] },
-      { path: '/admin/uniform/returns', label: 'Буцаалт', menuId: 'returns', permission: mk('uniform', 'returns'), actions: ['read', 'create', 'update', 'delete', 'approve'] },
-      { path: '/admin/uniform/requests', label: 'Хүсэлт', menuId: 'requests', permission: mk('uniform', 'requests'), actions: ['read', 'create', 'update', 'delete', 'approve'] },
-      { path: '/admin/uniform/reports', label: 'Тайлан', menuId: 'reports', permission: mk('uniform', 'reports'), actions: ['read', 'export'] },
-    ],
-  },
-  {
     id: 'fleet',
     index: 'fuel',
     moduleKey: 'fuel:module',
-    label: 'Автопарк',
+    label: 'Түлш',
     description: 'Шатахуун удирдлага — худалдан авалт, сав, олголт, зарцуулалт',
     color: '#a16207',
     items: [
@@ -274,7 +257,7 @@ export const ADMIN_MODULES: ModuleConfig[] = [
     id: 'daily-report',
     index: 'daily_report',
     moduleKey: 'daily_report:module',
-    label: 'Daily Report',
+    label: 'Daily report',
     description: 'Өдөр тутмын тайлан, захирлын товч',
     color: '#0891b2',
     items: [
@@ -287,8 +270,8 @@ export const ADMIN_MODULES: ModuleConfig[] = [
     id: 'hse',
     index: 'hse',
     moduleKey: 'hse:module',
-    label: 'Хөдөлмөрийн аюулгүй байдал',
-    description: 'ISO 45001 — ХАБЭА удирдлагын систем',
+    label: 'ХАБ',
+    description: 'Хөдөлмөрийн аюулгүй байдал — ISO 45001',
     color: '#dc2626',
     items: [
       { path: '/admin/hse', label: 'Самбар', menuId: 'dashboard', permission: mk('hse', 'dashboard'), actions: ['read', 'create', 'update', 'delete', 'approve', 'audit', 'mobile'] },
@@ -345,6 +328,26 @@ export const ADMIN_MODULES: ModuleConfig[] = [
       { path: '/admin/budget/reports', label: 'Тайлан', menuId: 'reports', permission: mk('budget', 'reports', 'export'), actions: ['view', 'read', 'export'] },
     ],
   },
+  {
+    id: 'material',
+    index: 'material',
+    moduleKey: 'material:module',
+    label: 'Материал',
+    description: 'Замын материал, тоо хэмжээ, ашиглалт',
+    color: '#78716c',
+    items: [],
+    comingSoon: true,
+  },
+  {
+    id: 'geodesy',
+    index: 'geodesy',
+    moduleKey: 'geodesy:module',
+    label: 'Геодези',
+    description: 'Геодезийн хэмжилт, судалгаа',
+    color: '#0e7490',
+    items: [],
+    comingSoon: true,
+  },
 ];
 
 export const ADMIN_DATA_FOLDERS: ModuleConfig[] = [
@@ -374,7 +377,7 @@ export const ADMIN_DATA_FOLDERS: ModuleConfig[] = [
     id: 'data-brigade',
     index: 'brigada',
     moduleKey: 'brigada:module',
-    label: 'Бригад',
+    label: 'Бригада',
     description: 'Платформын бригад — ажилд авах, үнэлгээ (бүртгэл app / admin.rcos.mn)',
     color: '#531dab',
     items: [
@@ -431,7 +434,102 @@ export const ADMIN_DATA_FOLDERS: ModuleConfig[] = [
       { path: '/admin/data/road-sign', label: 'Жагсаалт', menuId: 'list', permission: mk('road_sign', 'list') },
     ],
   },
+  {
+    id: 'uniform-supply',
+    index: 'uniform',
+    moduleKey: 'uniform:module',
+    label: 'Хувцас хэрэглэл хангамж',
+    description: 'Ажилчдын хувцас, хэрэгслийн хангамж',
+    color: '#d4380d',
+    items: [
+      { path: '/admin/uniform', label: 'Самбар', menuId: 'dashboard', permission: mk('uniform', 'dashboard'), actions: ['read', 'create', 'update', 'delete', 'approve'] },
+      { path: '/admin/uniform/items', label: 'Барааны бүртгэл', menuId: 'items', permission: mk('uniform', 'items'), actions: ['read', 'create', 'update', 'delete', 'approve'] },
+      { path: '/admin/uniform/stock', label: 'Үлдэгдэл', menuId: 'stock', permission: mk('uniform', 'stock'), actions: ['read', 'create', 'update', 'delete', 'approve'] },
+      { path: '/admin/uniform/issues', label: 'Олголтын бүртгэл', menuId: 'issues', permission: mk('uniform', 'issues'), actions: ['read', 'create', 'update', 'delete', 'approve'] },
+      { path: '/admin/uniform/returns', label: 'Буцаалт', menuId: 'returns', permission: mk('uniform', 'returns'), actions: ['read', 'create', 'update', 'delete', 'approve'] },
+      { path: '/admin/uniform/requests', label: 'Хүсэлт', menuId: 'requests', permission: mk('uniform', 'requests'), actions: ['read', 'create', 'update', 'delete', 'approve'] },
+      { path: '/admin/uniform/reports', label: 'Тайлан', menuId: 'reports', permission: mk('uniform', 'reports'), actions: ['read', 'export'] },
+    ],
+  },
 ];
+
+/** Dashboard folder sections on /admin */
+export type AdminFolderSectionId =
+  | 'management'
+  | 'erp-settings'
+  | 'fleet-tech'
+  | 'engineering'
+  | 'data';
+
+export interface AdminFolderSection {
+  id: AdminFolderSectionId;
+  title: string;
+  description: string;
+  moduleIds: string[];
+}
+
+export const ADMIN_FOLDER_SECTIONS: AdminFolderSection[] = [
+  {
+    id: 'management',
+    title: 'Удирдлагын хэсэг',
+    description: 'Төсөл, хүний нөөц, санхүү, баримт болон удирдлагын модулиуд',
+    moduleIds: [
+      'operations',
+      'inventory',
+      'hr',
+      'document',
+      'notification',
+      'finance',
+      'ai-tender',
+      'daily-report',
+      'tender',
+    ],
+  },
+  {
+    id: 'erp-settings',
+    title: 'ERP Тохиргоо',
+    description: 'Системийн тохиргоо, хандалт',
+    moduleIds: ['homepage', 'system-access'],
+  },
+  {
+    id: 'fleet-tech',
+    title: 'Техник, машин',
+    description: 'Техник, түрээс, GPS, түлш',
+    moduleIds: ['equipment', 'rental', 'gps', 'fleet'],
+  },
+  {
+    id: 'engineering',
+    title: 'Инженерийн хэсэг',
+    description: 'Зам, төсөв, материал, геодези, ХАБ, үйлдвэр',
+    moduleIds: [
+      'road-engineering',
+      'budget',
+      'material',
+      'geodesy',
+      'hse',
+      'plant',
+    ],
+  },
+  {
+    id: 'data',
+    title: 'Data',
+    description: 'Платформын дата — харах / холбогдох',
+    moduleIds: [
+      'data-factory',
+      'data-technique',
+      'data-brigade',
+      'data-laboratory',
+      'data-job-seeker',
+      'data-student',
+      'data-road-sign',
+      'uniform-supply',
+    ],
+  },
+];
+
+export function allAdminFolders(): ModuleConfig[] {
+  return [...ADMIN_MODULES, ...ADMIN_DATA_FOLDERS];
+}
 
 /** Admin role name can differ by DB/locale; treat these as full access. */
 export function isAdminRole(userRole?: string | null): boolean {
@@ -500,7 +598,9 @@ function filterModuleList(
   enabledModuleIds?: string[] | null,
 ): ModuleConfig[] {
   const byTenant = enabledModuleIds?.length
-    ? modules.filter((mod) => enabledModuleIds.includes(mod.id))
+    ? modules.filter(
+        (mod) => mod.comingSoon || enabledModuleIds.includes(mod.id),
+      )
     : modules;
 
   if (isAdminRole(userRole)) return byTenant;
@@ -533,13 +633,27 @@ export function filterDataFolders(
   return filterModuleList(ADMIN_DATA_FOLDERS, userPermissions, userRole, enabledModuleIds);
 }
 
+/** Folders for one /admin dashboard section, in declared order. */
+export function filterFoldersForSection(
+  section: AdminFolderSection,
+  userPermissions: string[],
+  userRole?: string,
+  enabledModuleIds?: string[] | null,
+): ModuleConfig[] {
+  const byId = new Map(allAdminFolders().map((m) => [m.id, m]));
+  const folders = section.moduleIds
+    .map((id) => byId.get(id))
+    .filter((m): m is ModuleConfig => Boolean(m));
+  return filterModuleList(folders, userPermissions, userRole, enabledModuleIds);
+}
+
 export function getModuleForPath(pathname: string): ModuleConfig | null {
   if (pathname === DASHBOARD_PATH) return null;
 
   let best: ModuleConfig | null = null;
   let bestLen = -1;
 
-  for (const mod of [...ADMIN_MODULES, ...ADMIN_DATA_FOLDERS]) {
+  for (const mod of allAdminFolders()) {
     for (const item of mod.items) {
       const match =
         pathname === item.path || pathname.startsWith(`${item.path}/`);
