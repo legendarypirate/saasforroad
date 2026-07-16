@@ -27,12 +27,7 @@ import {
 import type { ColumnsType } from '@/components/admin/primitives';
 import {
   ArrowLeftOutlined,
-  EditOutlined,
-  PlusOutlined,
-  MailOutlined,
   StarOutlined,
-  CameraOutlined,
-  KeyOutlined,
 } from '@/components/admin/icons';
 import { formatDate } from '@/lib/userDates';
 import {
@@ -91,6 +86,7 @@ export default function BrigadeDetailPage() {
   const [passwordForm] = Form.useForm();
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
+  const readOnlyTenantView = true;
 
   const openPasswordModal = () => {
     if (!brigade?.username && !brigade?.leader?.username) {
@@ -386,24 +382,6 @@ export default function BrigadeDetailPage() {
       dataIndex: 'status',
       render: (v) => <Tag color={v === 'active' ? 'green' : 'default'}>{v}</Tag>,
     },
-    {
-      title: '',
-      key: 'rm',
-      width: 80,
-      render: (_, r) => (
-        <Popconfirm
-          title="Хасах уу?"
-          onConfirm={async () => {
-            await brigadaApi.removeMember(brigadeId, r.id);
-            load();
-          }}
-        >
-          <Button type="text" danger size="small">
-            Хасах
-          </Button>
-        </Popconfirm>
-      ),
-    },
   ];
 
   return (
@@ -431,36 +409,33 @@ export default function BrigadeDetailPage() {
             </Space>
           </div>
         </div>
-        <Space wrap>
-          <Upload beforeUpload={handleLogo} showUploadList={false} accept="image/*">
-            <Button icon={<CameraOutlined />}>Лого</Button>
-          </Upload>
-          <Button
-            icon={<MailOutlined />}
-            onClick={() => {
-              hireForm.resetFields();
-              hireForm.setFieldsValue({ priority: 'normal' });
-              setHireOpen(true);
-            }}
-          >
-            Hire хүсэлт
-          </Button>
-          <Button icon={<KeyOutlined />} onClick={openPasswordModal}>
-            Нууц үг солих
-          </Button>
-          {!editing ? (
-            <Button icon={<EditOutlined />} onClick={() => setEditing(true)}>
-              Засах
+        {readOnlyTenantView ? null : (
+          <Space wrap>
+            <Upload beforeUpload={handleLogo} showUploadList={false} accept="image/*">
+              <Button>Лого</Button>
+            </Upload>
+            <Button
+              onClick={() => {
+                hireForm.resetFields();
+                hireForm.setFieldsValue({ priority: 'normal' });
+                setHireOpen(true);
+              }}
+            >
+              Hire хүсэлт
             </Button>
-          ) : (
-            <>
-              <Button onClick={() => setEditing(false)}>Болих</Button>
-              <Button type="primary" loading={saving} onClick={handleSave}>
-                Хадгалах
-              </Button>
-            </>
-          )}
-        </Space>
+            <Button onClick={openPasswordModal}>Нууц үг солих</Button>
+            {!editing ? (
+              <Button onClick={() => setEditing(true)}>Засах</Button>
+            ) : (
+              <>
+                <Button onClick={() => setEditing(false)}>Болих</Button>
+                <Button type="primary" loading={saving} onClick={handleSave}>
+                  Хадгалах
+                </Button>
+              </>
+            )}
+          </Space>
+        )}
       </div>
 
       <Tabs
@@ -567,18 +542,6 @@ export default function BrigadeDetailPage() {
             label: `Гишүүд (${brigade.members?.length || 0})`,
             children: (
               <div>
-                <div className="mb-3 flex justify-end">
-                  <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={() => {
-                      memberForm.resetFields();
-                      setMemberOpen(true);
-                    }}
-                  >
-                    Гишүүн нэмэх
-                  </Button>
-                </div>
                 <Table
                   rowKey="id"
                   dataSource={brigade.members || []}
@@ -593,20 +556,6 @@ export default function BrigadeDetailPage() {
             label: `Техник (${brigade.equipmentLinks?.length || 0})`,
             children: (
               <div>
-                <div className="mb-3 flex justify-end">
-                  <Select
-                    placeholder="Техник нэмэх"
-                    className="w-[280px]"
-                    showSearch
-                    optionFilterProp="label"
-                    options={equipments.map((e) => ({ value: e.id, label: e.name }))}
-                    onChange={async (equipment_id) => {
-                      await brigadaApi.addEquipment(brigadeId, { equipment_id });
-                      message.success('Нэмэгдлээ');
-                      load();
-                    }}
-                  />
-                </div>
                 {(brigade.equipmentLinks || []).length === 0 ? (
                   <Empty description="Техник байхгүй" />
                 ) : (
@@ -623,23 +572,6 @@ export default function BrigadeDetailPage() {
                       {
                         title: 'Улсын дугаар',
                         render: (_, r) => r.equipment?.registration_number || '—',
-                      },
-                      {
-                        title: '',
-                        width: 80,
-                        render: (_, r) => (
-                          <Popconfirm
-                            title="Хасах уу?"
-                            onConfirm={async () => {
-                              await brigadaApi.removeEquipment(brigadeId, r.id);
-                              load();
-                            }}
-                          >
-                            <Button type="text" danger size="small">
-                              Хасах
-                            </Button>
-                          </Popconfirm>
-                        ),
                       },
                     ]}
                   />
@@ -757,21 +689,13 @@ export default function BrigadeDetailPage() {
                             `${formatDate(r.start_date)} – ${formatDate(r.end_date)}`,
                         },
                         {
-                          title: 'Үйлдэл',
+                          title: 'Тайлбар',
                           render: (_, r) =>
-                            r.status === 'accepted' ? (
-                              <Button
-                                size="small"
-                                type="primary"
-                                onClick={() => updateHire(r.id, 'active')}
-                              >
-                                Идэвхжүүлэх
-                              </Button>
-                            ) : r.status === 'active' ? (
-                              <Button size="small" onClick={() => updateHire(r.id, 'completed')}>
-                                Дуусгах
-                              </Button>
-                            ) : null,
+                            r.status === 'accepted'
+                              ? 'Бригад аппаас ажил эхлүүлнэ'
+                              : r.status === 'active'
+                                ? 'Бригад аппаас дуусгана'
+                                : '—',
                         },
                       ]}
                     />
@@ -813,29 +737,9 @@ export default function BrigadeDetailPage() {
                         {
                           title: 'Үнэлгээ',
                           render: (_, r) =>
-                            r.status === 'completed' ? (
-                              <Button
-                                size="small"
-                                type="primary"
-                                icon={<StarOutlined />}
-                                onClick={() => {
-                                  setReviewHire(r);
-                                  reviewForm.resetFields();
-                                  reviewForm.setFieldsValue({
-                                    overall_rating: 0,
-                                    quality: 0,
-                                    safety: 0,
-                                    speed: 0,
-                                    communication: 0,
-                                  });
-                                  setReviewOpen(true);
-                                }}
-                              >
-                                Од өгөх
-                              </Button>
-                            ) : (
-                              <Tag color="gold">Үнэлсэн</Tag>
-                            ),
+                            r.status === 'completed'
+                              ? 'Үнэлгээг жагсаалтын хуудаснаас өгнө'
+                              : <Tag color="gold">Үнэлсэн</Tag>,
                         },
                       ]}
                     />
@@ -893,19 +797,6 @@ export default function BrigadeDetailPage() {
             label: `Баримт (${brigade.documents?.length || 0})`,
             children: (
               <div>
-                <div className="mb-3 flex justify-end">
-                  <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={() => {
-                      docForm.resetFields();
-                      docForm.setFieldsValue({ doc_type: 'certificate' });
-                      setDocOpen(true);
-                    }}
-                  >
-                    Баримт нэмэх
-                  </Button>
-                </div>
                 <Table
                   rowKey="id"
                   pagination={false}
@@ -933,23 +824,6 @@ export default function BrigadeDetailPage() {
                       title: 'Дуусах',
                       dataIndex: 'expires_at',
                       render: (v) => formatDate(v),
-                    },
-                    {
-                      title: '',
-                      width: 80,
-                      render: (_, r) => (
-                        <Popconfirm
-                          title="Устгах уу?"
-                          onConfirm={async () => {
-                            await brigadaApi.removeDocument(brigadeId, r.id);
-                            load();
-                          }}
-                        >
-                          <Button type="text" danger size="small">
-                            Устгах
-                          </Button>
-                        </Popconfirm>
-                      ),
                     },
                   ]}
                 />

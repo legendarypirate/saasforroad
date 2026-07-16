@@ -176,6 +176,22 @@ export function clearSession() {
   localStorage.removeItem(ADMIN_KEY);
 }
 
+function handleAuthFailure(message?: string, status?: number) {
+  const text = String(message || "").toLowerCase();
+  const expired =
+    status === 401 ||
+    status === 403 ||
+    text.includes("invalid or expired token") ||
+    text.includes("no token provided") ||
+    text.includes("platform admin token required");
+
+  if (!expired || typeof window === "undefined") return;
+  clearSession();
+  if (window.location.pathname !== "/login") {
+    window.location.replace("/login");
+  }
+}
+
 export function getStoredAdmin(): PlatformAdmin | null {
   try {
     const raw = localStorage.getItem(ADMIN_KEY);
@@ -203,6 +219,7 @@ async function request<T>(
   const res = await fetch(`${API}${path}`, { ...options, headers });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
+    handleAuthFailure(data.message, res.status);
     throw new Error(data.message || `Request failed (${res.status})`);
   }
   return data as T;
@@ -303,6 +320,7 @@ export const api = {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
+      handleAuthFailure(data.message, res.status);
       throw new Error(data.message || `Upload failed (${res.status})`);
     }
     return data as {
