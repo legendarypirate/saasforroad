@@ -104,7 +104,7 @@ export default function RentableTechniquePage() {
       ) : filtered.length === 0 ? (
         <Empty description="Түрээслэх боломжтой техник байхгүй" />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {filtered.map((item) => {
             const cover = equipmentCoverUrl(item);
             const status = (item.status || 'available') as EquipmentStatus;
@@ -114,9 +114,9 @@ export default function RentableTechniquePage() {
                 key={item.id}
                 type="button"
                 onClick={() => router.push(`/admin/data/technique/${item.id}`)}
-                className="group overflow-hidden rounded-xl border border-border bg-card text-left shadow-sm transition hover:border-primary/40 hover:shadow-md"
+                className="group overflow-hidden rounded-xl border border-border bg-card text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
               >
-                <div className="relative aspect-[16/10] bg-muted">
+                <div className="relative aspect-[4/3] bg-muted">
                   {cover ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -125,48 +125,54 @@ export default function RentableTechniquePage() {
                       className="h-full w-full object-cover transition group-hover:scale-[1.02]"
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                      <ToolOutlined style={{ fontSize: 40 }} />
+                    <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-[#e6f4ff] via-[#f0f7ff] to-[#d6ebff] dark:from-[#0b1f33] dark:via-[#12283f] dark:to-[#0f1a28]">
+                      <div
+                        className="flex size-16 items-center justify-center rounded-2xl shadow-sm sm:size-[4.75rem]"
+                        style={{
+                          backgroundColor: '#096dd918',
+                          color: '#096dd9',
+                        }}
+                      >
+                        <ToolOutlined className="size-10 sm:size-12" />
+                      </div>
                     </div>
                   )}
                   {imgCount > 1 ? (
-                    <span className="absolute bottom-2 right-2 rounded-md bg-black/55 px-2 py-0.5 text-xs text-white">
+                    <span className="absolute bottom-2 right-2 rounded-md bg-black/55 px-2 py-0.5 text-[10px] text-white">
                       {imgCount} зураг
                     </span>
                   ) : null}
                 </div>
-                <div className="space-y-2 p-4">
-                  <div className="flex items-start justify-between gap-2">
+                <div className="space-y-1.5 p-3">
+                  <div className="flex items-start justify-between gap-1.5">
                     <div className="min-w-0">
-                      <div className="truncate font-semibold">{item.name}</div>
-                      <div className="truncate text-xs text-muted-foreground">
+                      <div className="truncate text-sm font-semibold">{item.name}</div>
+                      <div className="truncate text-[11px] text-muted-foreground">
                         {[item.model, item.registration_number].filter(Boolean).join(' · ') ||
                           '—'}
                       </div>
                     </div>
-                    <Tag color={EQUIPMENT_STATUS_COLORS[status] || 'default'}>
+                    <Tag
+                      color={EQUIPMENT_STATUS_COLORS[status] || 'default'}
+                      className="m-0 shrink-0 !text-[10px] !leading-4"
+                    >
                       {EQUIPMENT_STATUS_LABELS[status] || item.status || '—'}
                     </Tag>
                   </div>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-                    <span className="font-medium text-primary">
-                      {money(Number(item.default_daily_rate))}
-                      <span className="font-normal text-muted-foreground"> /өдөр</span>
-                    </span>
-                    {item.owner_name ? (
-                      <span className="text-muted-foreground">{item.owner_name}</span>
-                    ) : null}
+                  <div className="text-sm font-medium text-primary">
+                    {money(Number(item.default_daily_rate))}
+                    <span className="font-normal text-muted-foreground"> /өдөр</span>
                   </div>
-                  <div className="flex items-center justify-between pt-1 text-sm">
+                  <div className="flex items-center justify-between gap-1 pt-0.5 text-[11px]">
                     {item.phone ? (
-                      <span className="inline-flex items-center gap-1 text-muted-foreground">
+                      <span className="inline-flex min-w-0 items-center gap-1 truncate text-muted-foreground">
                         <PhoneOutlined />
                         {item.phone}
                       </span>
                     ) : (
-                      <span className="text-muted-foreground">Утас байхгүй</span>
+                      <span className="truncate text-muted-foreground">Утас байхгүй</span>
                     )}
-                    <span className="inline-flex items-center gap-1 text-primary">
+                    <span className="inline-flex shrink-0 items-center gap-0.5 text-primary">
                       <EyeOutlined />
                       Дэлгэрэнгүй
                     </span>
