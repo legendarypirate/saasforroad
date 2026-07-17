@@ -10,8 +10,8 @@ import {
   Form,
   Input,
   InputNumber,
-  Select,
   Switch,
+  Tabs,
   message,
   Tag,
   Avatar,
@@ -28,8 +28,56 @@ import {
   EDUCATION_LABELS,
   type JobSeeker,
 } from '@/lib/jobSeeker';
+import {
+  studentApi,
+  studentFullName,
+  formatGpa,
+  normalizeSkills,
+  STUDENT_STATUS_LABELS,
+  STUDENT_STATUS_COLORS,
+  INTERNSHIP_TYPE_LABELS,
+  type StudentRecord,
+  type StudentStatus,
+  type InternshipType,
+} from '@/lib/student';
 
 export default function JobSeekerListPage() {
+  useEffect(() => {
+    document.title = 'Ажил горилогч';
+  }, []);
+
+  return (
+    <div>
+      <div className="mb-4">
+        <h1 className="mb-1 text-2xl font-semibold">Ажил горилогч / Оюутан</h1>
+        <p className="text-sm text-muted-foreground">
+          Замын салбарын ажил горилогчид болон дадлагын оюутнууд. Санал илгээх,
+          хүсэлт харах, боломжит нэр дэвшигчдийг нэг дороос харах боломжтой.
+        </p>
+      </div>
+
+      <Tabs
+        defaultActiveKey="seekers"
+        items={[
+          {
+            key: 'seekers',
+            label: 'Ажил горилогч',
+            children: <JobSeekerPanel />,
+          },
+          {
+            key: 'students',
+            label: 'Оюутан / дадлагажигч',
+            children: <StudentPanel />,
+          },
+        ]}
+      />
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------- Seekers */
+
+function JobSeekerPanel() {
   const router = useRouter();
   const [rows, setRows] = useState<JobSeeker[]>([]);
   const [loading, setLoading] = useState(false);
@@ -59,7 +107,6 @@ export default function JobSeekerListPage() {
   }, [q, province, onlyAvailable]);
 
   useEffect(() => {
-    document.title = 'Ажил горилогч';
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onlyAvailable]);
@@ -186,24 +233,6 @@ export default function JobSeekerListPage() {
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="mb-1 text-2xl font-semibold">Ажил горилогч</h1>
-          <p className="text-sm text-muted-foreground">
-            Замын салбарын ажил горилогчид (гар утасны апп-аар бүртгүүлдэг). Санал
-            илгээх, ирсэн хүсэлтийг харах боломжтой.
-          </p>
-        </div>
-        <Space>
-          <Button onClick={() => router.push('/admin/data/job-seeker/hire-requests')}>
-            Санал / хүсэлтүүд
-          </Button>
-          <Button icon={<ReloadOutlined />} onClick={load}>
-            Шинэчлэх
-          </Button>
-        </Space>
-      </div>
-
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <Input.Search
           allowClear
@@ -225,6 +254,16 @@ export default function JobSeekerListPage() {
           <Switch checked={onlyAvailable} onChange={setOnlyAvailable} />
           Зөвхөн ажил хайж буй
         </span>
+        <div className="ml-auto flex gap-2">
+          <Button
+            onClick={() => router.push('/admin/data/job-seeker/hire-requests')}
+          >
+            Санал / хүсэлтүүд
+          </Button>
+          <Button icon={<ReloadOutlined />} onClick={load}>
+            Шинэчлэх
+          </Button>
+        </div>
       </div>
 
       <Table
@@ -273,6 +312,149 @@ export default function JobSeekerListPage() {
           </Form.Item>
         </Form>
       </Drawer>
+    </div>
+  );
+}
+
+/* --------------------------------------------------------------- Students */
+
+function StudentPanel() {
+  const [rows, setRows] = useState<StudentRecord[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [q, setQ] = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await studentApi.list({ q: q.trim() || undefined });
+      setRows(data);
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : 'Ачаалахад алдаа');
+    } finally {
+      setLoading(false);
+    }
+  }, [q]);
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const columns: ColumnsType<StudentRecord> = [
+    {
+      title: '',
+      dataIndex: 'photo',
+      width: 56,
+      render: (v, r) => (
+        <Avatar src={v || undefined} size={38}>
+          {(r.first_name || r.last_name || '?').slice(0, 1)}
+        </Avatar>
+      ),
+    },
+    {
+      title: 'Нэр',
+      key: 'name',
+      render: (_, r) => (
+        <div>
+          <div className="font-medium">{studentFullName(r)}</div>
+          {r.register_number ? (
+            <div className="text-xs text-muted-foreground">
+              {r.register_number}
+            </div>
+          ) : null}
+        </div>
+      ),
+    },
+    {
+      title: 'Сургууль / мэргэжил',
+      key: 'school',
+      render: (_, r) =>
+        [r.school, r.major].filter(Boolean).join(' · ') || '—',
+    },
+    {
+      title: 'Курс',
+      dataIndex: 'course_year',
+      width: 80,
+      render: (v) => (v ? `${v}-р курс` : '—'),
+    },
+    {
+      title: 'Голч',
+      dataIndex: 'gpa',
+      width: 80,
+      render: (v) => formatGpa(v),
+    },
+    {
+      title: 'Ур чадвар',
+      dataIndex: 'skills',
+      render: (v: string[] | null) => {
+        const skills = normalizeSkills(v);
+        if (!skills.length) return '—';
+        return (
+          <div className="flex flex-wrap gap-1">
+            {skills.slice(0, 4).map((s) => (
+              <Tag key={s}>{s}</Tag>
+            ))}
+            {skills.length > 4 ? (
+              <span className="text-xs text-muted-foreground">
+                +{skills.length - 4}
+              </span>
+            ) : null}
+          </div>
+        );
+      },
+    },
+    {
+      title: 'Төрөл',
+      dataIndex: 'internship_type',
+      width: 120,
+      render: (v: string) =>
+        INTERNSHIP_TYPE_LABELS[v as InternshipType] || v || '—',
+    },
+    {
+      title: 'Утас',
+      dataIndex: 'phone',
+      width: 120,
+      render: (v) => v || '—',
+    },
+    {
+      title: 'Төлөв',
+      dataIndex: 'status',
+      width: 130,
+      render: (v: string) => (
+        <Tag color={STUDENT_STATUS_COLORS[v as StudentStatus] || 'default'}>
+          {STUDENT_STATUS_LABELS[v as StudentStatus] || v}
+        </Tag>
+      ),
+    },
+  ];
+
+  return (
+    <div>
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <Input.Search
+          allowClear
+          placeholder="Нэр, сургууль, мэргэжил, утас..."
+          className="w-[260px] shrink-0"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onSearch={load}
+        />
+        <div className="ml-auto">
+          <Button icon={<ReloadOutlined />} onClick={load}>
+            Шинэчлэх
+          </Button>
+        </div>
+      </div>
+
+      <Table
+        rowKey="id"
+        loading={loading}
+        columns={columns}
+        dataSource={rows}
+        scroll={{ x: 1100 }}
+        pagination={{ pageSize: 20, showSizeChanger: true }}
+        locale={{ emptyText: 'Одоогоор оюутны бүртгэл байхгүй' }}
+      />
     </div>
   );
 }

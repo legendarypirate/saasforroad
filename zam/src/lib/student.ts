@@ -1,3 +1,5 @@
+import { tenantHeaders } from '@/lib/tenant';
+
 const API = process.env.NEXT_PUBLIC_API_URL || '';
 
 export const STUDENT_API = `${API}/api/student`;
@@ -84,14 +86,19 @@ export function formatGpa(value?: number | string | null) {
 }
 
 async function studentFetch<T>(path = '', init?: RequestInit) {
+  const token =
+    typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const extra: Record<string, string> = {
+    ...((init?.headers as Record<string, string> | undefined) ?? {}),
+  };
+  if (init?.body && !(init.body instanceof FormData)) {
+    extra['Content-Type'] = 'application/json';
+  }
+  if (token) extra['Authorization'] = token;
   const res = await fetch(`${STUDENT_API}${path}`, {
     ...init,
-    headers: {
-      ...(init?.body && !(init.body instanceof FormData)
-        ? { 'Content-Type': 'application/json' }
-        : {}),
-      ...init?.headers,
-    },
+    headers: tenantHeaders(extra),
+    cache: 'no-store',
   });
   return res.json() as Promise<{ success: boolean; data?: T; message?: string }>;
 }
