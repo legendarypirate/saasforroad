@@ -165,6 +165,11 @@ db.brigade_documents = require("./brigade_document.model.js")(sequelize, Sequeli
 db.brigade_timeline_events = require("./brigade_timeline_event.model.js")(sequelize, Sequelize);
 db.brigade_progress_reports = require("./brigade_progress_report.model.js")(sequelize, Sequelize);
 db.brigade_notifications = require("./brigade_notification.model.js")(sequelize, Sequelize);
+db.job_seekers = require("./job_seeker.model.js")(sequelize, Sequelize);
+db.job_seeker_schools = require("./job_seeker_school.model.js")(sequelize, Sequelize);
+db.job_seeker_families = require("./job_seeker_family.model.js")(sequelize, Sequelize);
+db.job_applications = require("./job_application.model.js")(sequelize, Sequelize);
+db.job_offers = require("./job_offer.model.js")(sequelize, Sequelize);
 db.documents = require("./document.model.js")(sequelize, Sequelize);
 db.document_folders = require("./document_folder.model.js")(sequelize, Sequelize);
 db.warehouses = require("./warehouse.model.js")(sequelize, Sequelize);
@@ -904,6 +909,42 @@ db.road_budget_items.belongsTo(db.road_budgets, { foreignKey: "budget_id", as: "
 db.road_budget_items.belongsTo(db.road_budget_rates, { foreignKey: "rate_id", as: "rate" });
 db.road_budgets.hasMany(db.road_budget_assumptions, { foreignKey: "budget_id", as: "assumptions", onDelete: "CASCADE" });
 db.road_budget_assumptions.belongsTo(db.road_budgets, { foreignKey: "budget_id", as: "budget" });
+
+// Job seeker marketplace (platform-shared profiles + tenant-scoped offers/applications)
+db.job_seekers.hasMany(db.job_seeker_schools, {
+  foreignKey: "job_seeker_id",
+  as: "schools",
+  onDelete: "CASCADE",
+});
+db.job_seeker_schools.belongsTo(db.job_seekers, {
+  foreignKey: "job_seeker_id",
+  as: "jobSeeker",
+});
+db.job_seekers.hasMany(db.job_seeker_families, {
+  foreignKey: "job_seeker_id",
+  as: "family",
+  onDelete: "CASCADE",
+});
+db.job_seeker_families.belongsTo(db.job_seekers, {
+  foreignKey: "job_seeker_id",
+  as: "jobSeeker",
+});
+db.job_seekers.hasMany(db.job_applications, {
+  foreignKey: "job_seeker_id",
+  as: "applications",
+});
+db.job_applications.belongsTo(db.job_seekers, {
+  foreignKey: "job_seeker_id",
+  as: "jobSeeker",
+});
+db.job_seekers.hasMany(db.job_offers, {
+  foreignKey: "job_seeker_id",
+  as: "offers",
+});
+db.job_offers.belongsTo(db.job_seekers, {
+  foreignKey: "job_seeker_id",
+  as: "jobSeeker",
+});
 
 // Inject tenant_id only as a safety net if a new model forgot to declare it.
 // All business *.model.js files now declare tenant_id explicitly.

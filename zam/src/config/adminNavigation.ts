@@ -406,10 +406,16 @@ export const ADMIN_DATA_FOLDERS: ModuleConfig[] = [
     index: 'job_seeker',
     moduleKey: 'job_seeker:module',
     label: 'Ажил горилогч',
-    description: 'Ажил горилогч — зөвхөн харах / холбогдох',
+    description: 'Ажил горилогч — харах, санал илгээх, хүсэлт хүлээн авах',
     color: '#d48806',
     items: [
       { path: '/admin/data/job-seeker', label: 'Жагсаалт', menuId: 'list', permission: mk('job_seeker', 'list') },
+      {
+        path: '/admin/data/job-seeker/hire-requests',
+        label: 'Санал / хүсэлтүүд',
+        menuId: 'hire-requests',
+        permission: mk('job_seeker', 'list'),
+      },
     ],
   },
   {

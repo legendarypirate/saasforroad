@@ -26,6 +26,11 @@ const TENANT_SKIP_KEYS = new Set([
   "brigade_timeline_events",
   "brigade_progress_reports",
   "brigade_notifications",
+  // Platform-shared job-seeker marketplace (register on mobile app; any tenant
+  // can browse & send offers). Offers/applications stay tenant-scoped.
+  "job_seekers",
+  "job_seeker_schools",
+  "job_seeker_families",
 ]);
 
 const TENANT_SKIP_TABLES = new Set([
@@ -46,6 +51,9 @@ const TENANT_SKIP_TABLES = new Set([
   "brigade_timeline_events",
   "brigade_progress_reports",
   "brigade_notifications",
+  "job_seekers",
+  "job_seeker_schools",
+  "job_seeker_families",
 ]);
 
 function isSequelizeModel(model) {
