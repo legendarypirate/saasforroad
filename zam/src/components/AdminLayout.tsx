@@ -146,6 +146,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <AppWindow className="size-5" />
             Замын систем
           </button>
+          {username && (
+            <div className="hidden items-center gap-2 border-l border-border pl-4 sm:flex">
+              <span className="text-sm font-semibold text-foreground">{username}</span>
+              {userRole && (
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                  {userRole}
+                </span>
+              )}
+            </div>
+          )}
           {!isDashboard && (
             <Button variant="ghost" size="sm" onClick={goHome}>
               <Home className="size-4" />

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Button,
   Collapse,
@@ -40,6 +40,27 @@ type Props = {
   onPersist: (ids: number[]) => Promise<boolean>;
 };
 
+/**
+ * Legacy flat module keys (e.g. `finance:read`, `road:view`) predate the granular
+ * `module.menu:action` model. They are never surfaced in this editor, yet the RBAC
+ * layer expands them into visibility for the WHOLE module (all folders + submenus).
+ * Left over from role seeding, they make a role see far more than what the admin
+ * actually configured here. We treat the granular editor as the source of truth and
+ * drop these keys on save so "what you configure is what the role gets".
+ */
+const STRIPPABLE_FLAT_ACTIONS = new Set([
+  'read',
+  'view',
+  'write',
+  'create',
+  'update',
+  'delete',
+  'approve',
+  'export',
+  'audit',
+  'adjust',
+]);
+
 function matchesMenu(p: PermissionRow, menu: CatalogMenu): boolean {
   if (p.menu_key && (p.menu_key === menu.menuKey || p.menu_key === `${menu.menuIndex}:view`)) {
     return true;
@@ -78,6 +99,30 @@ export function RolePermissionsEditor({
     return map;
   }, [permissions]);
 
+  const catalogModuleIndexes = useMemo(
+    () => new Set(catalog.map((m) => m.index)),
+    [catalog],
+  );
+
+  const isLegacyFlatKey = useCallback(
+    (key?: string | null) => {
+      if (!key || key.includes('.')) return false;
+      const [index, action] = key.split(':');
+      if (!index || !action) return false;
+      if (!catalogModuleIndexes.has(index)) return false;
+      return STRIPPABLE_FLAT_ACTIONS.has(action);
+    },
+    [catalogModuleIndexes],
+  );
+
+  const legacyFlatIds = useMemo(() => {
+    const ids = new Set<number>();
+    for (const p of permissions) {
+      if (isLegacyFlatKey(p.key)) ids.add(p.id);
+    }
+    return ids;
+  }, [permissions, isLegacyFlatKey]);
+
   const assignedModules = useMemo(() => {
     const selected = new Set(selectedIds);
     return catalog.filter((mod) => {
@@ -96,17 +141,39 @@ export function RolePermissionsEditor({
 
   const persist = useCallback(
     async (nextIds: number[]) => {
+      // Granular editor is authoritative — never re-save legacy flat module keys.
+      const cleaned = nextIds.filter((id) => !legacyFlatIds.has(id));
       setSaving(true);
       try {
-        const ok = await onPersist(nextIds);
-        if (ok) onSelectedIdsChange(nextIds);
+        const ok = await onPersist(cleaned);
+        if (ok) onSelectedIdsChange(cleaned);
         return ok;
       } finally {
         setSaving(false);
       }
     },
-    [onPersist, onSelectedIdsChange],
+    [onPersist, onSelectedIdsChange, legacyFlatIds],
   );
+
+  // One-time cleanup: if a role is already managed granularly (has module or
+  // menu-level keys) but still carries leftover legacy flat keys, drop them so the
+  // user sees exactly what is configured here. Pure legacy (flat-only) roles are
+  // left untouched to avoid silently removing access on mere viewing.
+  useEffect(() => {
+    if (!canUpdate) return;
+    const selected = new Set(selectedIds);
+    const hasLegacy = selectedIds.some((id) => legacyFlatIds.has(id));
+    if (!hasLegacy) return;
+    const hasGranular = permissions.some(
+      (p) =>
+        selected.has(p.id) &&
+        (p.key?.includes('.') || p.key?.endsWith(':module')),
+    );
+    if (!hasGranular) return;
+    const cleaned = selectedIds.filter((id) => !legacyFlatIds.has(id));
+    void persist(cleaned);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedIds, legacyFlatIds, permissions, canUpdate]);
 
   const handleAddModule = async () => {
     if (!addModuleKey) {
