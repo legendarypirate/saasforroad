@@ -7,6 +7,7 @@ module.exports = (app) => {
 
   router.post("/auth/login", platform.login);
   router.get("/auth/me", verifyPlatformToken, platform.me);
+  router.post("/auth/refresh", verifyPlatformToken, platform.refresh);
 
   // Public platform marketing page (rcos.mn)
   router.get("/landing", platformLanding.getPublic);

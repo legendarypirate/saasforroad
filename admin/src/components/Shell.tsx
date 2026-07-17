@@ -11,6 +11,7 @@ import {
   PlatformAdmin,
 } from "@/lib/api";
 import { ThemeToggle } from "@/components/ThemeProvider";
+import SessionCountdown from "@/components/SessionCountdown";
 
 function IconGrid({ className = "nav-ico" }: { className?: string }) {
   return (
@@ -162,6 +163,7 @@ export default function Shell({ children }: { children: ReactNode }) {
           <div style={{ fontSize: "0.85rem", color: "var(--muted)", marginBottom: "0.75rem", fontWeight: 700 }}>
             {admin.name || admin.username}
           </div>
+          <SessionCountdown />
           <ThemeToggle />
           <button className="btn secondary" type="button" onClick={logout} style={{ width: "100%" }}>
             Log out

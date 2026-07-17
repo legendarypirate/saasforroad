@@ -64,6 +64,20 @@ exports.me = async (req, res) => {
   }
 };
 
+exports.refresh = async (req, res) => {
+  try {
+    const admin = await db.platform_admins.findByPk(req.platformAdmin.id);
+    if (!admin || !admin.is_active) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+    const token = signPlatformToken(admin);
+    res.json({ success: true, token, admin: publicAdmin(admin) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 exports.listModules = async (_req, res) => {
   res.json({
     success: true,

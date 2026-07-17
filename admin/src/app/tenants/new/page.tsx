@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Shell from "@/components/Shell";
+import ModuleCategoryGrid from "@/components/ModuleCategoryGrid";
 import { api, ModuleInfo } from "@/lib/api";
 
 export default function NewTenantPage() {
@@ -38,6 +39,14 @@ export default function NewTenantPage() {
     setSelected((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
+  }
+
+  function setManyModules(ids: string[], checked: boolean) {
+    setSelected((prev) => {
+      const set = new Set(prev);
+      ids.forEach((id) => (checked ? set.add(id) : set.delete(id)));
+      return Array.from(set);
+    });
   }
 
   const previewSlug =
@@ -166,22 +175,13 @@ export default function NewTenantPage() {
         <h2 className="panel-title" style={{ marginTop: "0.5rem" }}>
           Enabled zam modules
         </h2>
-        <div className="module-grid" style={{ marginBottom: "0.5rem" }}>
-          {modules.map((m) => (
-            <label key={m.id} className="module-item">
-              <input
-                type="checkbox"
-                checked={selected.includes(m.id)}
-                onChange={() => toggleModule(m.id)}
-              />
-              <span>
-                <strong style={{ display: "block" }}>{m.label}</strong>
-                <span className="muted" style={{ fontSize: "0.75rem" }}>
-                  {m.id}
-                </span>
-              </span>
-            </label>
-          ))}
+        <div style={{ marginBottom: "0.5rem" }}>
+          <ModuleCategoryGrid
+            modules={modules}
+            selected={selected}
+            onToggle={toggleModule}
+            onSetMany={setManyModules}
+          />
         </div>
 
         <h2 className="panel-title" style={{ marginTop: "0.75rem" }}>

@@ -176,6 +176,21 @@ export function clearSession() {
   localStorage.removeItem(ADMIN_KEY);
 }
 
+/** Ask the server for a fresh platform token and persist it. */
+export async function renewSession(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+  if (!getToken()) return false;
+  try {
+    const res = await api.refresh();
+    if (!res?.success || !res.token) return false;
+    localStorage.setItem(TOKEN_KEY, res.token);
+    if (res.admin) localStorage.setItem(ADMIN_KEY, JSON.stringify(res.admin));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function handleAuthFailure(message?: string, status?: number) {
   const text = String(message || "").toLowerCase();
   const expired =
@@ -203,6 +218,30 @@ export function getStoredAdmin(): PlatformAdmin | null {
 
 export function isLoggedIn(): boolean {
   return !!getToken();
+}
+
+/** JWT `exp` as epoch ms, or null if missing/invalid. */
+export function getTokenExpiresAt(): number | null {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const part = token.split(".")[1];
+    if (!part) return null;
+    const b64 = part.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
+    const payload = JSON.parse(atob(padded)) as { exp?: number };
+    if (!payload.exp || typeof payload.exp !== "number") return null;
+    return payload.exp * 1000;
+  } catch {
+    return null;
+  }
+}
+
+/** Remaining ms until JWT expiry (0 if already expired / no token). */
+export function getTokenRemainingMs(): number {
+  const exp = getTokenExpiresAt();
+  if (!exp) return 0;
+  return Math.max(0, exp - Date.now());
 }
 
 async function request<T>(
@@ -234,6 +273,12 @@ export const api = {
 
   me: () =>
     request<{ success: boolean; admin: PlatformAdmin }>("/api/platform/auth/me"),
+
+  refresh: () =>
+    request<{ success: boolean; token: string; admin: PlatformAdmin }>(
+      "/api/platform/auth/refresh",
+      { method: "POST" }
+    ),
 
   listModules: () =>
     request<{ success: boolean; modules: ModuleInfo[]; allIds: string[] }>(

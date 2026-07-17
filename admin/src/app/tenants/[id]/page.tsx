@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Shell from "@/components/Shell";
+import ModuleCategoryGrid from "@/components/ModuleCategoryGrid";
 import {
   api,
   ModuleInfo,
@@ -81,6 +82,14 @@ export default function TenantDetailPage() {
         ? prev.filter((x) => x !== moduleId)
         : [...prev, moduleId]
     );
+  }
+
+  function setManyModules(ids: string[], checked: boolean) {
+    setSelectedModules((prev) => {
+      const set = new Set(prev);
+      ids.forEach((mid) => (checked ? set.add(mid) : set.delete(mid)));
+      return Array.from(set);
+    });
   }
 
   async function saveModules() {
@@ -284,23 +293,12 @@ export default function TenantDetailPage() {
               Save modules
             </button>
           </div>
-          <div className="module-grid">
-            {modules.map((m) => (
-              <label key={m.id} className="module-item">
-                <input
-                  type="checkbox"
-                  checked={selectedModules.includes(m.id)}
-                  onChange={() => toggleModule(m.id)}
-                />
-                <span>
-                  <strong style={{ display: "block" }}>{m.label}</strong>
-                  <span className="muted" style={{ fontSize: "0.75rem" }}>
-                    {m.id}
-                  </span>
-                </span>
-              </label>
-            ))}
-          </div>
+          <ModuleCategoryGrid
+            modules={modules}
+            selected={selectedModules}
+            onToggle={toggleModule}
+            onSetMany={setManyModules}
+          />
         </section>
 
         <form className="panel" onSubmit={saveSuperadmin}>
