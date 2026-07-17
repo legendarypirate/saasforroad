@@ -3,32 +3,46 @@ const Role = db.roles;
 const Op = db.Sequelize.Op;
 
 // Create and Save a new Role
-exports.create = (req, res) => {
+exports.create = async (req, res) => {
   // Validate request
-  if (!req.body.name) {
+  const name = String(req.body.name || "").trim();
+  if (!name) {
     res.status(400).send({
       message: "Content can not be empty!"
     });
     return;
   }
 
-  const cat = {
-    name: req.body.name,
-    description: req.body.description || null,
-    mobile_access: req.body.mobile_access === true,
-    tenant_id: req.tenant?.id || req.body.tenant_id || null,
-  };
+  const tenantId = req.tenant?.id || req.body.tenant_id || null;
 
-  Role.create(cat)
-    .then(data => {
-      res.send({ success: true, data });
-    })
-    .catch(err => {
-      res.status(500).send({
-        message:
-          err.message || "Some error occurred while creating the Role."
-      });
+  try {
+    // Prevent duplicate role names within the same tenant (case-insensitive).
+    const existing = await Role.findOne({
+      where: {
+        name: { [Op.iLike]: name },
+        ...(tenantId ? { tenant_id: tenantId } : {}),
+      },
     });
+    if (existing) {
+      return res.status(409).send({
+        success: false,
+        message: `"${existing.name}" нэртэй эрх аль хэдийн бүртгэлтэй байна.`,
+        data: existing,
+      });
+    }
+
+    const data = await Role.create({
+      name,
+      description: req.body.description || null,
+      mobile_access: req.body.mobile_access === true,
+      tenant_id: tenantId,
+    });
+    res.send({ success: true, data });
+  } catch (err) {
+    res.status(500).send({
+      message: err.message || "Some error occurred while creating the Role.",
+    });
+  }
 };
 
 // Retrieve all Role from the database.
@@ -102,28 +116,42 @@ exports.update = (req, res) => {
 };
 
 // Delete a Role with the specified id in the request
-exports.delete = (req, res) => {
+exports.delete = async (req, res) => {
   const id = req.params.id;
 
-  Role.destroy({
-    where: { id: id }
-  })
-    .then(num => {
-      if (num == 1) {
-        res.send({
-          message: "Role was deleted successfully!"
-        });
-      } else {
-        res.send({
-          message: `Cannot delete Role with id=${id}. Maybe Role was not found!`
-        });
-      }
-    })
-    .catch(err => {
-      res.status(500).send({
-        message: "Could not delete Role with id=" + id
+  try {
+    const role = await Role.findByPk(id);
+    if (!role) {
+      return res.status(404).send({ success: false, message: `Role with id=${id} not found.` });
+    }
+
+    // Tenant isolation: never let one tenant delete another tenant's role.
+    if (req.tenant?.id && role.tenant_id && role.tenant_id !== req.tenant.id) {
+      return res.status(403).send({ success: false, message: "Role belongs to another tenant" });
+    }
+
+    // Block deletion if any users still reference this role.
+    const inUse = await db.users.count({ where: { role_id: id } });
+    if (inUse > 0) {
+      return res.status(409).send({
+        success: false,
+        message: `Энэ эрхийг ${inUse} хэрэглэгч ашиглаж байгаа тул устгах боломжгүй. Эхлээд хэрэглэгчдийн эрхийг өөрчилнө үү.`,
       });
+    }
+
+    // Clean up role_permissions join rows, then delete the role.
+    if (typeof role.setPermissions === "function") {
+      await role.setPermissions([]);
+    }
+    await role.destroy();
+
+    res.send({ success: true, message: "Role was deleted successfully!" });
+  } catch (err) {
+    res.status(500).send({
+      success: false,
+      message: err.message || "Could not delete Role with id=" + id,
     });
+  }
 };
 
 // Delete all Role from the database.

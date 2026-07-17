@@ -18,12 +18,20 @@ async function seedRolesForTenant(tenantId, transaction) {
     const permissionByKey = new Map(allPermissions.map((p) => [p.key, p]));
     const created = [];
 
+    // Load once and match names case-insensitively/trimmed so re-seeding never
+    // creates near-duplicate roles (e.g. after a role name edit across deploys).
+    const existingRoles = await db.roles.findAll({
+      where: { tenant_id: tenantId },
+      transaction,
+      skipTenantScope: true,
+    });
+    const normalize = (s) => String(s || "").trim().toLowerCase();
+    const existingByName = new Map(
+      existingRoles.map((r) => [normalize(r.name), r])
+    );
+
     for (const roleDef of DEFAULT_ROLES) {
-      let role = await db.roles.findOne({
-        where: { name: roleDef.name, tenant_id: tenantId },
-        transaction,
-        skipTenantScope: true,
-      });
+      let role = existingByName.get(normalize(roleDef.name)) || null;
 
       if (!role) {
         role = await db.roles.create(
@@ -35,6 +43,7 @@ async function seedRolesForTenant(tenantId, transaction) {
           },
           { transaction, skipTenantScope: true }
         );
+        existingByName.set(normalize(role.name), role);
       }
 
       let permissionIds;
