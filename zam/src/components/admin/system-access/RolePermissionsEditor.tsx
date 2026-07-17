@@ -187,7 +187,17 @@ export function RolePermissionsEditor({
       message.error(`Модулийн эрх олдсонгүй: ${mod.moduleKey}.`);
       return;
     }
-    const next = Array.from(new Set([...selectedIds, modulePerm.id]));
+    // Grant the module key AND every menu action under it by default, so the
+    // folder is immediately usable (clickable menus) instead of an empty shell.
+    // The admin can then uncheck specific actions per menu.
+    const grantIds = [modulePerm.id];
+    for (const menu of mod.menus) {
+      for (const act of menu.actions) {
+        const perm = permissionByKey.get(act.key);
+        if (perm) grantIds.push(perm.id);
+      }
+    }
+    const next = Array.from(new Set([...selectedIds, ...grantIds]));
     const ok = await persist(next);
     if (ok) {
       message.success(`${mod.label} модуль нэмэгдлээ`);
