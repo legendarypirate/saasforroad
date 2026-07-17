@@ -19,6 +19,7 @@ import {
 import type { ColumnsType } from '@/components/admin/primitives';
 import { EyeOutlined, KeyOutlined, PlusOutlined } from '@/components/admin/icons';
 import { useRouter } from 'next/navigation';
+import { tenantHeaders } from '@/lib/tenant';
 
 const { Option } = Select;
 
@@ -60,7 +61,9 @@ export default function UsersPage() {
 
   const fetchRoles = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/role`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/role`, {
+        headers: tenantHeaders(),
+      });
       const result = await res.json();
       if (result.success) setRoles(result.data);
     } catch (err) {
@@ -76,6 +79,7 @@ export default function UsersPage() {
       const qs = params.toString();
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/user${qs ? `?${qs}` : ''}`,
+        { headers: tenantHeaders() },
       );
       const result = await res.json();
       if (result.success) setUsers(result.data);
@@ -106,7 +110,7 @@ export default function UsersPage() {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/${user.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: tenantHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ is_active: active ? '1' : '0' }),
       });
       const result = await res.json();
@@ -129,7 +133,7 @@ export default function UsersPage() {
       const values = await form.validateFields();
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: tenantHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(values),
       });
       const result = await response.json();
@@ -164,7 +168,7 @@ export default function UsersPage() {
         `${process.env.NEXT_PUBLIC_API_URL}/api/user/${passwordUser.id}/password`,
         {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: tenantHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ password: values.password }),
         }
       );

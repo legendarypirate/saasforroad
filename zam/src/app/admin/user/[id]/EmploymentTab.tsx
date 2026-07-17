@@ -15,6 +15,7 @@ import {
 import type { ColumnsType } from '@/components/admin/primitives';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/admin/icons';
 import { DATE_FORMAT, dateFormItemProps, formatDate } from '@/lib/userDates';
+import { tenantHeaders } from '@/lib/tenant';
 
 export interface EmploymentUser {
   responsible_equipment?: string;
@@ -143,7 +144,7 @@ export default function EmploymentTab({
     try {
       const res = await fetch(`${apiBase}/api/user/${userId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: tenantHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(values),
       });
       const json = await res.json();
@@ -165,7 +166,7 @@ export default function EmploymentTab({
     try {
       const res = await fetch(`${apiBase}/api/career_change`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: tenantHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ user_id: userId, ...values }),
       });
       const json = await res.json();
@@ -183,7 +184,10 @@ export default function EmploymentTab({
 
   const deleteCareerChange = async (id: number) => {
     try {
-      const res = await fetch(`${apiBase}/api/career_change/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${apiBase}/api/career_change/${id}`, {
+        method: 'DELETE',
+        headers: tenantHeaders(),
+      });
       const json = await res.json();
       if (!json.success) throw new Error(json.message || 'Алдаа');
       message.success('Устгагдлаа');
@@ -200,7 +204,7 @@ export default function EmploymentTab({
     try {
       const res = await fetch(`${apiBase}/api/contract_termination`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: tenantHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ user_id: userId, ...values }),
       });
       const json = await res.json();
@@ -218,7 +222,10 @@ export default function EmploymentTab({
 
   const deleteTermination = async (id: number) => {
     try {
-      const res = await fetch(`${apiBase}/api/contract_termination/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${apiBase}/api/contract_termination/${id}`, {
+        method: 'DELETE',
+        headers: tenantHeaders(),
+      });
       const json = await res.json();
       if (!json.success) throw new Error(json.message || 'Алдаа');
       message.success('Устгагдлаа');
@@ -236,7 +243,7 @@ export default function EmploymentTab({
     try {
       const res = await fetch(`${apiBase}/api/user_award`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: tenantHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ user_id: userId, award_type: awardType, ...values }),
       });
       const json = await res.json();
@@ -254,7 +261,10 @@ export default function EmploymentTab({
 
   const deleteAward = async (id: number) => {
     try {
-      const res = await fetch(`${apiBase}/api/user_award/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${apiBase}/api/user_award/${id}`, {
+        method: 'DELETE',
+        headers: tenantHeaders(),
+      });
       const json = await res.json();
       if (!json.success) throw new Error(json.message || 'Алдаа');
       message.success('Устгагдлаа');

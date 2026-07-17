@@ -25,6 +25,7 @@ import {
 import type { ColumnsType } from '@/components/admin/primitives';
 import { DeleteOutlined, EditOutlined, PlusOutlined, UserOutlined, CameraOutlined } from '@/components/admin/icons';
 import { DATE_FORMAT, dateFormItemProps, formatDate } from '@/lib/userDates';
+import { tenantHeaders } from '@/lib/tenant';
 import EmploymentTab, {
   type CareerChangeRow,
   type ContractTerminationRow,
@@ -185,14 +186,14 @@ export default function UserDetailPage() {
     try {
       const [userRes, actionRes, emergencyRes, schoolRes, familyRes, careerRes, terminationRes, awardRes] =
         await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/${userId}`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/action?user_id=${userId}`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/emergency_contact?user_id=${userId}`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/education?user_id=${userId}`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/family_member?user_id=${userId}`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/career_change?user_id=${userId}`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/contract_termination?user_id=${userId}`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user_award?user_id=${userId}`),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/${userId}`, { headers: tenantHeaders() }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/action?user_id=${userId}`, { headers: tenantHeaders() }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/emergency_contact?user_id=${userId}`, { headers: tenantHeaders() }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/education?user_id=${userId}`, { headers: tenantHeaders() }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/family_member?user_id=${userId}`, { headers: tenantHeaders() }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/career_change?user_id=${userId}`, { headers: tenantHeaders() }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/contract_termination?user_id=${userId}`, { headers: tenantHeaders() }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user_award?user_id=${userId}`, { headers: tenantHeaders() }),
       ]);
 
       const userJson = await userRes.json();
@@ -284,6 +285,7 @@ export default function UserDetailPage() {
       formData.append('image', file);
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/${userId}/profile-image`, {
         method: 'POST',
+        headers: tenantHeaders(),
         body: formData,
       });
       const json = await res.json();
@@ -340,7 +342,7 @@ export default function UserDetailPage() {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/${userId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: tenantHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(values),
       });
       const json = await res.json();
@@ -363,7 +365,7 @@ export default function UserDetailPage() {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/education`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: tenantHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           user_id: userId,
           school_name: values.schoolName,
@@ -389,6 +391,7 @@ export default function UserDetailPage() {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/education/${id}`, {
         method: "DELETE",
+        headers: tenantHeaders(),
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.message || "Устгах үед алдаа");
@@ -407,7 +410,7 @@ export default function UserDetailPage() {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/family_member`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: tenantHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           user_id: userId,
           full_name: values.fullName,
@@ -433,6 +436,7 @@ export default function UserDetailPage() {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/family_member/${id}`, {
         method: 'DELETE',
+        headers: tenantHeaders(),
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.message || 'Устгах үед алдаа');
@@ -451,7 +455,7 @@ export default function UserDetailPage() {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/emergency_contact`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: tenantHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ ...values, user_id: userId }),
       });
       const json = await res.json();
@@ -471,6 +475,7 @@ export default function UserDetailPage() {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/emergency_contact/${id}`, {
         method: 'DELETE',
+        headers: tenantHeaders(),
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.message || 'Устгах үед алдаа');
@@ -489,7 +494,7 @@ export default function UserDetailPage() {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/action`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: tenantHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ ...values, user_id: userId }),
       });
       const json = await res.json();
@@ -509,6 +514,7 @@ export default function UserDetailPage() {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/action/${actionId}`, {
         method: 'DELETE',
+        headers: tenantHeaders(),
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.message || 'Устгах үед алдаа гарлаа');
