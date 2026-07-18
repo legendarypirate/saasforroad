@@ -12,17 +12,26 @@ function ensureConfigured() {
   cloudinary.config({ cloud_name: cloudName, api_key: apiKey, api_secret: apiSecret });
 }
 
+/**
+ * Cloudinary types:
+ * - PDF → image (Cloudinary native; transformations work)
+ * - office/zip/etc → raw (extension must stay on public_id)
+ * - images/videos as usual
+ */
 function getResourceType(mimeType, filename = "") {
   const mime = String(mimeType || "").toLowerCase();
   const name = String(filename || "").toLowerCase();
+
+  if (mime === "application/pdf" || /\.pdf$/i.test(name)) return "image";
   if (mime.startsWith("image/")) return "image";
   if (mime.startsWith("video/")) return "video";
   if (mime.startsWith("audio/")) return "video";
   if (/\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)$/i.test(name)) return "image";
+  if (/\.(mp4|mov|avi|mkv|webm|mp3|wav|ogg|m4a)$/i.test(name)) return "video";
   return "raw";
 }
 
-function sanitizePublicId(filename) {
+function sanitizePublicId(filename, resourceType = "raw") {
   const raw = String(filename || "file");
   const extMatch = raw.match(/(\.[a-z0-9]{1,12})$/i);
   const ext = extMatch ? extMatch[1].toLowerCase() : "";
@@ -30,31 +39,40 @@ function sanitizePublicId(filename) {
     .replace(/\.[^/.]+$/, "")
     .replace(/[^\w\u0400-\u04FF-]+/g, "_")
     .slice(0, 80);
-  // Keep extension on public_id so raw downloads (xlsx/docx/…) deliver correctly.
-  return `${base || "file"}_${Date.now()}${ext}`;
+  const stem = `${base || "file"}_${Date.now()}`;
+  // Raw assets need the extension in public_id; image/video must not include it.
+  if (resourceType === "raw") return `${stem}${ext || ""}`;
+  return stem;
 }
 
 async function uploadBuffer(buffer, mimeType, options = {}) {
   ensureConfigured();
-  const resourceType = options.resource_type || getResourceType(mimeType, options.original_filename);
+  const originalName = options.original_filename;
+  const resourceType =
+    options.resource_type || getResourceType(mimeType, originalName);
 
   const uploadOptions = {
     resource_type: resourceType,
     folder: options.folder || "rd_zam",
-    ...options,
   };
-  delete uploadOptions.original_filename;
 
-  if (!uploadOptions.public_id && options.original_filename) {
-    uploadOptions.public_id = sanitizePublicId(options.original_filename);
+  if (options.public_id) {
+    uploadOptions.public_id = options.public_id;
+  } else if (originalName) {
+    uploadOptions.public_id = sanitizePublicId(originalName, resourceType);
   }
 
-  // Stream upload avoids data-URI size limits that often break Office/raw files.
   return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(uploadOptions, (err, result) => {
-      if (err) return reject(err);
-      resolve(result);
-    });
+    const stream = cloudinary.uploader.upload_stream(
+      uploadOptions,
+      (err, result) => {
+        if (err) return reject(err);
+        if (!result?.secure_url) {
+          return reject(new Error("Cloudinary URL буцаасангүй"));
+        }
+        resolve(result);
+      }
+    );
     stream.end(buffer);
   });
 }

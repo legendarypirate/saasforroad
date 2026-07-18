@@ -203,6 +203,11 @@ export default function DmsBrowser({
       ]);
       setFolders(folderRows);
       setFiles(fileRows);
+    } catch (err) {
+      console.error(err);
+      message.error(
+        err instanceof Error ? err.message : 'Жагсаалт ачаалахад алдаа',
+      );
     } finally {
       setLoading(false);
     }
@@ -330,31 +335,68 @@ export default function DmsBrowser({
     setUploading(true);
     try {
       const fd = new FormData();
-      fd.append('file', uploadFile);
+      fd.append('file', uploadFile, uploadFile.name);
       fd.append('name', uploadForm.name.trim());
-      fd.append('parent_id', currentParentId == null ? '' : String(currentParentId));
-      fd.append('doc_type', uploadForm.doc_type);
-      fd.append('doc_number', uploadForm.doc_number);
-      fd.append('status', uploadForm.status);
-      fd.append('project_id', uploadForm.project_id);
-      fd.append('tags', uploadForm.tags);
-      fd.append('issuer', uploadForm.issuer);
-      fd.append('issue_date', uploadForm.issue_date);
-      fd.append('expiry_date', uploadForm.expiry_date);
-      fd.append('description', uploadForm.description);
-      fd.append('notes', uploadForm.notes);
+      fd.append(
+        'parent_id',
+        currentParentId == null ? '' : String(currentParentId),
+      );
+      fd.append('doc_type', uploadForm.doc_type || 'other');
+      fd.append('status', uploadForm.status || 'active');
+      if (uploadForm.doc_number.trim()) {
+        fd.append('doc_number', uploadForm.doc_number.trim());
+      }
+      if (uploadForm.project_id) {
+        fd.append('project_id', uploadForm.project_id);
+      }
+      if (uploadForm.tags.trim()) fd.append('tags', uploadForm.tags.trim());
+      if (uploadForm.issuer.trim()) fd.append('issuer', uploadForm.issuer.trim());
+      if (uploadForm.issue_date) fd.append('issue_date', uploadForm.issue_date);
+      if (uploadForm.expiry_date) {
+        fd.append('expiry_date', uploadForm.expiry_date);
+      }
+      if (uploadForm.description.trim()) {
+        fd.append('description', uploadForm.description.trim());
+      }
+      if (uploadForm.notes.trim()) fd.append('notes', uploadForm.notes.trim());
 
       const res = await dmsApi.upload(fd);
-      if (!res.success) {
+      if (!res.success || !res.data) {
         message.error(res.message || 'Байршуулахад алдаа гарлаа');
         return;
       }
+
+      // Clear filters so the new file is visible in the current folder
+      setQ('');
+      setFilterType('');
+      setFilterStatus('');
+      setFilterProject('');
+      setFilterExpiring(false);
+
+      // Show immediately
+      setFiles((prev) => {
+        if (prev.some((d) => d.id === res.data!.id)) return prev;
+        return [res.data!, ...prev];
+      });
+
       message.success('Баримт амжилттай байршуулагдлаа');
       setUploadOpen(false);
       setUploadFile(null);
       setUploadForm(emptyUpload());
-      loadFolderContents();
-      loadStats();
+
+      // Reload current folder without stale filter closure
+      const [folderRows, fileRows] = await Promise.all([
+        dmsApi.listFolders(currentParentId),
+        dmsApi.listDocuments({ parent_id: currentParentId }),
+      ]);
+      setFolders(folderRows);
+      setFiles(fileRows);
+      await loadStats();
+    } catch (err) {
+      console.error(err);
+      message.error(
+        err instanceof Error ? err.message : 'Байршуулахад алдаа гарлаа',
+      );
     } finally {
       setUploading(false);
     }
@@ -899,7 +941,7 @@ export default function DmsBrowser({
       >
         <div className="space-y-3">
           <Upload
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm,.ppt,.pptx,.csv,.txt,.zip,.rar,.7z,.png,.jpg,.jpeg,.gif,.webp,.svg,.mp4,.mov,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,image/*,*/*"
+            accept="application/pdf,.pdf,.doc,.docx,.xls,.xlsx,.xlsm,.ppt,.pptx,.csv,.txt,.zip,.rar,.7z,image/*,.png,.jpg,.jpeg,.gif,.webp"
             beforeUpload={(file) => {
               setUploadFile(file);
               setUploadForm((f) => ({ ...f, name: f.name || file.name }));

@@ -40,17 +40,19 @@ function parseOptionalInt(value) {
 }
 
 function buildMetaFromBody(body = {}) {
+  const issue = body.issue_date != null ? String(body.issue_date).trim() : "";
+  const expiry = body.expiry_date != null ? String(body.expiry_date).trim() : "";
   return {
-    description: body.description ?? null,
+    description: body.description ? String(body.description).trim() || null : null,
     doc_type: body.doc_type || "other",
-    doc_number: body.doc_number || null,
+    doc_number: body.doc_number ? String(body.doc_number).trim() || null : null,
     status: body.status || "active",
     project_id: parseOptionalInt(body.project_id),
-    tags: body.tags || null,
-    issue_date: body.issue_date || null,
-    expiry_date: body.expiry_date || null,
-    issuer: body.issuer || null,
-    notes: body.notes || null,
+    tags: body.tags ? String(body.tags).trim() || null : null,
+    issue_date: issue || null,
+    expiry_date: expiry || null,
+    issuer: body.issuer ? String(body.issuer).trim() || null : null,
+    notes: body.notes ? String(body.notes).trim() || null : null,
   };
 }
 
@@ -250,7 +252,11 @@ exports.stats = async (req, res) => {
 exports.create = (req, res) => {
   upload(req, res, async function (err) {
     if (err instanceof multer.MulterError) {
-      return res.status(500).json({ success: false, message: "File upload error." });
+      const msg =
+        err.code === "LIMIT_FILE_SIZE"
+          ? "Файлын хэмжээ хэтэрсэн (хамгийн ихдээ 15MB)"
+          : "File upload error.";
+      return res.status(400).json({ success: false, message: msg });
     }
     if (err) {
       return res.status(500).json({ success: false, message: err.message || "Unexpected error." });
@@ -264,9 +270,16 @@ exports.create = (req, res) => {
       if (!scopeInfo) return;
 
       const result = await uploadMulterFile(req.file, "documents");
+      if (!result?.secure_url) {
+        return res.status(500).json({
+          success: false,
+          message: "Файл байршуулалт амжилтгүй (URL олдсонгүй)",
+        });
+      }
+
       const meta = buildMetaFromBody(req.body);
       const data = await Document.create({
-        name: req.body.name,
+        name: String(req.body.name).trim(),
         parent_id: parseParentId(req.body.parent_id),
         file_url: result.secure_url,
         mime_type: req.file.mimetype || null,
@@ -279,9 +292,13 @@ exports.create = (req, res) => {
         ...meta,
       });
       const full = await Document.findByPk(data.id, { include: DOC_INCLUDE });
-      res.json({ success: true, data: full });
+      res.status(201).json({ success: true, data: full });
     } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
+      console.error("document create:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Баримт үүсгэхэд алдаа",
+      });
     }
   });
 };

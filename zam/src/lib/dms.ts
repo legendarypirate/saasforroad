@@ -17,6 +17,7 @@ async function dmsFetch<T = unknown>(
     ...((init?.headers as Record<string, string> | undefined) ?? {}),
   };
   if (token) extra['Authorization'] = token;
+  // Never set Content-Type on FormData — browser must add multipart boundary.
   if (init?.body && !(init.body instanceof FormData) && !extra['Content-Type']) {
     extra['Content-Type'] = 'application/json';
   }
@@ -25,7 +26,27 @@ async function dmsFetch<T = unknown>(
     headers: tenantHeaders(extra),
     cache: 'no-store',
   });
-  return res.json();
+
+  let body: { success?: boolean; data?: T; message?: string } = {};
+  try {
+    body = await res.json();
+  } catch {
+    body = {};
+  }
+
+  if (!res.ok) {
+    return {
+      success: false,
+      message: body.message || `Хүсэлт амжилтгүй (${res.status})`,
+      data: body.data,
+    };
+  }
+
+  return {
+    success: body.success !== false,
+    data: body.data,
+    message: body.message,
+  };
 }
 
 export type DmsFolder = {
@@ -187,7 +208,7 @@ export function createDmsApi(scope: DmsScope = 'company') {
       if (params.expiring) sp.set('expiring', '1');
       const q = sp.toString();
       return dmsFetch<DmsDocument[]>(q ? `?${q}` : '', undefined, scope).then(
-        (j) => j.data ?? [],
+        (j) => (j.success === false ? [] : (j.data ?? [])),
       );
     },
 
