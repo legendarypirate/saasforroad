@@ -5,7 +5,21 @@ const Op = db.Sequelize.Op;
 const { memoryUpload, fixMulterFile } = require("../utils/multerMemory");
 const { uploadMulterFile } = require("../utils/cloudinary");
 const { saveLocalUpload } = require("../utils/localUpload");
+const {
+  getCurrentTenantId,
+  runWithTenant,
+} = require("../middleware/tenantScope");
 const multer = require("multer");
+
+/** Multer callbacks can drop AsyncLocalStorage — capture tenant before upload. */
+function resolveRequestTenantId(req) {
+  return (
+    req.tenant?.id ||
+    req.user?.tenant_id ||
+    getCurrentTenantId() ||
+    null
+  );
+}
 
 const upload = memoryUpload().single("file");
 
@@ -269,6 +283,7 @@ exports.stats = async (req, res) => {
 // ─── Documents ─────────────────────────────────────────────────────────────
 
 exports.create = (req, res) => {
+  const tenantId = resolveRequestTenantId(req);
   upload(req, res, async function (err) {
     if (err instanceof multer.MulterError) {
       const msg =
@@ -285,35 +300,39 @@ exports.create = (req, res) => {
     }
 
     try {
-      const scopeInfo = ownerWhere(req, res);
-      if (!scopeInfo) return;
+      await runWithTenant(tenantId, async () => {
+        const scopeInfo = ownerWhere(req, res);
+        if (!scopeInfo) return;
 
-      fixMulterFile(req.file);
-      const result = await storeDocumentFile(req.file);
-      if (!result?.secure_url) {
-        return res.status(500).json({
-          success: false,
-          message: "Файл байршуулалт амжилтгүй (URL олдсонгүй)",
+        fixMulterFile(req.file);
+        const result = await storeDocumentFile(req.file);
+        if (!result?.secure_url) {
+          return res.status(500).json({
+            success: false,
+            message: "Файл байршуулалт амжилтгүй (URL олдсонгүй)",
+          });
+        }
+
+        const meta = buildMetaFromBody(req.body);
+        const data = await Document.create({
+          name: String(req.body.name).trim(),
+          parent_id: parseParentId(req.body.parent_id),
+          file_url: result.secure_url,
+          mime_type: req.file.mimetype || null,
+          file_size: req.file.size || null,
+          original_name: req.file.originalname || null,
+          version: Number(req.body.version) || 1,
+          owner_user_id: scopeInfo.owner_user_id,
+          created_by: scopeInfo.userId || null,
+          updated_by: scopeInfo.userId || null,
+          // Explicit — multer can drop ALS so the beforeCreate hook alone is not enough
+          ...(tenantId != null ? { tenant_id: tenantId } : {}),
+          ...meta,
         });
-      }
-
-      const meta = buildMetaFromBody(req.body);
-      const data = await Document.create({
-        name: String(req.body.name).trim(),
-        parent_id: parseParentId(req.body.parent_id),
-        file_url: result.secure_url,
-        mime_type: req.file.mimetype || null,
-        file_size: req.file.size || null,
-        original_name: req.file.originalname || null,
-        version: Number(req.body.version) || 1,
-        owner_user_id: scopeInfo.owner_user_id,
-        created_by: scopeInfo.userId || null,
-        updated_by: scopeInfo.userId || null,
-        ...meta,
+        let full = await Document.findByPk(data.id, { include: DOC_INCLUDE });
+        if (!full) full = data;
+        res.status(201).json({ success: true, data: full });
       });
-      let full = await Document.findByPk(data.id, { include: DOC_INCLUDE });
-      if (!full) full = data;
-      res.status(201).json({ success: true, data: full });
     } catch (error) {
       console.error("document create:", error);
       res.status(500).json({
@@ -328,6 +347,26 @@ exports.findAll = async (req, res) => {
   try {
     const scopeInfo = ownerWhere(req, res);
     if (!scopeInfo) return;
+
+    // Heal docs created while multer dropped tenant ALS (tenant_id left null)
+    const tenantId = resolveRequestTenantId(req);
+    if (tenantId && scopeInfo.userId) {
+      try {
+        await Document.update(
+          { tenant_id: tenantId },
+          {
+            where: {
+              tenant_id: { [Op.is]: null },
+              created_by: scopeInfo.userId,
+              ...scopeOwnerCondition(scopeInfo),
+            },
+            skipTenantScope: true,
+          }
+        );
+      } catch (healErr) {
+        console.warn("document tenant heal:", healErr?.message);
+      }
+    }
 
     const {
       name,
@@ -453,6 +492,7 @@ exports.update = async (req, res) => {
 };
 
 exports.replaceFile = (req, res) => {
+  const tenantId = resolveRequestTenantId(req);
   upload(req, res, async function (err) {
     if (err instanceof multer.MulterError) {
       return res.status(500).json({ success: false, message: "File upload error." });
@@ -465,25 +505,28 @@ exports.replaceFile = (req, res) => {
     }
 
     try {
-      const scopeInfo = ownerWhere(req, res);
-      if (!scopeInfo) return;
-      const doc = await Document.findByPk(req.params.id);
-      if (!doc || !matchesScope(doc, scopeInfo)) {
-        return res.status(404).json({ success: false, message: "Document not found" });
-      }
-      fixMulterFile(req.file);
-      const result = await storeDocumentFile(req.file);
-      await doc.update({
-        file_url: result.secure_url,
-        mime_type: req.file.mimetype || doc.mime_type,
-        file_size: req.file.size || null,
-        original_name: req.file.originalname || doc.original_name,
-        version: (doc.version || 1) + 1,
-        name: req.body.name || doc.name,
-        updated_by: scopeInfo.userId || doc.updated_by,
+      await runWithTenant(tenantId, async () => {
+        const scopeInfo = ownerWhere(req, res);
+        if (!scopeInfo) return;
+        const doc = await Document.findByPk(req.params.id);
+        if (!doc || !matchesScope(doc, scopeInfo)) {
+          return res.status(404).json({ success: false, message: "Document not found" });
+        }
+        fixMulterFile(req.file);
+        const result = await storeDocumentFile(req.file);
+        await doc.update({
+          file_url: result.secure_url,
+          mime_type: req.file.mimetype || doc.mime_type,
+          file_size: req.file.size || null,
+          original_name: req.file.originalname || doc.original_name,
+          version: (doc.version || 1) + 1,
+          name: req.body.name || doc.name,
+          updated_by: scopeInfo.userId || doc.updated_by,
+          ...(tenantId != null && doc.tenant_id == null ? { tenant_id: tenantId } : {}),
+        });
+        const full = await Document.findByPk(doc.id, { include: DOC_INCLUDE });
+        res.json({ success: true, data: full || doc });
       });
-      const full = await Document.findByPk(doc.id, { include: DOC_INCLUDE });
-      res.json({ success: true, data: full || doc });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
