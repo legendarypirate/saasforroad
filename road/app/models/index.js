@@ -186,6 +186,25 @@ db.platform_data_entries = require("./platform_data_entry.model.js")(
   sequelize,
   Sequelize
 );
+db.platform_factories = require("./platform_factory.model.js")(
+  sequelize,
+  Sequelize
+);
+db.platform_plant_companies = require("./platform_plant_company.model.js")(
+  sequelize,
+  Sequelize
+);
+
+db.platform_plant_companies.hasMany(db.platform_factories, {
+  foreignKey: "company_id",
+  as: "plants",
+  onDelete: "CASCADE",
+});
+db.platform_factories.belongsTo(db.platform_plant_companies, {
+  foreignKey: "company_id",
+  as: "company",
+});
+
 db.tender_packages = require("./tender_package.model.js")(sequelize, Sequelize);
 db.tender_documents = require("./tender_document.model.js")(sequelize, Sequelize);
 db.equipment_rentals = require("./equipment_rental.model.js")(sequelize, Sequelize);

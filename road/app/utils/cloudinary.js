@@ -23,17 +23,20 @@ function getResourceType(mimeType, filename = "") {
 }
 
 function sanitizePublicId(filename) {
-  const base = String(filename || "file")
+  const raw = String(filename || "file");
+  const extMatch = raw.match(/(\.[a-z0-9]{1,12})$/i);
+  const ext = extMatch ? extMatch[1].toLowerCase() : "";
+  const base = raw
     .replace(/\.[^/.]+$/, "")
     .replace(/[^\w\u0400-\u04FF-]+/g, "_")
     .slice(0, 80);
-  return `${base || "file"}_${Date.now()}`;
+  // Keep extension on public_id so raw downloads (xlsx/docx/…) deliver correctly.
+  return `${base || "file"}_${Date.now()}${ext}`;
 }
 
 async function uploadBuffer(buffer, mimeType, options = {}) {
   ensureConfigured();
   const resourceType = options.resource_type || getResourceType(mimeType, options.original_filename);
-  const dataUri = `data:${mimeType || "application/octet-stream"};base64,${buffer.toString("base64")}`;
 
   const uploadOptions = {
     resource_type: resourceType,
@@ -46,7 +49,14 @@ async function uploadBuffer(buffer, mimeType, options = {}) {
     uploadOptions.public_id = sanitizePublicId(options.original_filename);
   }
 
-  return cloudinary.uploader.upload(dataUri, uploadOptions);
+  // Stream upload avoids data-URI size limits that often break Office/raw files.
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(uploadOptions, (err, result) => {
+      if (err) return reject(err);
+      resolve(result);
+    });
+    stream.end(buffer);
+  });
 }
 
 /** @deprecated use uploadBuffer */

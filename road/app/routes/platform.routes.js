@@ -36,6 +36,16 @@ module.exports = (app) => {
     platformBrigades.setStatus
   );
 
+  // Factory marketplace (registered via plant app; pending until approved)
+  const platformFactories = require("../controllers/platformFactories.controller");
+  router.get("/factories", verifyPlatformToken, platformFactories.list);
+  router.get("/factories/:id", verifyPlatformToken, platformFactories.getOne);
+  router.patch(
+    "/factories/:id/status",
+    verifyPlatformToken,
+    platformFactories.setStatus
+  );
+
   router.get("/modules", verifyPlatformToken, platform.listModules);
   router.get("/permissions", verifyPlatformToken, platform.listPermissions);
 

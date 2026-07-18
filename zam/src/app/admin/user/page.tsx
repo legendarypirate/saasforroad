@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Table,
   Button,
@@ -8,13 +8,13 @@ import {
   Drawer,
   Form,
   Input,
-  InputNumber,
   Select,
   message,
   Switch,
   Tag,
   Modal,
   Tooltip,
+  Tabs,
 } from '@/components/admin/primitives';
 import type { ColumnsType } from '@/components/admin/primitives';
 import { EyeOutlined, KeyOutlined, PlusOutlined } from '@/components/admin/icons';
@@ -56,6 +56,7 @@ export default function UsersPage() {
   const [passwordUser, setPasswordUser] = useState<User | null>(null);
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [roleFilter, setRoleFilter] = useState<number | undefined>();
+  const [statusTab, setStatusTab] = useState<'active' | 'inactive'>('active');
   const [form] = Form.useForm();
   const [passwordForm] = Form.useForm();
 
@@ -100,6 +101,14 @@ export default function UsersPage() {
     fetchUsers(roleFilter);
   }, [roleFilter]);
 
+  const activeUsers = useMemo(
+    () => users.filter((u) => isUserActive(u.is_active)),
+    [users],
+  );
+  const inactiveUsers = useMemo(
+    () => users.filter((u) => !isUserActive(u.is_active)),
+    [users],
+  );
   const handleDrawerClose = () => {
     setDrawerVisible(false);
     form.resetFields();
@@ -120,6 +129,7 @@ export default function UsersPage() {
         prev.map((u) => (u.id === user.id ? { ...u, is_active: active ? '1' : '0' } : u))
       );
       message.success(active ? 'Ажилтан идэвхтэй боллоо' : 'Ажилтан идэвхгүй боллоо');
+      setStatusTab(active ? 'active' : 'inactive');
     } catch (err) {
       console.error(err);
       message.error('Төлөв өөрчлөхөд алдаа гарлаа');
@@ -140,6 +150,7 @@ export default function UsersPage() {
       if (response.ok && result.success) {
         message.success('Хэрэглэгч үүслээ');
         fetchUsers(roleFilter);
+        setStatusTab('active');
         handleDrawerClose();
       } else {
         message.error(result.message || 'Үүсгэхэд алдаа');
@@ -265,7 +276,38 @@ export default function UsersPage() {
         </Button>
       </div>
 
-      <Table columns={columns} dataSource={users} rowKey="id" loading={loading} />
+      <Tabs
+        activeKey={statusTab}
+        onChange={(key) => setStatusTab(key as 'active' | 'inactive')}
+        items={[
+          {
+            key: 'active',
+            label: `Идэвхтэй (${activeUsers.length})`,
+            children: (
+              <Table
+                columns={columns}
+                dataSource={activeUsers}
+                rowKey="id"
+                loading={loading}
+                locale={{ emptyText: 'Идэвхтэй хэрэглэгч байхгүй' }}
+              />
+            ),
+          },
+          {
+            key: 'inactive',
+            label: `Гарсан / идэвхгүй (${inactiveUsers.length})`,
+            children: (
+              <Table
+                columns={columns}
+                dataSource={inactiveUsers}
+                rowKey="id"
+                loading={loading}
+                locale={{ emptyText: 'Идэвхгүй хэрэглэгч байхгүй' }}
+              />
+            ),
+          },
+        ]}
+      />
 
       <Drawer title="Хэрэглэгч үүсгэх" width={400} onClose={handleDrawerClose} open={drawerVisible}>
         <Form layout="vertical" form={form} onFinish={handleFormSubmit}>

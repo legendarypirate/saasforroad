@@ -86,7 +86,11 @@ function openOrDownload(doc: DmsDocument) {
     message.error('Файлын холбоос олдсонгүй');
     return;
   }
-  const kind = resolveFileKind(doc.name, doc.file_url);
+  const kind = resolveFileKind(
+    doc.name || doc.original_name || '',
+    doc.file_url,
+    doc.mime_type,
+  );
   if (kind === 'pdf' || kind === 'image') {
     window.open(url, '_blank', 'noopener,noreferrer');
     return;
@@ -633,7 +637,11 @@ export default function DmsBrowser({
           ))}
 
           {files.map((doc) => {
-            const kind = resolveFileKind(doc.name, doc.file_url);
+            const kind = resolveFileKind(
+              doc.name || doc.original_name || '',
+              doc.file_url,
+              doc.mime_type,
+            );
             const expired = isExpired(doc.expiry_date);
             const soon = isExpiringSoon(doc.expiry_date);
             return (
@@ -739,7 +747,14 @@ export default function DmsBrowser({
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <FileTypeIcon kind={resolveFileKind(doc.name, doc.file_url)} size={28} />
+                        <FileTypeIcon
+                          kind={resolveFileKind(
+                            doc.name || doc.original_name || '',
+                            doc.file_url,
+                            doc.mime_type,
+                          )}
+                          size={28}
+                        />
                         <div>
                           <div className="font-medium">{doc.name}</div>
                           {doc.doc_number && (
@@ -834,17 +849,39 @@ export default function DmsBrowser({
       >
         <div className="space-y-3">
           <Upload
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm,.ppt,.pptx,.csv,.txt,.zip,.rar,.7z,.png,.jpg,.jpeg,.gif,.webp,.svg,.mp4,.mov,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,image/*,*/*"
             beforeUpload={(file) => {
               setUploadFile(file);
               setUploadForm((f) => ({ ...f, name: f.name || file.name }));
               return false;
             }}
-            showUploadList={Boolean(uploadFile)}
+            fileList={
+              uploadFile
+                ? [
+                    {
+                      uid: 'upload',
+                      name: uploadFile.name,
+                      status: 'done',
+                      originFileObj: uploadFile,
+                    },
+                  ]
+                : []
+            }
+            showUploadList
             maxCount={1}
             onRemove={() => setUploadFile(null)}
           >
             <Button icon={<UploadOutlined />}>Файл сонгох</Button>
           </Upload>
+          {uploadFile ? (
+            <p className="text-xs text-muted-foreground">
+              Сонгосон: {uploadFile.name} ({formatFileSize(uploadFile.size)})
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              PDF, Word, Excel (xlsx), зураг болон бусад файлууд дэмжигдэнэ.
+            </p>
+          )}
           <MetaFields
             value={uploadForm}
             onChange={setUploadForm}
@@ -877,7 +914,14 @@ export default function DmsBrowser({
         {detail && (
           <div className="space-y-4">
             <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 p-3">
-              <FileTypeIcon kind={resolveFileKind(detail.name, detail.file_url)} size={48} />
+              <FileTypeIcon
+                kind={resolveFileKind(
+                  detail.name || detail.original_name || '',
+                  detail.file_url,
+                  detail.mime_type,
+                )}
+                size={48}
+              />
               <div className="min-w-0 flex-1">
                 <div className="truncate font-medium">{detail.name}</div>
                 <div className="text-xs text-muted-foreground">
@@ -894,11 +938,24 @@ export default function DmsBrowser({
             <div>
               <div className="mb-2 text-sm font-medium">Шинэ хувилбар байршуулах</div>
               <Upload
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm,.ppt,.pptx,.csv,.txt,.zip,.rar,.7z,.png,.jpg,.jpeg,.gif,.webp,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,image/*,*/*"
                 beforeUpload={(file) => {
                   setReplaceFile(file);
                   return false;
                 }}
-                showUploadList={Boolean(replaceFile)}
+                fileList={
+                  replaceFile
+                    ? [
+                        {
+                          uid: 'replace',
+                          name: replaceFile.name,
+                          status: 'done',
+                          originFileObj: replaceFile,
+                        },
+                      ]
+                    : []
+                }
+                showUploadList
                 maxCount={1}
                 onRemove={() => setReplaceFile(null)}
               >

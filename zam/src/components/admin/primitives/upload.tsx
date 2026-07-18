@@ -52,11 +52,19 @@ export function Upload({
   maxCount = 1,
   listType,
   fileList = [],
+  showUploadList = true,
   onRemove,
   onChange,
 }: UploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const isCard = listType === 'picture-card';
+  /** Only default to images when explicitly using picture-card (avatars/covers). */
+  const resolvedAccept =
+    accept !== undefined
+      ? accept
+      : isCard
+        ? 'image/*'
+        : undefined;
 
   const emitFiles = (files: File[]) => {
     const mapped = files.map((f, i) => toUploadFile(f, i));
@@ -66,12 +74,12 @@ export function Upload({
   };
 
   return (
-    <div className={cn(isCard && 'flex flex-wrap gap-2')}>
+    <div className={cn('space-y-2', isCard && 'flex flex-wrap gap-2 space-y-0')}>
       <input
         ref={inputRef}
         type="file"
         className="hidden"
-        accept={accept || 'image/*'}
+        accept={resolvedAccept}
         multiple={multiple && maxCount !== 1}
         onChange={async (e) => {
           const picked = Array.from(e.target.files || []);
@@ -119,6 +127,35 @@ export function Upload({
             </button>
           </div>
         ))}
+
+      {!isCard && showUploadList && fileList.length > 0 ? (
+        <ul className="space-y-1">
+          {fileList.map((f) => (
+            <li
+              key={f.uid}
+              className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm"
+            >
+              <span className="min-w-0 truncate" title={f.name}>
+                {f.name}
+              </span>
+              <button
+                type="button"
+                className="shrink-0 text-xs text-muted-foreground hover:text-destructive"
+                onClick={() => {
+                  const keep = onRemove?.(f);
+                  if (keep === false) return;
+                  onChange?.({
+                    file: f,
+                    fileList: fileList.filter((x) => x.uid !== f.uid),
+                  });
+                }}
+              >
+                Устгах
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
 
       {(fileList.length < maxCount || !isCard) && (
         <span

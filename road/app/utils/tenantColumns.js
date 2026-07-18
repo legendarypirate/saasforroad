@@ -31,6 +31,9 @@ const TENANT_SKIP_KEYS = new Set([
   "job_seekers",
   "job_seeker_schools",
   "job_seeker_families",
+  // Platform-shared factory marketplace (plant app; platform admin approves)
+  "platform_factories",
+  "platform_plant_companies",
 ]);
 
 const TENANT_SKIP_TABLES = new Set([
@@ -54,6 +57,8 @@ const TENANT_SKIP_TABLES = new Set([
   "job_seekers",
   "job_seeker_schools",
   "job_seeker_families",
+  "platform_factories",
+  "platform_plant_companies",
 ]);
 
 function isSequelizeModel(model) {

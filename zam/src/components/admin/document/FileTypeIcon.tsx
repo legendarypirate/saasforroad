@@ -23,19 +23,37 @@ function extFromName(name: string): string {
   return dot >= 0 ? name.slice(dot + 1).toLowerCase() : '';
 }
 
-export function resolveFileKind(name: string, fileUrl?: string): FileKind {
+export function resolveFileKind(
+  name: string,
+  fileUrl?: string,
+  mimeType?: string | null,
+): FileKind {
   const ext = extFromName(name) || extFromName(fileUrl || '');
+  const mime = String(mimeType || '').toLowerCase();
 
-  if (ext === 'pdf') return 'pdf';
-  if (['doc', 'docx', 'rtf', 'odt'].includes(ext)) return 'word';
-  if (['xls', 'xlsx', 'xlsm', 'ods'].includes(ext)) return 'excel';
-  if (['ppt', 'pptx', 'odp'].includes(ext)) return 'powerpoint';
-  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'heic'].includes(ext)) return 'image';
-  if (['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(ext)) return 'video';
-  if (['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(ext)) return 'audio';
+  if (ext === 'pdf' || mime === 'application/pdf') return 'pdf';
+  if (['doc', 'docx', 'rtf', 'odt'].includes(ext) || mime.includes('wordprocessingml') || mime.includes('msword')) {
+    return 'word';
+  }
+  if (
+    ['xls', 'xlsx', 'xlsm', 'ods'].includes(ext) ||
+    mime.includes('spreadsheetml') ||
+    mime.includes('ms-excel') ||
+    mime === 'application/vnd.oasis.opendocument.spreadsheet'
+  ) {
+    return 'excel';
+  }
+  if (['ppt', 'pptx', 'odp'].includes(ext) || mime.includes('presentationml')) {
+    return 'powerpoint';
+  }
+  if (mime.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'heic'].includes(ext)) {
+    return 'image';
+  }
+  if (['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(ext) || mime.startsWith('video/')) return 'video';
+  if (['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(ext) || mime.startsWith('audio/')) return 'audio';
   if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return 'archive';
-  if (ext === 'csv') return 'csv';
-  if (['txt', 'md', 'log'].includes(ext)) return 'text';
+  if (ext === 'csv' || mime === 'text/csv') return 'csv';
+  if (['txt', 'md', 'log'].includes(ext) || mime.startsWith('text/')) return 'text';
   return 'unknown';
 }
 

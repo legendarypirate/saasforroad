@@ -151,6 +151,30 @@ export type PlatformBrigade = {
   updatedAt?: string;
 };
 
+export type PlatformFactory = {
+  id: number;
+  company_id?: number | null;
+  company_name?: string | null;
+  company_username?: string | null;
+  company_phone?: string | null;
+  name: string;
+  owner_name?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  plant_type?: string;
+  province?: string | null;
+  location?: string | null;
+  description?: string | null;
+  image?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  status: string;
+  is_active: boolean;
+  rejection_note?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 export const PLATFORM_DATA_KINDS: PlatformDataKind[] = [
   { id: "brigada", label: "Бригад", labelEn: "Brigade" },
   { id: "job-seeker", label: "Ажил горилогч", labelEn: "Job seeker" },
@@ -418,6 +442,30 @@ export const api = {
   ) =>
     request<{ success: boolean; brigade: PlatformBrigade }>(
       `/api/platform/brigades/${id}/status`,
+      { method: "PATCH", body: JSON.stringify(body) }
+    ),
+
+  listFactories: (params?: { q?: string; status?: string }) => {
+    const sp = new URLSearchParams();
+    if (params?.q) sp.set("q", params.q);
+    if (params?.status) sp.set("status", params.status);
+    const q = sp.toString() ? `?${sp}` : "";
+    return request<{
+      success: boolean;
+      factories: PlatformFactory[];
+      total: number;
+    }>(`/api/platform/factories${q}`);
+  },
+
+  setFactoryStatus: (
+    id: number,
+    body: {
+      status: "pending" | "active" | "rejected" | "inactive";
+      note?: string;
+    }
+  ) =>
+    request<{ success: boolean; factory: PlatformFactory }>(
+      `/api/platform/factories/${id}/status`,
       { method: "PATCH", body: JSON.stringify(body) }
     ),
 };
