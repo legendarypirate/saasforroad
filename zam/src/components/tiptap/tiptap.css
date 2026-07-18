@@ -211,8 +211,59 @@
   border-color: var(--border);
 }
 
-.dark .tiptap-editor__content {
+.dark .tiptap-editor__content,
+.dark .tiptap-editor__content .tiptap,
+.dark .tiptap-editor__content .tiptap p,
+.dark .tiptap-editor__content .tiptap h1,
+.dark .tiptap-editor__content .tiptap h2,
+.dark .tiptap-editor__content .tiptap h3,
+.dark .tiptap-editor__content .tiptap li {
   color: var(--foreground);
+}
+
+.dark .tiptap-editor__content .tiptap p.is-editor-empty:first-child::before {
+  color: var(--muted-foreground);
+}
+
+.dark .tiptap-editor__content .tiptap blockquote {
+  color: var(--muted-foreground);
+}
+
+.dark .tiptap-editor__content .tiptap code {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.dark .tiptap-editor__content .tiptap a {
+  color: var(--neon-green, #21cda8);
+}
+
+.dark .tiptap-editor__content .tiptap hr {
+  border-top-color: var(--border);
+}
+
+.dark .tiptap-editor__content .tiptap th,
+.dark .tiptap-editor__content .tiptap td {
+  border-color: var(--border);
+}
+
+.dark .tiptap-editor__content .tiptap th {
+  background: var(--muted);
+}
+
+.dark .tiptap-toolbar-btn {
+  color: var(--muted-foreground);
+}
+
+.dark .tiptap-toolbar-btn:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.dark .tiptap-toolbar-btn.is-active {
+  background: color-mix(in srgb, var(--neon-green, #21cda8) 18%, transparent);
+  border-color: color-mix(in srgb, var(--neon-green, #21cda8) 45%, transparent);
+  color: var(--neon-green, #21cda8);
 }
 
 .dark .tiptap-toolbar-select,
