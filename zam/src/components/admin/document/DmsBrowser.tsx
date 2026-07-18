@@ -80,6 +80,11 @@ function fileUrl(doc: DmsDocument) {
   return resolveAssetUrl(doc.file_url) || '';
 }
 
+function fileDownloadName(doc: DmsDocument) {
+  return doc.original_name || doc.name || 'file';
+}
+
+/** Open preview (PDF/image) or download other types. */
 function openOrDownload(doc: DmsDocument) {
   const url = fileUrl(doc);
   if (!url) {
@@ -95,12 +100,40 @@ function openOrDownload(doc: DmsDocument) {
     window.open(url, '_blank', 'noopener,noreferrer');
     return;
   }
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = doc.name;
-  link.target = '_blank';
-  link.rel = 'noopener noreferrer';
-  link.click();
+  void downloadFile(doc);
+}
+
+/** Always download the file (grid / list / detail download button). */
+async function downloadFile(doc: DmsDocument) {
+  const url = fileUrl(doc);
+  if (!url) {
+    message.error('Файлын холбоос олдсонгүй');
+    return;
+  }
+  const filename = fileDownloadName(doc);
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
+  } catch {
+    // Cross-origin / CORS fallback — still trigger browser download/open
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
 }
 
 type DmsBrowserProps = {
@@ -669,17 +702,30 @@ export default function DmsBrowser({
                     </Tag>
                   ) : null}
                 </div>
-                <div className="absolute right-1 top-1 opacity-0 transition-opacity group-hover:opacity-100">
-                  <Button
-                    type="text"
-                    danger
-                    size="small"
-                    icon={<DeleteOutlined />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteFile(doc);
-                    }}
-                  />
+                <div className="absolute right-1 top-1 flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                  <Tooltip title="Татах">
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<DownloadOutlined />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void downloadFile(doc);
+                      }}
+                    />
+                  </Tooltip>
+                  <Tooltip title="Устгах">
+                    <Button
+                      type="text"
+                      danger
+                      size="small"
+                      icon={<DeleteOutlined />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteFile(doc);
+                      }}
+                    />
+                  </Tooltip>
                 </div>
               </div>
             );
@@ -780,25 +826,29 @@ export default function DmsBrowser({
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{formatFileSize(doc.file_size)}</td>
                     <td className="px-4 py-3 text-right">
-                      <Button
-                        type="text"
-                        size="small"
-                        icon={<DownloadOutlined />}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openOrDownload(doc);
-                        }}
-                      />
-                      <Button
-                        type="text"
-                        danger
-                        size="small"
-                        icon={<DeleteOutlined />}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteFile(doc);
-                        }}
-                      />
+                      <Tooltip title="Татах">
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<DownloadOutlined />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void downloadFile(doc);
+                          }}
+                        />
+                      </Tooltip>
+                      <Tooltip title="Устгах">
+                        <Button
+                          type="text"
+                          danger
+                          size="small"
+                          icon={<DeleteOutlined />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteFile(doc);
+                          }}
+                        />
+                      </Tooltip>
                     </td>
                   </tr>
                 );
@@ -901,8 +951,14 @@ export default function DmsBrowser({
               Устгах
             </Button>
             <div className="flex gap-2">
-              <Button icon={<DownloadOutlined />} onClick={() => detail && openOrDownload(detail)}>
-                Нээх / Татах
+              <Button
+                icon={<DownloadOutlined />}
+                onClick={() => detail && void downloadFile(detail)}
+              >
+                Татах
+              </Button>
+              <Button onClick={() => detail && openOrDownload(detail)}>
+                Нээх
               </Button>
               <Button type="primary" loading={savingDetail} onClick={saveDetail}>
                 Хадгалах
