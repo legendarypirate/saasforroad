@@ -19,6 +19,8 @@ export interface ModuleConfig {
   moduleKey?: string;
   items: NavItemConfig[];
   comingSoon?: boolean;
+  /** Always show for every logged-in user (ignore RBAC + tenant module enablement). */
+  alwaysVisible?: boolean;
 }
 
 export const DASHBOARD_PATH = '/admin';
@@ -459,8 +461,29 @@ export const ADMIN_DATA_FOLDERS: ModuleConfig[] = [
   },
 ];
 
+/** Personal tools — visible to every logged-in user, no RBAC / module gate. */
+export const ADMIN_PERSONAL_FOLDERS: ModuleConfig[] = [
+  {
+    id: 'my-documents',
+    label: 'Бичиг баримт',
+    description: 'Хувийн файл, баримт — зөвхөн танд харагдана',
+    color: '#0ea5e9',
+    alwaysVisible: true,
+    items: [{ path: '/admin/my/documents', label: 'Бичиг баримт', menuId: 'list' }],
+  },
+  {
+    id: 'my-notes',
+    label: 'Тэмдэглэл',
+    description: 'Notion шиг хувийн тэмдэглэл',
+    color: '#8b5cf6',
+    alwaysVisible: true,
+    items: [{ path: '/admin/my/notes', label: 'Тэмдэглэл', menuId: 'list' }],
+  },
+];
+
 /** Dashboard folder sections on /admin */
 export type AdminFolderSectionId =
+  | 'personal'
   | 'management'
   | 'erp-settings'
   | 'fleet-tech'
@@ -475,6 +498,12 @@ export interface AdminFolderSection {
 }
 
 export const ADMIN_FOLDER_SECTIONS: AdminFolderSection[] = [
+  {
+    id: 'personal',
+    title: 'Миний',
+    description: 'Хувийн баримт болон тэмдэглэл — зөвхөн танд харагдана',
+    moduleIds: ['my-documents', 'my-notes'],
+  },
   {
     id: 'management',
     title: 'Удирдлагын хэсэг',
@@ -534,7 +563,7 @@ export const ADMIN_FOLDER_SECTIONS: AdminFolderSection[] = [
 ];
 
 export function allAdminFolders(): ModuleConfig[] {
-  return [...ADMIN_MODULES, ...ADMIN_DATA_FOLDERS];
+  return [...ADMIN_PERSONAL_FOLDERS, ...ADMIN_MODULES, ...ADMIN_DATA_FOLDERS];
 }
 
 /** Admin role name can differ by DB/locale; treat these as full access. */
@@ -605,7 +634,10 @@ function filterModuleList(
 ): ModuleConfig[] {
   const byTenant = enabledModuleIds?.length
     ? modules.filter(
-        (mod) => mod.comingSoon || enabledModuleIds.includes(mod.id),
+        (mod) =>
+          mod.alwaysVisible ||
+          mod.comingSoon ||
+          enabledModuleIds.includes(mod.id),
       )
     : modules;
 
@@ -614,9 +646,12 @@ function filterModuleList(
   return byTenant
     .map((mod) => ({
       ...mod,
-      items: filterNavItems(mod.items, userPermissions, userRole),
+      items: mod.alwaysVisible
+        ? mod.items
+        : filterNavItems(mod.items, userPermissions, userRole),
     }))
     .filter((mod) => {
+      if (mod.alwaysVisible) return true;
       if (mod.items.length > 0) return true;
       // Module added in RBAC (module:module) or legacy module:* with no menu match yet
       return hasAnyModuleGrant(mod, userPermissions);

@@ -66,6 +66,7 @@ function registerRoutes() {
   require("./app/routes/fuel.routes")(app);
   require("./app/routes/notification.routes")(app);
   require("./app/routes/document.routes")(app);
+  require("./app/routes/personal_note.routes")(app);
   require("./app/routes/student.routes")(app);
   require("./app/routes/job_seeker.routes")(app);
   require("./app/routes/jobseeker_app.routes")(app);

@@ -1,10 +1,30 @@
+import { tenantHeaders } from '@/lib/tenant';
+
 const API = process.env.NEXT_PUBLIC_API_URL || '';
+
+export type DmsScope = 'company' | 'personal';
 
 async function dmsFetch<T = unknown>(
   path: string,
   init?: RequestInit,
+  scope: DmsScope = 'company',
 ): Promise<{ success: boolean; data?: T; message?: string }> {
-  const res = await fetch(`${API}/api/document${path}`, init);
+  const token =
+    typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const separator = path.includes('?') ? '&' : '?';
+  const url = `${API}/api/document${path}${separator}scope=${scope}`;
+  const extra: Record<string, string> = {
+    ...((init?.headers as Record<string, string> | undefined) ?? {}),
+  };
+  if (token) extra['Authorization'] = token;
+  if (init?.body && !(init.body instanceof FormData) && !extra['Content-Type']) {
+    extra['Content-Type'] = 'application/json';
+  }
+  const res = await fetch(url, {
+    ...init,
+    headers: tenantHeaders(extra),
+    cache: 'no-store',
+  });
   return res.json();
 }
 
@@ -15,6 +35,7 @@ export type DmsFolder = {
   description?: string | null;
   sort_order: number;
   is_system: boolean;
+  owner_user_id?: number | null;
 };
 
 export type DmsDocument = {
@@ -36,6 +57,7 @@ export type DmsDocument = {
   expiry_date?: string | null;
   issuer?: string | null;
   notes?: string | null;
+  owner_user_id?: number | null;
   createdAt?: string;
   updatedAt?: string;
   project?: { id: number; name: string; road_name?: string; contract_number?: string } | null;
@@ -108,65 +130,86 @@ export function isExpired(expiry?: string | null) {
   return end < today;
 }
 
-export const dmsApi = {
-  stats: () => dmsFetch<DmsStats>('/stats').then((j) => j.data ?? null),
+export function createDmsApi(scope: DmsScope = 'company') {
+  return {
+    stats: () => dmsFetch<DmsStats>('/stats', undefined, scope).then((j) => j.data ?? null),
 
-  listFolders: (parentId: number | null) =>
-    dmsFetch<DmsFolder[]>(`/folders?parent_id=${parentId ?? ''}`).then((j) => j.data ?? []),
+    listFolders: (parentId: number | null) =>
+      dmsFetch<DmsFolder[]>(`/folders?parent_id=${parentId ?? ''}`, undefined, scope).then(
+        (j) => j.data ?? [],
+      ),
 
-  createFolder: (body: { name: string; parent_id: number | null; description?: string }) =>
-    dmsFetch<DmsFolder>('/folders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    }),
+    createFolder: (body: { name: string; parent_id: number | null; description?: string }) =>
+      dmsFetch<DmsFolder>(
+        '/folders',
+        {
+          method: 'POST',
+          body: JSON.stringify(body),
+        },
+        scope,
+      ),
 
-  updateFolder: (id: number, body: Partial<{ name: string; parent_id: number | null; description: string }>) =>
-    dmsFetch<DmsFolder>(`/folders/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    }),
+    updateFolder: (
+      id: number,
+      body: Partial<{ name: string; parent_id: number | null; description: string }>,
+    ) =>
+      dmsFetch<DmsFolder>(
+        `/folders/${id}`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify(body),
+        },
+        scope,
+      ),
 
-  deleteFolder: (id: number) =>
-    dmsFetch(`/folders/${id}`, { method: 'DELETE' }),
+    deleteFolder: (id: number) =>
+      dmsFetch(`/folders/${id}`, { method: 'DELETE' }, scope),
 
-  listDocuments: (params: {
-    parent_id?: number | null;
-    q?: string;
-    doc_type?: string;
-    status?: string;
-    project_id?: number | string;
-    expiring?: boolean;
-    search_all?: boolean;
-  }) => {
-    const sp = new URLSearchParams();
-    if (params.search_all) {
-      sp.set('search_all', '1');
-    } else if (params.parent_id !== undefined) {
-      sp.set('parent_id', params.parent_id == null ? '' : String(params.parent_id));
-    }
-    if (params.q) sp.set('q', params.q);
-    if (params.doc_type) sp.set('doc_type', params.doc_type);
-    if (params.status) sp.set('status', params.status);
-    if (params.project_id) sp.set('project_id', String(params.project_id));
-    if (params.expiring) sp.set('expiring', '1');
-    const q = sp.toString();
-    return dmsFetch<DmsDocument[]>(q ? `?${q}` : '').then((j) => j.data ?? []);
-  },
+    listDocuments: (params: {
+      parent_id?: number | null;
+      q?: string;
+      doc_type?: string;
+      status?: string;
+      project_id?: number | string;
+      expiring?: boolean;
+      search_all?: boolean;
+    }) => {
+      const sp = new URLSearchParams();
+      if (params.search_all) {
+        sp.set('search_all', '1');
+      } else if (params.parent_id !== undefined) {
+        sp.set('parent_id', params.parent_id == null ? '' : String(params.parent_id));
+      }
+      if (params.q) sp.set('q', params.q);
+      if (params.doc_type) sp.set('doc_type', params.doc_type);
+      if (params.status) sp.set('status', params.status);
+      if (params.project_id) sp.set('project_id', String(params.project_id));
+      if (params.expiring) sp.set('expiring', '1');
+      const q = sp.toString();
+      return dmsFetch<DmsDocument[]>(q ? `?${q}` : '', undefined, scope).then(
+        (j) => j.data ?? [],
+      );
+    },
 
-  upload: (form: FormData) =>
-    dmsFetch<DmsDocument>('/', { method: 'POST', body: form }),
+    upload: (form: FormData) =>
+      dmsFetch<DmsDocument>('/', { method: 'POST', body: form }, scope),
 
-  update: (id: number, body: Record<string, unknown>) =>
-    dmsFetch<DmsDocument>(`/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    }),
+    update: (id: number, body: Record<string, unknown>) =>
+      dmsFetch<DmsDocument>(
+        `/${id}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify(body),
+        },
+        scope,
+      ),
 
-  replace: (id: number, form: FormData) =>
-    dmsFetch<DmsDocument>(`/${id}/replace`, { method: 'POST', body: form }),
+    replace: (id: number, form: FormData) =>
+      dmsFetch<DmsDocument>(`/${id}/replace`, { method: 'POST', body: form }, scope),
 
-  remove: (id: number) => dmsFetch(`/${id}`, { method: 'DELETE' }),
-};
+    remove: (id: number) => dmsFetch(`/${id}`, { method: 'DELETE' }, scope),
+  };
+}
+
+/** Default company DMS client (backward compatible). */
+export const dmsApi = createDmsApi('company');

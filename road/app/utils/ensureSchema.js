@@ -468,6 +468,8 @@ async function ensureDmsColumns(sequelize) {
     `ALTER TABLE "documents" ADD COLUMN IF NOT EXISTS "notes" TEXT;`,
     `ALTER TABLE "documents" ADD COLUMN IF NOT EXISTS "created_by" INTEGER;`,
     `ALTER TABLE "documents" ADD COLUMN IF NOT EXISTS "updated_by" INTEGER;`,
+    `ALTER TABLE "documents" ADD COLUMN IF NOT EXISTS "owner_user_id" INTEGER;`,
+    `ALTER TABLE "document_folders" ADD COLUMN IF NOT EXISTS "owner_user_id" INTEGER;`,
   ];
   for (const sql of columns) {
     try {

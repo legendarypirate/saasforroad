@@ -172,6 +172,7 @@ db.job_applications = require("./job_application.model.js")(sequelize, Sequelize
 db.job_offers = require("./job_offer.model.js")(sequelize, Sequelize);
 db.documents = require("./document.model.js")(sequelize, Sequelize);
 db.document_folders = require("./document_folder.model.js")(sequelize, Sequelize);
+db.personal_notes = require("./personal_note.model.js")(sequelize, Sequelize);
 db.warehouses = require("./warehouse.model.js")(sequelize, Sequelize);
 db.stocks = require("./stock.model.js")(sequelize, Sequelize);
 db.transactions = require("./transaction.model.js")(sequelize, Sequelize);
@@ -241,6 +242,17 @@ db.documents.belongsTo(db.users, {
 db.documents.belongsTo(db.users, {
   foreignKey: "updated_by",
   as: "updater",
+});
+
+db.personal_notes.belongsTo(db.users, { foreignKey: "user_id", as: "owner" });
+db.users.hasMany(db.personal_notes, { foreignKey: "user_id", as: "personal_notes" });
+db.personal_notes.hasMany(db.personal_notes, {
+  foreignKey: "parent_id",
+  as: "children",
+});
+db.personal_notes.belongsTo(db.personal_notes, {
+  foreignKey: "parent_id",
+  as: "parent",
 });
 
 db.notifications.belongsTo(db.projects, {

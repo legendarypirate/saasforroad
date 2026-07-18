@@ -54,13 +54,54 @@ function buildMetaFromBody(body = {}) {
   };
 }
 
+/** company (default) | personal — from query or X-Doc-Scope header */
+function resolveScope(req) {
+  const raw =
+    req.query?.scope ||
+    req.headers["x-doc-scope"] ||
+    req.headers["X-Doc-Scope"] ||
+    "company";
+  return String(raw).toLowerCase() === "personal" ? "personal" : "company";
+}
+
+function requireUserId(req, res) {
+  const id = req.user?.id;
+  if (!id) {
+    res.status(401).json({ success: false, message: "Нэвтрэх шаардлагатай" });
+    return null;
+  }
+  return id;
+}
+
+/** Owner filter: company = null only; personal = current user */
+function ownerWhere(req, res) {
+  const scope = resolveScope(req);
+  if (scope === "personal") {
+    const userId = requireUserId(req, res);
+    if (userId == null) return null;
+    return { scope, owner_user_id: userId, userId };
+  }
+  return { scope: "company", owner_user_id: null, userId: req.user?.id || null };
+}
+
+function matchesScope(row, scopeInfo) {
+  if (!row) return false;
+  if (scopeInfo.scope === "personal") {
+    return Number(row.owner_user_id) === Number(scopeInfo.owner_user_id);
+  }
+  return row.owner_user_id == null;
+}
+
 // ─── Folders ───────────────────────────────────────────────────────────────
 
 exports.listFolders = async (req, res) => {
   try {
+    const scopeInfo = ownerWhere(req, res);
+    if (!scopeInfo) return;
+
     const parent_id =
       req.query.parent_id !== undefined ? parseParentId(req.query.parent_id) : undefined;
-    const where = {};
+    const where = { owner_user_id: scopeInfo.owner_user_id };
     if (parent_id !== undefined) where.parent_id = parent_id;
 
     const data = await Folder.findAll({
@@ -78,6 +119,8 @@ exports.listFolders = async (req, res) => {
 
 exports.createFolder = async (req, res) => {
   try {
+    const scopeInfo = ownerWhere(req, res);
+    if (!scopeInfo) return;
     if (!req.body.name) {
       return res.status(400).json({ success: false, message: "Хавтасны нэр шаардлагатай" });
     }
@@ -87,6 +130,7 @@ exports.createFolder = async (req, res) => {
       description: req.body.description || null,
       sort_order: Number(req.body.sort_order) || 0,
       is_system: false,
+      owner_user_id: scopeInfo.owner_user_id,
     });
     res.json({ success: true, data });
   } catch (err) {
@@ -96,12 +140,11 @@ exports.createFolder = async (req, res) => {
 
 exports.updateFolder = async (req, res) => {
   try {
+    const scopeInfo = ownerWhere(req, res);
+    if (!scopeInfo) return;
     const folder = await Folder.findByPk(req.params.id);
-    if (!folder) {
+    if (!folder || !matchesScope(folder, scopeInfo)) {
       return res.status(404).json({ success: false, message: "Хавтас олдсонгүй" });
-    }
-    if (folder.is_system && req.body.name === undefined && req.body.description === undefined) {
-      // allow rename of system folders for flexibility
     }
     const patch = {};
     if (req.body.name !== undefined) patch.name = String(req.body.name).trim();
@@ -118,8 +161,10 @@ exports.updateFolder = async (req, res) => {
 
 exports.deleteFolder = async (req, res) => {
   try {
+    const scopeInfo = ownerWhere(req, res);
+    if (!scopeInfo) return;
     const folder = await Folder.findByPk(req.params.id);
-    if (!folder) {
+    if (!folder || !matchesScope(folder, scopeInfo)) {
       return res.status(404).json({ success: false, message: "Хавтас олдсонгүй" });
     }
     if (folder.is_system) {
@@ -128,8 +173,12 @@ exports.deleteFolder = async (req, res) => {
         message: "Системийн хавтсыг устгах боломжгүй",
       });
     }
-    const childFolders = await Folder.count({ where: { parent_id: folder.id } });
-    const childFiles = await Document.count({ where: { parent_id: folder.id } });
+    const childFolders = await Folder.count({
+      where: { parent_id: folder.id, owner_user_id: scopeInfo.owner_user_id },
+    });
+    const childFiles = await Document.count({
+      where: { parent_id: folder.id, owner_user_id: scopeInfo.owner_user_id },
+    });
     if (childFolders > 0 || childFiles > 0) {
       return res.status(400).json({
         success: false,
@@ -145,20 +194,25 @@ exports.deleteFolder = async (req, res) => {
 
 // ─── Stats ─────────────────────────────────────────────────────────────────
 
-exports.stats = async (_req, res) => {
+exports.stats = async (req, res) => {
   try {
+    const scopeInfo = ownerWhere(req, res);
+    if (!scopeInfo) return;
+    const ow = { owner_user_id: scopeInfo.owner_user_id };
+
     const [total, active, draft, archived, folders] = await Promise.all([
-      Document.count(),
-      Document.count({ where: { status: "active" } }),
-      Document.count({ where: { status: "draft" } }),
-      Document.count({ where: { status: "archived" } }),
-      Folder.count(),
+      Document.count({ where: ow }),
+      Document.count({ where: { ...ow, status: "active" } }),
+      Document.count({ where: { ...ow, status: "draft" } }),
+      Document.count({ where: { ...ow, status: "archived" } }),
+      Folder.count({ where: ow }),
     ]);
 
     const soon = new Date();
     soon.setDate(soon.getDate() + 30);
     const expiring = await Document.count({
       where: {
+        ...ow,
         expiry_date: { [Op.ne]: null, [Op.lte]: soon.toISOString().slice(0, 10) },
         status: { [Op.ne]: "archived" },
       },
@@ -166,6 +220,7 @@ exports.stats = async (_req, res) => {
 
     const byTypeRows = await Document.findAll({
       attributes: ["doc_type", [db.Sequelize.fn("COUNT", db.Sequelize.col("id")), "count"]],
+      where: ow,
       group: ["doc_type"],
       raw: true,
     });
@@ -205,6 +260,9 @@ exports.create = (req, res) => {
     }
 
     try {
+      const scopeInfo = ownerWhere(req, res);
+      if (!scopeInfo) return;
+
       const result = await uploadMulterFile(req.file, "documents");
       const meta = buildMetaFromBody(req.body);
       const data = await Document.create({
@@ -215,6 +273,9 @@ exports.create = (req, res) => {
         file_size: req.file.size || null,
         original_name: req.file.originalname || null,
         version: Number(req.body.version) || 1,
+        owner_user_id: scopeInfo.owner_user_id,
+        created_by: scopeInfo.userId || null,
+        updated_by: scopeInfo.userId || null,
         ...meta,
       });
       const full = await Document.findByPk(data.id, { include: DOC_INCLUDE });
@@ -227,6 +288,9 @@ exports.create = (req, res) => {
 
 exports.findAll = async (req, res) => {
   try {
+    const scopeInfo = ownerWhere(req, res);
+    if (!scopeInfo) return;
+
     const {
       name,
       q,
@@ -238,7 +302,7 @@ exports.findAll = async (req, res) => {
       search_all,
     } = req.query;
 
-    const condition = {};
+    const condition = { owner_user_id: scopeInfo.owner_user_id };
     const search = q || name;
 
     if (search) {
@@ -251,7 +315,6 @@ exports.findAll = async (req, res) => {
       ];
     }
 
-    // Folder browse vs global search
     if (search_all !== "1" && search_all !== "true") {
       if (parent_id !== undefined) {
         condition.parent_id = parseParentId(parent_id);
@@ -288,8 +351,10 @@ exports.findAll = async (req, res) => {
 
 exports.findOne = async (req, res) => {
   try {
+    const scopeInfo = ownerWhere(req, res);
+    if (!scopeInfo) return;
     const data = await Document.findByPk(req.params.id, { include: DOC_INCLUDE });
-    if (!data) {
+    if (!data || !matchesScope(data, scopeInfo)) {
       return res.status(404).json({
         success: false,
         message: `Cannot find Document with id=${req.params.id}.`,
@@ -306,8 +371,10 @@ exports.findOne = async (req, res) => {
 
 exports.update = async (req, res) => {
   try {
+    const scopeInfo = ownerWhere(req, res);
+    if (!scopeInfo) return;
     const doc = await Document.findByPk(req.params.id);
-    if (!doc) {
+    if (!doc || !matchesScope(doc, scopeInfo)) {
       return res.status(404).json({ success: false, message: "Document not found" });
     }
 
@@ -334,6 +401,7 @@ exports.update = async (req, res) => {
     if (req.body.project_id !== undefined) {
       patch.project_id = parseOptionalInt(req.body.project_id);
     }
+    if (scopeInfo.userId) patch.updated_by = scopeInfo.userId;
 
     await doc.update(patch);
     const full = await Document.findByPk(doc.id, { include: DOC_INCLUDE });
@@ -359,8 +427,10 @@ exports.replaceFile = (req, res) => {
     }
 
     try {
+      const scopeInfo = ownerWhere(req, res);
+      if (!scopeInfo) return;
       const doc = await Document.findByPk(req.params.id);
-      if (!doc) {
+      if (!doc || !matchesScope(doc, scopeInfo)) {
         return res.status(404).json({ success: false, message: "Document not found" });
       }
       const result = await uploadMulterFile(req.file, "documents");
@@ -371,6 +441,7 @@ exports.replaceFile = (req, res) => {
         original_name: req.file.originalname || doc.original_name,
         version: (doc.version || 1) + 1,
         name: req.body.name || doc.name,
+        updated_by: scopeInfo.userId || doc.updated_by,
       });
       const full = await Document.findByPk(doc.id, { include: DOC_INCLUDE });
       res.json({ success: true, data: full });
@@ -382,7 +453,11 @@ exports.replaceFile = (req, res) => {
 
 exports.delete = async (req, res) => {
   try {
-    const num = await Document.destroy({ where: { id: req.params.id } });
+    const scopeInfo = ownerWhere(req, res);
+    if (!scopeInfo) return;
+    const num = await Document.destroy({
+      where: { id: req.params.id, owner_user_id: scopeInfo.owner_user_id },
+    });
     if (num === 1) {
       return res.json({ success: true, message: "Document was deleted successfully!" });
     }
@@ -398,9 +473,21 @@ exports.delete = async (req, res) => {
   }
 };
 
-exports.deleteAll = async (_req, res) => {
+exports.deleteAll = async (req, res) => {
   try {
-    const nums = await Document.destroy({ where: {}, truncate: false });
+    const scopeInfo = ownerWhere(req, res);
+    if (!scopeInfo) return;
+    // Never allow mass-delete of company DMS via this endpoint unless explicitly company scope
+    if (scopeInfo.scope !== "personal") {
+      return res.status(403).json({
+        success: false,
+        message: "Company DMS mass delete is disabled",
+      });
+    }
+    const nums = await Document.destroy({
+      where: { owner_user_id: scopeInfo.owner_user_id },
+      truncate: false,
+    });
     res.json({ success: true, message: `${nums} documents were deleted successfully!` });
   } catch (err) {
     res.status(500).json({
