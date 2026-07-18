@@ -33,8 +33,8 @@ export const PLANT_TYPE_LABELS: Record<string, string> = {
 
 export async function fetchPublicFactories(): Promise<PublicFactory[]> {
   const res = await fetch(`${API}/api/factories`, {
-    credentials: 'include',
     headers: tenantHeaders(),
+    cache: 'no-store',
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {

@@ -1,3 +1,5 @@
+import { tenantHeaders } from '@/lib/tenant';
+
 const API = process.env.NEXT_PUBLIC_API_URL || '';
 
 export type DataCatalogKind =
@@ -38,7 +40,7 @@ export const DATA_CATALOG_LABELS: Record<DataCatalogKind, string> = {
 export async function fetchDataCatalog(kind: DataCatalogKind): Promise<DataCatalogEntry[]> {
   const res = await fetch(
     `${API}/api/data-catalog?kind=${encodeURIComponent(kind)}`,
-    { credentials: 'include' }
+    { headers: tenantHeaders(), cache: 'no-store' }
   );
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {

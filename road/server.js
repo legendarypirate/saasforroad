@@ -5,11 +5,23 @@ const cors = require("cors");
 
 const app = express();
 
-var corsOptions = {
-  origin: "*",
+// Browsers reject Access-Control-Allow-Origin: * when fetch uses credentials: 'include'.
+// Reflect the request Origin so tenant domains (e.g. masterboy.mn) work with cookies/auth headers.
+const corsOptions = {
+  origin: true,
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Tenant-Domain",
+    "X-Device-Id",
+    "X-Doc-Scope",
+  ],
 };
 
 app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
