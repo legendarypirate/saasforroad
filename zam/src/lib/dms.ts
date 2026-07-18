@@ -16,16 +16,29 @@ async function dmsFetch<T = unknown>(
   const extra: Record<string, string> = {
     ...((init?.headers as Record<string, string> | undefined) ?? {}),
   };
-  if (token) extra['Authorization'] = token;
+  if (token) {
+    extra['Authorization'] = token.startsWith('Bearer ')
+      ? token
+      : `Bearer ${token}`;
+  }
   // Never set Content-Type on FormData — browser must add multipart boundary.
   if (init?.body && !(init.body instanceof FormData) && !extra['Content-Type']) {
     extra['Content-Type'] = 'application/json';
   }
-  const res = await fetch(url, {
-    ...init,
-    headers: tenantHeaders(extra),
-    cache: 'no-store',
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      ...init,
+      headers: tenantHeaders(extra),
+      cache: 'no-store',
+    });
+  } catch (err) {
+    return {
+      success: false,
+      message:
+        err instanceof Error ? err.message : 'Сүлжээний алдаа — дахин оролдоно уу',
+    };
+  }
 
   let body: { success?: boolean; data?: T; message?: string } = {};
   try {
@@ -42,8 +55,17 @@ async function dmsFetch<T = unknown>(
     };
   }
 
+  // Require explicit success + data for mutating calls; list can be empty array
+  if (body.success !== true) {
+    return {
+      success: false,
+      message: body.message || 'Амжилтгүй хариу',
+      data: body.data,
+    };
+  }
+
   return {
-    success: body.success !== false,
+    success: true,
     data: body.data,
     message: body.message,
   };

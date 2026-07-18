@@ -2,12 +2,23 @@ const db = require("../models");
 const Document = db.documents;
 const Folder = db.document_folders;
 const Op = db.Sequelize.Op;
-const { memoryUpload } = require("../utils/multerMemory");
+const { memoryUpload, fixMulterFile } = require("../utils/multerMemory");
 const { uploadMulterFile } = require("../utils/cloudinary");
+const { saveLocalUpload } = require("../utils/localUpload");
 const multer = require("multer");
 
 const upload = memoryUpload().single("file");
 
+async function storeDocumentFile(file) {
+  // Local-first for DMS — Cloudinary PDF/Office uploads often fail (paid PDF
+  // add-on, raw quirks) while the UI already shows success. Disk is reliable.
+  try {
+    return saveLocalUpload(file, "documents");
+  } catch (localErr) {
+    console.warn("local document save failed, trying Cloudinary:", localErr?.message);
+    return uploadMulterFile(file, "documents");
+  }
+}
 const DOC_INCLUDE = [
   {
     model: db.projects,
@@ -86,6 +97,14 @@ function ownerWhere(req, res) {
   return { scope: "company", owner_user_id: null, userId: req.user?.id || null };
 }
 
+function scopeOwnerCondition(scopeInfo) {
+  if (scopeInfo.scope === "personal") {
+    return { owner_user_id: scopeInfo.owner_user_id };
+  }
+  // Explicit IS NULL — plain `null` can be unreliable with some Sequelize + AND combos
+  return { owner_user_id: { [Op.is]: null } };
+}
+
 function matchesScope(row, scopeInfo) {
   if (!row) return false;
   if (scopeInfo.scope === "personal") {
@@ -103,7 +122,7 @@ exports.listFolders = async (req, res) => {
 
     const parent_id =
       req.query.parent_id !== undefined ? parseParentId(req.query.parent_id) : undefined;
-    const where = { owner_user_id: scopeInfo.owner_user_id };
+    const where = { ...scopeOwnerCondition(scopeInfo) };
     if (parent_id !== undefined) where.parent_id = parent_id;
 
     const data = await Folder.findAll({
@@ -176,10 +195,10 @@ exports.deleteFolder = async (req, res) => {
       });
     }
     const childFolders = await Folder.count({
-      where: { parent_id: folder.id, owner_user_id: scopeInfo.owner_user_id },
+      where: { parent_id: folder.id, ...scopeOwnerCondition(scopeInfo) },
     });
     const childFiles = await Document.count({
-      where: { parent_id: folder.id, owner_user_id: scopeInfo.owner_user_id },
+      where: { parent_id: folder.id, ...scopeOwnerCondition(scopeInfo) },
     });
     if (childFolders > 0 || childFiles > 0) {
       return res.status(400).json({
@@ -200,7 +219,7 @@ exports.stats = async (req, res) => {
   try {
     const scopeInfo = ownerWhere(req, res);
     if (!scopeInfo) return;
-    const ow = { owner_user_id: scopeInfo.owner_user_id };
+    const ow = scopeOwnerCondition(scopeInfo);
 
     const [total, active, draft, archived, folders] = await Promise.all([
       Document.count({ where: ow }),
@@ -254,7 +273,7 @@ exports.create = (req, res) => {
     if (err instanceof multer.MulterError) {
       const msg =
         err.code === "LIMIT_FILE_SIZE"
-          ? "Файлын хэмжээ хэтэрсэн (хамгийн ихдээ 15MB)"
+          ? "Файлын хэмжээ хэтэрсэн (хамгийн ихдээ 50MB)"
           : "File upload error.";
       return res.status(400).json({ success: false, message: msg });
     }
@@ -269,7 +288,8 @@ exports.create = (req, res) => {
       const scopeInfo = ownerWhere(req, res);
       if (!scopeInfo) return;
 
-      const result = await uploadMulterFile(req.file, "documents");
+      fixMulterFile(req.file);
+      const result = await storeDocumentFile(req.file);
       if (!result?.secure_url) {
         return res.status(500).json({
           success: false,
@@ -291,7 +311,8 @@ exports.create = (req, res) => {
         updated_by: scopeInfo.userId || null,
         ...meta,
       });
-      const full = await Document.findByPk(data.id, { include: DOC_INCLUDE });
+      let full = await Document.findByPk(data.id, { include: DOC_INCLUDE });
+      if (!full) full = data;
       res.status(201).json({ success: true, data: full });
     } catch (error) {
       console.error("document create:", error);
@@ -319,7 +340,7 @@ exports.findAll = async (req, res) => {
       search_all,
     } = req.query;
 
-    const condition = { owner_user_id: scopeInfo.owner_user_id };
+    const condition = { ...scopeOwnerCondition(scopeInfo) };
     const search = q || name;
 
     if (search) {
@@ -450,7 +471,8 @@ exports.replaceFile = (req, res) => {
       if (!doc || !matchesScope(doc, scopeInfo)) {
         return res.status(404).json({ success: false, message: "Document not found" });
       }
-      const result = await uploadMulterFile(req.file, "documents");
+      fixMulterFile(req.file);
+      const result = await storeDocumentFile(req.file);
       await doc.update({
         file_url: result.secure_url,
         mime_type: req.file.mimetype || doc.mime_type,
@@ -461,7 +483,7 @@ exports.replaceFile = (req, res) => {
         updated_by: scopeInfo.userId || doc.updated_by,
       });
       const full = await Document.findByPk(doc.id, { include: DOC_INCLUDE });
-      res.json({ success: true, data: full });
+      res.json({ success: true, data: full || doc });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
@@ -473,7 +495,7 @@ exports.delete = async (req, res) => {
     const scopeInfo = ownerWhere(req, res);
     if (!scopeInfo) return;
     const num = await Document.destroy({
-      where: { id: req.params.id, owner_user_id: scopeInfo.owner_user_id },
+      where: { id: req.params.id, ...scopeOwnerCondition(scopeInfo) },
     });
     if (num === 1) {
       return res.json({ success: true, message: "Document was deleted successfully!" });
@@ -502,7 +524,7 @@ exports.deleteAll = async (req, res) => {
       });
     }
     const nums = await Document.destroy({
-      where: { owner_user_id: scopeInfo.owner_user_id },
+      where: { ...scopeOwnerCondition(scopeInfo) },
       truncate: false,
     });
     res.json({ success: true, message: `${nums} documents were deleted successfully!` });

@@ -22,8 +22,17 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+
+// Local DMS / upload files (Cloudinary fallback + primary for documents)
+const uploadsDir = path.join(__dirname, "uploads");
+try {
+  require("fs").mkdirSync(uploadsDir, { recursive: true });
+} catch {
+  // ignore
+}
+app.use("/assets", express.static(uploadsDir, { fallthrough: true, maxAge: "7d" }));
 
 const db = require("./app/models");
 const dbConfig = require("./app/config/db.config");

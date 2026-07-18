@@ -80,8 +80,62 @@ function fileUrl(doc: DmsDocument) {
   return resolveAssetUrl(doc.file_url) || '';
 }
 
+/** True if string looks like latin1-mojibake of UTF-8 (common multer Cyrillic bug). */
+function looksLikeMojibake(value: string) {
+  // Clusters of high latin1 bytes often mean mis-decoded UTF-8 Cyrillic
+  return /(?:Ã.|Ð.|Ñ.|Â.){2,}/.test(value) || /[\u00C0-\u00FF]{3,}/.test(value);
+}
+
+function tryFixMojibake(value: string) {
+  if (!looksLikeMojibake(value)) return value;
+  try {
+    const bytes = Uint8Array.from(value, (ch) => ch.charCodeAt(0) & 0xff);
+    const decoded = new TextDecoder('utf-8').decode(bytes);
+    if (decoded && !decoded.includes('\uFFFD') && /[^\u0000-\u007f]/.test(decoded)) {
+      return decoded;
+    }
+  } catch {
+    // keep original
+  }
+  return value;
+}
+
+function extensionFrom(name: string) {
+  const m = name.trim().match(/(\.[a-z0-9]{1,12})$/i);
+  return m ? m[1].toLowerCase() : '';
+}
+
+function extensionFromMime(mime?: string | null) {
+  const m = String(mime || '').toLowerCase();
+  if (m.includes('spreadsheetml') || m.includes('ms-excel')) return '.xlsx';
+  if (m === 'application/pdf') return '.pdf';
+  if (m.includes('wordprocessingml') || m.includes('msword')) return '.docx';
+  if (m.includes('presentationml')) return '.pptx';
+  if (m === 'text/csv') return '.csv';
+  if (m.startsWith('image/')) {
+    const sub = m.split('/')[1]?.replace('jpeg', 'jpg');
+    return sub ? `.${sub}` : '';
+  }
+  return '';
+}
+
 function fileDownloadName(doc: DmsDocument) {
-  return doc.original_name || doc.name || 'file';
+  const display = tryFixMojibake((doc.name || '').trim());
+  const original = tryFixMojibake((doc.original_name || '').trim());
+
+  // Prefer document title (API JSON UTF-8) over multer original_name
+  let filename = display || original || 'file';
+  filename = filename.replace(/[\\/:*?"<>|]+/g, '_').trim() || 'file';
+
+  if (!extensionFrom(filename)) {
+    const ext =
+      extensionFrom(original) ||
+      extensionFromMime(doc.mime_type) ||
+      extensionFrom(doc.file_url || '');
+    if (ext) filename += ext;
+  }
+
+  return filename;
 }
 
 /** Open preview (PDF/image) or download other types. */
@@ -115,16 +169,21 @@ async function downloadFile(doc: DmsDocument) {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const blob = await res.blob();
-    const objectUrl = URL.createObjectURL(blob);
+    // File() keeps Unicode filename more reliably than <a download> alone
+    const file = new File([blob], filename, {
+      type: blob.type || doc.mime_type || 'application/octet-stream',
+    });
+    const objectUrl = URL.createObjectURL(file);
     const link = document.createElement('a');
     link.href = objectUrl;
     link.download = filename;
+    link.rel = 'noopener';
     document.body.appendChild(link);
     link.click();
     link.remove();
     URL.revokeObjectURL(objectUrl);
   } catch {
-    // Cross-origin / CORS fallback — still trigger browser download/open
+    // Cross-origin fallback: still try blob-less download with UTF-8 name
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
@@ -361,37 +420,53 @@ export default function DmsBrowser({
       if (uploadForm.notes.trim()) fd.append('notes', uploadForm.notes.trim());
 
       const res = await dmsApi.upload(fd);
-      if (!res.success || !res.data) {
+      if (!res.success || !res.data?.id) {
         message.error(res.message || 'Байршуулахад алдаа гарлаа');
         return;
       }
 
-      // Clear filters so the new file is visible in the current folder
+      const created = res.data;
+
+      // Clear filters (next effect refresh will be correct)
       setQ('');
       setFilterType('');
       setFilterStatus('');
       setFilterProject('');
       setFilterExpiring(false);
 
-      // Show immediately
-      setFiles((prev) => {
-        if (prev.some((d) => d.id === res.data!.id)) return prev;
-        return [res.data!, ...prev];
-      });
-
       message.success('Баримт амжилттай байршуулагдлаа');
       setUploadOpen(false);
       setUploadFile(null);
       setUploadForm(emptyUpload());
 
-      // Reload current folder without stale filter closure
-      const [folderRows, fileRows] = await Promise.all([
-        dmsApi.listFolders(currentParentId),
-        dmsApi.listDocuments({ parent_id: currentParentId }),
-      ]);
-      setFolders(folderRows);
-      setFiles(fileRows);
-      await loadStats();
+      // Keep the new file visible even if a parallel refresh races
+      setFiles((prev) => {
+        const without = prev.filter((d) => d.id !== created.id);
+        return [created, ...without];
+      });
+
+      try {
+        const [folderRows, fileRows] = await Promise.all([
+          dmsApi.listFolders(currentParentId),
+          dmsApi.listDocuments({ parent_id: currentParentId }),
+        ]);
+        setFolders(folderRows);
+        // Merge so a briefly stale list cannot drop the just-created file
+        setFiles(() => {
+          const map = new Map<number, DmsDocument>();
+          for (const row of fileRows) map.set(row.id, row);
+          map.set(created.id, created);
+          return Array.from(map.values()).sort((a, b) => {
+            const ta = a.updatedAt || a.createdAt || '';
+            const tb = b.updatedAt || b.createdAt || '';
+            return tb.localeCompare(ta);
+          });
+        });
+        await loadStats();
+      } catch (reloadErr) {
+        console.error(reloadErr);
+        // File already shown from create response
+      }
     } catch (err) {
       console.error(err);
       message.error(
