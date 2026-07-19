@@ -121,11 +121,11 @@ export default function Shell({ children }: { children: ReactNode }) {
         <nav className="nav-stack">
           <Link href="/tenants" className={`nav-link${tenantsActive ? " active" : ""}`}>
             <IconGrid />
-            Tenants
+            Түрээслэгч
           </Link>
           <Link href="/tenants/new" className={`nav-link${newActive ? " active" : ""}`}>
             <IconPlus />
-            Register tenant
+            Бүртгэх
           </Link>
           <Link href="/landing" className={`nav-link${landingActive ? " active" : ""}`}>
             <IconPage />
@@ -166,7 +166,7 @@ export default function Shell({ children }: { children: ReactNode }) {
           <SessionCountdown />
           <ThemeToggle />
           <button className="btn secondary" type="button" onClick={logout} style={{ width: "100%" }}>
-            Log out
+            Гарах
           </button>
         </div>
       </aside>

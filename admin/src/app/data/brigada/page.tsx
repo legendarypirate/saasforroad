@@ -5,9 +5,9 @@ import Shell from "@/components/Shell";
 import { api, PlatformBrigade } from "@/lib/api";
 
 const STATUS_LABEL: Record<string, string> = {
-  active: "Active",
-  inactive: "Inactive",
-  suspended: "Suspended",
+  active: "Идэвхтэй",
+  inactive: "Идэвхгүй",
+  suspended: "Түдгэлзүүлсэн",
 };
 
 export default function PlatformBrigadesPage() {
@@ -68,30 +68,26 @@ export default function PlatformBrigadesPage() {
 
   return (
     <Shell>
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Бригад</h1>
-          <p className="page-desc">
-            Brigades registered via the brigad app on api.rcos.mn. Activate or
-            deactivate to control who companies can hire.
-          </p>
-        </div>
-        <button type="button" className="btn secondary" onClick={load}>
-          Refresh
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[13px] text-[var(--muted)]">
+          Бригад аппаас бүртгэгдсэн. Идэвхжүүлснээр компаниуд хөлслөнө.
+        </p>
+        <button type="button" className="btn secondary !px-3 !py-1.5 !text-[13px]" onClick={load}>
+          Шинэчлэх
         </button>
       </div>
 
       <div className="stat-row">
         <div className="stat-card">
-          <div className="label">Loaded</div>
+          <div className="label">Нийт</div>
           <div className="value">{loading ? "—" : counts.all}</div>
         </div>
         <div className="stat-card">
-          <div className="label">Active</div>
+          <div className="label">Идэвхтэй</div>
           <div className="value">{loading ? "—" : counts.active}</div>
         </div>
         <div className="stat-card">
-          <div className="label">Off</div>
+          <div className="label">Идэвхгүй</div>
           <div className="value">{loading ? "—" : counts.off}</div>
         </div>
       </div>
@@ -99,10 +95,10 @@ export default function PlatformBrigadesPage() {
       <div
         className="panel"
         style={{
-          marginBottom: "1rem",
+          marginBottom: "0.75rem",
           display: "flex",
           flexWrap: "wrap",
-          gap: "0.75rem",
+          gap: "0.5rem",
           alignItems: "center",
         }}
       >
@@ -112,15 +108,16 @@ export default function PlatformBrigadesPage() {
           onKeyDown={(e) => {
             if (e.key === "Enter") load();
           }}
-          placeholder="Search name, username, phone…"
+          placeholder="Нэр, нэвтрэх нэр, утас…"
           style={{
-            flex: "1 1 220px",
-            minWidth: 180,
-            padding: "0.65rem 0.75rem",
-            borderRadius: "var(--radius-sm)",
+            flex: "1 1 200px",
+            minWidth: 160,
+            padding: "0.45rem 0.65rem",
+            borderRadius: "10px",
             border: "1px solid var(--line-strong)",
             background: "var(--input-bg)",
             color: "var(--ink)",
+            fontSize: "0.82rem",
           }}
         />
         <select
@@ -129,20 +126,21 @@ export default function PlatformBrigadesPage() {
             setFilter(e.target.value as typeof filter)
           }
           style={{
-            padding: "0.65rem 0.75rem",
-            borderRadius: "var(--radius-sm)",
+            padding: "0.45rem 0.65rem",
+            borderRadius: "10px",
             border: "1px solid var(--line-strong)",
             background: "var(--input-bg)",
             color: "var(--ink)",
+            fontSize: "0.82rem",
           }}
         >
-          <option value="all">All statuses</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-          <option value="suspended">Suspended</option>
+          <option value="all">Бүх төлөв</option>
+          <option value="active">Идэвхтэй</option>
+          <option value="inactive">Идэвхгүй</option>
+          <option value="suspended">Түдгэлзүүлсэн</option>
         </select>
         <button type="button" className="btn" onClick={load}>
-          Search
+          Хайх
         </button>
       </div>
 
@@ -150,18 +148,18 @@ export default function PlatformBrigadesPage() {
       {message ? <p className="flash-ok">{message}</p> : null}
 
       <div className="panel">
-        {loading ? <p className="muted">Loading…</p> : null}
+        {loading ? <p className="muted">Ачаалж байна…</p> : null}
         {!loading ? (
           <div className="table-wrap">
             <table className="table">
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Leader / login</th>
-                  <th>Contact</th>
-                  <th>Location</th>
-                  <th>Rating</th>
-                  <th>Status</th>
+                  <th>Нэр</th>
+                  <th>Удирдагч</th>
+                  <th>Холбоо</th>
+                  <th>Байршил</th>
+                  <th>Үнэлгээ</th>
+                  <th>Төлөв</th>
                   <th />
                 </tr>
               </thead>
@@ -175,7 +173,7 @@ export default function PlatformBrigadesPage() {
                         {row.description ? (
                           <div
                             className="muted"
-                            style={{ fontSize: "0.8rem", marginTop: 2 }}
+                            style={{ fontSize: "0.75rem", marginTop: 2 }}
                           >
                             {row.description.slice(0, 72)}
                             {row.description.length > 72 ? "…" : ""}
@@ -186,16 +184,16 @@ export default function PlatformBrigadesPage() {
                         <div>{row.leader_name || "—"}</div>
                         <div
                           className="muted"
-                          style={{ fontSize: "0.8rem" }}
+                          style={{ fontSize: "0.75rem" }}
                         >
-                          {row.username ? `@${row.username}` : "no login"}
+                          {row.username ? `@${row.username}` : "нэвтрэх нэргүй"}
                         </div>
                       </td>
                       <td>
                         <div>{row.phone || row.contact_phone || "—"}</div>
                         <div
                           className="muted"
-                          style={{ fontSize: "0.8rem" }}
+                          style={{ fontSize: "0.75rem" }}
                         >
                           {row.contact_email || ""}
                         </div>
@@ -209,9 +207,9 @@ export default function PlatformBrigadesPage() {
                         {(row.average_rating ?? 0).toFixed(1)}
                         <div
                           className="muted"
-                          style={{ fontSize: "0.75rem" }}
+                          style={{ fontSize: "0.7rem" }}
                         >
-                          rep {(row.reputation_score ?? 0).toFixed(0)}
+                          нэр {(row.reputation_score ?? 0).toFixed(0)}
                         </div>
                       </td>
                       <td>
@@ -227,7 +225,7 @@ export default function PlatformBrigadesPage() {
                             disabled={busyId === row.id}
                             onClick={() => setStatus(row, "inactive")}
                           >
-                            {busyId === row.id ? "…" : "Deactivate"}
+                            {busyId === row.id ? "…" : "Идэвхгүй"}
                           </button>
                         ) : (
                           <button
@@ -236,7 +234,7 @@ export default function PlatformBrigadesPage() {
                             disabled={busyId === row.id}
                             onClick={() => setStatus(row, "active")}
                           >
-                            {busyId === row.id ? "…" : "Activate"}
+                            {busyId === row.id ? "…" : "Идэвхжүүлэх"}
                           </button>
                         )}
                       </td>
@@ -247,8 +245,7 @@ export default function PlatformBrigadesPage() {
                   <tr>
                     <td colSpan={7}>
                       <div className="empty-state">
-                        No brigades yet. They appear here after registering in
-                        the brigad mobile app (api.rcos.mn).
+                        Бригад байхгүй. Бригад апп-д бүртгэгдсэний дараа энд гарна.
                       </div>
                     </td>
                   </tr>

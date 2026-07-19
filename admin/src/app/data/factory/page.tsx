@@ -89,31 +89,26 @@ export default function PlatformFactoriesPage() {
 
   return (
     <Shell>
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Үйлдвэр</h1>
-          <p className="page-desc">
-            Factories (plants) added by company accounts in the plant app. Each
-            company may have many plants — approve per plant to publish on
-            tenant Үйлдвэр maps.
-          </p>
-        </div>
-        <button type="button" className="btn secondary" onClick={load}>
-          Refresh
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[13px] text-[var(--muted)]">
+          Үйлдвэр аппаас нэмсэн ургамлууд — баталгаажуулбал tenant газрын зурагт гарна.
+        </p>
+        <button type="button" className="btn secondary !px-3 !py-1.5 !text-[13px]" onClick={load}>
+          Шинэчлэх
         </button>
       </div>
 
       <div className="stat-row">
         <div className="stat-card">
-          <div className="label">Loaded</div>
+          <div className="label">Нийт</div>
           <div className="value">{loading ? "—" : counts.all}</div>
         </div>
         <div className="stat-card">
-          <div className="label">Pending</div>
+          <div className="label">Хүлээгдэж буй</div>
           <div className="value">{loading ? "—" : counts.pending}</div>
         </div>
         <div className="stat-card">
-          <div className="label">Active</div>
+          <div className="label">Идэвхтэй</div>
           <div className="value">{loading ? "—" : counts.active}</div>
         </div>
       </div>
