@@ -24,7 +24,7 @@ import { DeleteOutlined, PlusOutlined } from '@/components/admin/icons';
 import StyledFullCalendar from '@/components/StyledFullCalendar';
 import dayjs, { Dayjs } from 'dayjs';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface UserOption {
   id: number;
@@ -409,10 +409,7 @@ export default function AttendanceCalculationPage() {
 
   return (
     <div>
-      <Title level={4} style={{ marginBottom: 8 }}>
-        Ирц тооцоолол
-      </Title>
-      <Text type="secondary" style={{ display: 'block', marginBottom: 24 }}>
+      <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
         Ирцийн хяналт — бодит ирсэн/явсан цаг. Энд ээлжийн горимоор ажлын өдөр, амралт, цалингийн
         суурь цагийг тооцно.
       </Text>

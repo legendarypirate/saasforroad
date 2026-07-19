@@ -71,8 +71,7 @@ export default function FuelDashboardPage() {
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Шатахуун удирдлага</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           Автопарк — худалдан авалт, сав, олголт, зарцуулалтын самбар
         </p>
       </div>

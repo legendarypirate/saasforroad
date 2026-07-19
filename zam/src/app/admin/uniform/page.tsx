@@ -37,8 +37,7 @@ export default function UniformDashboardPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Хувцас хэрэглэл хангамж</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           Ажилчдад олгосон хувцас, хэрэгслийн бүртгэл — огноо, хүн, бараа, хэмжээ
         </p>
       </div>

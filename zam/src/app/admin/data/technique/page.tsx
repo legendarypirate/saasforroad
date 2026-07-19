@@ -78,8 +78,7 @@ export default function RentableTechniquePage() {
     <div className="space-y-4 p-4 md:p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Түрээсийн техник</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Түрээслэх боломжтой төхөөрөмжүүд — зөвхөн харах / холбогдох
           </p>
         </div>

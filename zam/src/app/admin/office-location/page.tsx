@@ -25,7 +25,7 @@ import {
 } from '@/lib/officeLocation';
 import type { OfficeMapEditPoint } from '@/components/admin/office-location/OfficeLocationMap';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const DEFAULT_CENTER = { lat: 47.9189, lng: 106.917 };
 
@@ -210,9 +210,6 @@ export default function OfficeLocationPage() {
     <>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
-          <Title level={4} style={{ margin: 0 }}>
-            Оффисын байршил
-          </Title>
           <Text type="secondary">
             Газрын зураг дээр дарж pin тавина. Ажилчин {radius}м радиуст ирц бүртгэнэ.
           </Text>

@@ -135,7 +135,6 @@ export default function UniformIssuesPage() {
   return (
     <div>
       <Space style={{ marginBottom: 16 }} wrap>
-        <h2 style={{ margin: 0 }}>Олголтын бүртгэл</h2>
         <Button icon={<ReloadOutlined />} onClick={load}>
           Шинэчлэх
         </Button>

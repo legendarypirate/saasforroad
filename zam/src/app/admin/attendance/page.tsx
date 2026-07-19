@@ -96,8 +96,6 @@ export default function AttendancePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Ирцийн хяналт</h1>
-
       <Space className="rounded-lg border bg-card px-4 py-3">
         <span className="text-sm font-medium text-muted-foreground">Огноо:</span>
         <DatePicker value={selectedDate} onChange={(d) => d && setSelectedDate(d)} allowClear={false} />

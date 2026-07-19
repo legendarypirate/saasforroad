@@ -305,8 +305,7 @@ export default function NotificationPage() {
     <div className="space-y-5 p-4 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Мэдэгдэл</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Системийн зарлал, мэдэгдэл — ноорог, нийтлэх, архивлах
           </p>
         </div>

@@ -13,7 +13,6 @@ export default function HorizontalAlignmentPage() {
   return (
     <div className="space-y-3">
       <Space wrap>
-        <h2 style={{ margin: 0 }}>Хэвтээ тэнхлэг</h2>
         <ProjectSelect value={projectId} onChange={(id) => { setProjectId(id); setAlignmentId(undefined); }} />
         <AlignmentSelect projectId={projectId} value={alignmentId} onChange={setAlignmentId} />
       </Space>

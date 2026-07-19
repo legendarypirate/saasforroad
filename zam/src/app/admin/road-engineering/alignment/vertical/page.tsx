@@ -273,7 +273,6 @@ export default function VerticalAlignmentPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <div className="mr-2">
-          <h2 className="text-lg font-semibold">Дагуу огтлол / Босоо тэнхлэг</h2>
           <p className="text-xs text-muted-foreground">
             Газар · хэмжилт · төлөвлөсөн өндөржилт · ухмал/далан
           </p>

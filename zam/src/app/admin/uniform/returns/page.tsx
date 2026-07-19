@@ -73,7 +73,6 @@ export default function Page() {
   return (
     <div>
       <Space style={{ marginBottom: 16 }} wrap>
-        <h2 style={{ margin: 0 }}>Буцаалт</h2>
         <Button icon={<ReloadOutlined />} onClick={load}>
           Шинэчлэх
         </Button>

@@ -194,7 +194,6 @@ export default function RoadProjectsPage() {
   return (
     <div>
       <Space style={{ marginBottom: 16 }} wrap>
-        <h2 style={{ margin: 0 }}>Замын төслүүд</h2>
         <Input.Search
           placeholder="Хайх..."
           allowClear

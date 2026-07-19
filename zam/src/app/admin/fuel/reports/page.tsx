@@ -165,7 +165,6 @@ export default function FuelReportsPage() {
   return (
     <div className="space-y-6" id="fuel-print-area">
       <div>
-        <h2 className="text-xl font-semibold">Шатахууны тайлан</h2>
         <p className="text-sm text-muted-foreground">Шүүлтүүр · Excel · PDF (хэвлэх) · CSV</p>
       </div>
 

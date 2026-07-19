@@ -227,7 +227,6 @@ export default function JobSeekerHiresPage() {
           >
             Жагсаалт
           </Button>
-          <h1 className="text-2xl font-semibold">Санал / хүсэлтүүд</h1>
         </div>
         <Button icon={<ReloadOutlined />} onClick={load}>
           Шинэчлэх

@@ -151,7 +151,6 @@ export default function DailySafetyPage() {
   return (
     <div className="space-y-4">
       <Space wrap>
-        <h2 style={{ margin: 0 }}>Өглөөний ХАБЭА заавар</h2>
         <DatePicker value={date} onChange={(d) => d && setDate(d)} />
         <Button icon={<ReloadOutlined />} onClick={load}>
           Шинэчлэх

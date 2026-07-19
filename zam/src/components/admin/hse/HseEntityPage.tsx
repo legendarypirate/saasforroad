@@ -136,8 +136,7 @@ export default function HseEntityPage({ title, resource, fields, columns }: Prop
 
   return (
     <div>
-      <Space style={{ marginBottom: 16 }}>
-        <h2 style={{ margin: 0 }}>{title}</h2>
+      <Space style={{ marginBottom: 12 }}>
         <Button icon={<ReloadOutlined />} onClick={load}>
           Шинэчлэх
         </Button>

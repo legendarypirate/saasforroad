@@ -7,7 +7,7 @@ import {
 import { DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined } from '@/components/admin/icons';
 import { inventoryApi } from '@/lib/inventory';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export default function SupplierPage() {
   const [rows, setRows] = useState<any[]>([]);
@@ -80,7 +80,6 @@ export default function SupplierPage() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <Title level={4} style={{ margin: 0 }}>Нийлүүлэгч</Title>
           <Text type="secondary">Материал нийлүүлэгчид</Text>
         </div>
         <Space>

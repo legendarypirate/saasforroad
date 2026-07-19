@@ -147,12 +147,9 @@ export default function HomepageAdminPage() {
     <div className="-m-4 space-y-0">
       <div className="sticky top-16 z-40 border-b border-border bg-background/95 backdrop-blur">
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">Landing — визуал засвар</h2>
-            <p className="text-sm text-muted-foreground">
-              Хуудас сонгоод хэсэг дээрх «Засах» товчийг дарна уу.
-            </p>
-          </div>
+          <p className="text-sm text-muted-foreground">
+            Хуудас сонгоод хэсэг дээрх «Засах» товчийг дарна уу.
+          </p>
           <div className="flex flex-wrap items-center gap-2">
             {dirty && (
               <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-200">

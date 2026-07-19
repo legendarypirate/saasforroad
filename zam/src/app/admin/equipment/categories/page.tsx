@@ -149,8 +149,7 @@ export default function EquipmentCategoriesPage() {
     <div className="space-y-4 p-4 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Техникийн ангилал</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Экскаватор, Дэвсэгч гэх мэт ангиллыг энд бүртгэж, техникийн формд сонгоно
           </p>
         </div>

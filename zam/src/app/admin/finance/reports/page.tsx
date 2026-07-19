@@ -50,7 +50,6 @@ export default function Page() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Санхүүгийн тайлан</h2>
         <p className="text-sm text-muted-foreground">Авлага/өглөгийн aging, данс, төсөв ({year}), НӨАТ</p>
       </div>
 

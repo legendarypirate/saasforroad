@@ -354,9 +354,7 @@ export default function DeliveryPage() {
   
   return (
     <div style={{ paddingBottom: '100px' }}> {/* Adding padding to prevent overlap with fixed button */}
-      <h1 style={{ marginBottom: 24 }}>Татан авалт</h1>
-
-      <Space style={{ marginBottom: 16 }} wrap>
+      <Space style={{ marginBottom: 12 }} wrap>
   <Input
     placeholder="Filter by Phone"
     value={phoneFilter}

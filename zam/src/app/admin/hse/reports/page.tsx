@@ -37,7 +37,6 @@ export default function HseReportsPage() {
   return (
     <div className="space-y-4">
       <Space wrap>
-        <h2 style={{ margin: 0 }}>ХАБЭА тайлан</h2>
         <DatePicker value={from} onChange={(d) => d && setFrom(d)} />
         <DatePicker value={to} onChange={(d) => d && setTo(d)} />
         <Button icon={<ReloadOutlined />} loading={loading} onClick={load}>

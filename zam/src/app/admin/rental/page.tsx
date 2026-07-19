@@ -29,7 +29,7 @@ import {
 } from '@/lib/equipmentRental';
 import type { EquipmentItem } from '@/lib/equipment';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export default function RentalDashboardPage() {
   const [stats, setStats] = useState<RentalStats | null>(null);
@@ -74,7 +74,6 @@ export default function RentalDashboardPage() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <Title level={4} style={{ margin: 0 }}>Түрээсийн самбар</Title>
           <Text type="secondary">
             Машин тоног, барилгын хэрэгсэл (шон, хүрз, арматур…) — өдрийн үнэ → сарын төлбөр
           </Text>

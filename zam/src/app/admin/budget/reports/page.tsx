@@ -61,7 +61,6 @@ export default function BudgetReportsPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-xl font-semibold">Төсвийн тайлан</h2>
         <p className="text-sm text-muted-foreground">Дэлгэрэнгүй BOQ, ангиллын товчоо, Excel/PDF экспорт.</p>
       </div>
 

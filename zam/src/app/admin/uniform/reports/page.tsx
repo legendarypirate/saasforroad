@@ -34,7 +34,6 @@ export default function Page() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Тайлан</h2>
         <p className="text-sm text-muted-foreground">Хүнээр, бараагаар олголт · үлдэгдэл</p>
       </div>
 

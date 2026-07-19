@@ -921,8 +921,9 @@ export default function UserDetailPage() {
     <div>
       <Space style={{ marginBottom: 16 }}>
         <Button onClick={() => router.push('/admin/user')}>Буцах</Button>
-        <Title level={4} style={{ margin: 0 }}>Хэрэглэгчийн дэлгэрэнгүй</Title>
-        <Text type="secondary">{user?.username ? `(${user.username})` : ''}</Text>
+        {user?.username ? (
+          <Title level={4} style={{ margin: 0 }}>{user.username}</Title>
+        ) : null}
       </Space>
 
       <Tabs defaultActiveKey="general" items={items} />

@@ -48,8 +48,7 @@ export default function JobSeekerListPage() {
 
   return (
     <div>
-      <div className="mb-4">
-        <h1 className="mb-1 text-2xl font-semibold">Ажил горилогч / Оюутан</h1>
+      <div className="mb-3">
         <p className="text-sm text-muted-foreground">
           Замын салбарын ажил горилогчид болон дадлагын оюутнууд. Санал илгээх,
           хүсэлт харах, боломжит нэр дэвшигчдийг нэг дороос харах боломжтой.

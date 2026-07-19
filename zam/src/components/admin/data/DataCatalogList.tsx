@@ -112,12 +112,9 @@ export default function DataCatalogList({ kind }: Props) {
   return (
     <div className="space-y-4 p-4 md:p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Платформын дата — зөвхөн харах / холбогдох. Шинээр бүртгэх боломжгүй.
-          </p>
-        </div>
+        <p className="text-sm text-muted-foreground">
+          Платформын дата — зөвхөн харах / холбогдох. Шинээр бүртгэх боломжгүй.
+        </p>
         <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
           Шинэчлэх
         </Button>

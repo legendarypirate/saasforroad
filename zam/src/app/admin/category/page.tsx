@@ -7,7 +7,7 @@ import {
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/admin/icons';
 import { inventoryApi } from '@/lib/inventory';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface Category {
   id: number;
@@ -85,7 +85,6 @@ export default function CategoryPage() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
-          <Title level={4} style={{ margin: 0 }}>Ангилал</Title>
           <Text type="secondary">Барааны ангилал (олон түвшинтэй)</Text>
         </div>
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>

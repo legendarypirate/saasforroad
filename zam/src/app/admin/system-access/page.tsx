@@ -162,9 +162,7 @@ export default function SystemAccessPage() {
   return (
     <PageWrapper menuIndex={MENU_INDEX} requiredAction={ACTIONS.VIEW}>
       <div>
-        <h1 style={{ marginBottom: 24 }}>Эрхийн зохицуулалт</h1>
-
-        <Space style={{ marginBottom: 16 }}>
+        <Space style={{ marginBottom: 12 }}>
           <CanAccess menuIndex={MENU_INDEX} action={ACTIONS.CREATE}>
             <Button
               type="primary"

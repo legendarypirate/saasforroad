@@ -30,7 +30,7 @@ import {
   type RentalPayment,
 } from '@/lib/equipmentRental';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 type FlatPayment = RentalPayment & {
   contract_number?: string;
@@ -188,7 +188,6 @@ export default function RentalPaymentsPage() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <Title level={4} style={{ margin: 0 }}>Түрээсийн төлбөр</Title>
           <Text type="secondary">Сарын хуваарь — өдрийн үнэ × хоногоор бодогдсон</Text>
         </div>
         <Space wrap>

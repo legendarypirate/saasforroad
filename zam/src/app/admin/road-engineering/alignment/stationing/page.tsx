@@ -55,7 +55,6 @@ export default function StationingPage() {
   return (
     <div>
       <Space style={{ marginBottom: 16 }} wrap>
-        <h2 style={{ margin: 0 }}>Станцлал / Chainage</h2>
         <ProjectSelect value={projectId} onChange={(id) => { setProjectId(id); setAlignmentId(undefined); }} />
         <AlignmentSelect projectId={projectId} value={alignmentId} onChange={setAlignmentId} />
         <select

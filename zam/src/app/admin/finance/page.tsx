@@ -69,8 +69,7 @@ export default function FinanceDashboardPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Санхүү</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           Замын компанийн касс, нэхэмжлэх, төлбөр, төсөв, НӨАТ
         </p>
       </div>

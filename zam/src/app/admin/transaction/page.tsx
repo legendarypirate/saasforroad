@@ -16,7 +16,7 @@ import {
   inventoryApi,
 } from '@/lib/inventory';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const QUICK_TYPES = [
   'RECEIPT',
@@ -149,7 +149,6 @@ export default function TransactionPage() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <Title level={4} style={{ margin: 0 }}>Хөдөлгөөн / Баримт</Title>
           <Text type="secondary">
             Агуулах болон төсөл хоорондын шилжүүлэг багтана. Түүх устгахгүй — зөвхөн цуцлалт.
           </Text>

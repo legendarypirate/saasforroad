@@ -123,8 +123,7 @@ export default function ActionPage() {
 
   return (
     <div>
-      <h1 style={{ marginBottom: 24 }}>Арга хэмжээ</h1>
-      <Space style={{ marginBottom: 16 }} wrap>
+      <Space style={{ marginBottom: 12 }} wrap>
         <Input placeholder="username" value={username} onChange={(e) => setUsername(e.target.value)} />
         <Input placeholder="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
         <Input placeholder="email" value={email} onChange={(e) => setEmail(e.target.value)} />

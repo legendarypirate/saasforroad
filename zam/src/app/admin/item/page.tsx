@@ -8,7 +8,7 @@ import {
 import { DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined } from '@/components/admin/icons';
 import { UNITS, formatMoney, inventoryApi } from '@/lib/inventory';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export default function MaterialPage() {
   const [rows, setRows] = useState<any[]>([]);
@@ -100,7 +100,6 @@ export default function MaterialPage() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <Title level={4} style={{ margin: 0 }}>Бараа материал</Title>
           <Text type="secondary">Материалын мастер бүртгэл (асфальт, хайрга, цемент, түлш...)</Text>
         </div>
         <Space wrap>

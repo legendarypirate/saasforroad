@@ -7,7 +7,7 @@ import {
 import { ReloadOutlined, WarningOutlined } from '@/components/admin/icons';
 import { formatMoney, formatQty, inventoryApi } from '@/lib/inventory';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export default function StockPage() {
   const [rows, setRows] = useState<any[]>([]);
@@ -49,7 +49,6 @@ export default function StockPage() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <Title level={4} style={{ margin: 0 }}>Үлдэгдэл</Title>
           <Text type="secondary">
             Үлдэгдэл зөвхөн баримтаар өөрчлөгдөнө (орлого/зарлага/шилжүүлэг/тохируулга)
           </Text>

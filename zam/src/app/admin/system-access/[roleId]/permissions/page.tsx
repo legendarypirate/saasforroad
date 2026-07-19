@@ -107,23 +107,21 @@ export default function RolePermissionsPage() {
   return (
     <PageWrapper menuIndex={MENU_INDEX} requiredAction={ACTIONS.VIEW}>
       <div>
-        <Space style={{ marginBottom: 16 }} className="flex items-center justify-between gap-2">
-          <Button
-            type="default"
-            icon={<ArrowLeftOutlined />}
-            onClick={() => router.push('/admin/system-access')}
-          >
-            Буцах
-          </Button>
-          <h1 style={{ marginBottom: 8 }}>
-            Эрх тохируулах{role ? `: ${role.name}` : ''}
-          </h1>
+        <div className="mb-4">
+          <Space className="flex items-center gap-2" wrap>
+            <Button
+              type="default"
+              icon={<ArrowLeftOutlined />}
+              onClick={() => router.push('/admin/system-access')}
+            >
+              Буцах
+            </Button>
+            {role ? <span className="text-base font-semibold">{role.name}</span> : null}
+          </Space>
           {role?.description ? (
-            <p className="mb-6 text-sm text-muted-foreground">{role.description}</p>
-          ) : (
-            <div className="mb-6" />
-          )}
-        </Space>
+            <p className="mt-2 text-sm text-muted-foreground">{role.description}</p>
+          ) : null}
+        </div>
 
 
         {loading || !role ? (

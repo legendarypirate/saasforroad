@@ -234,9 +234,6 @@ export default function UsersPage() {
 
   return (
     <div>
-      <h1 style={{ marginBottom: 24 }}>Ослын дуудлага</h1>
-      
-
       <Table columns={columns} dataSource={good} rowKey="id" loading={loading} />
 
       <Drawer

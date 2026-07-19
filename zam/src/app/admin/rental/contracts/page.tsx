@@ -47,7 +47,7 @@ import {
   type RentalStatus,
 } from '@/lib/equipmentRental';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { RangePicker } = DatePicker;
 
 export default function RentalContractsPage() {
@@ -350,8 +350,7 @@ export default function RentalContractsPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <Title level={4} style={{ margin: 0 }}>Түрээсийн гэрээ</Title>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 16 }}>
         <Space>
           <Button icon={<ReloadOutlined />} onClick={fetchAll}>Шинэчлэх</Button>
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>

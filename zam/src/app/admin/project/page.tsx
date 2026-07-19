@@ -55,7 +55,7 @@ import {
   type ProjectRecord,
 } from '@/lib/project';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { Option } = Select;
 
 function statusTag(status: number) {
@@ -239,9 +239,6 @@ export default function ProjectPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-3">
           <div>
-            <Title level={4} className="!mb-1">
-              Төслийн багц / Portfolio
-            </Title>
             <Text type="secondary">
               Зам барилга — FIDIC гэрээ, км хэсэг, үе шат, earned value, эрсдэл
             </Text>

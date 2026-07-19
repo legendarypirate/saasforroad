@@ -205,7 +205,6 @@ export default function BrigadeHiresPage() {
     <div className="p-4 md:p-6">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="mb-1 text-2xl font-semibold">Hire хүсэлтүүд</h1>
           <p className="text-sm text-muted-foreground">
             Бригад апп зөвшөөрсний дараа эндээс идэвхжүүлж, дуусгаж, од өгнө
           </p>

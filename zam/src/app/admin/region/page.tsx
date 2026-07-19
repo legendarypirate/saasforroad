@@ -162,9 +162,7 @@ const columns: ColumnsType<Region> = [
 
   return (
     <div style={{ paddingBottom: '100px' }}> {/* Adding padding to prevent overlap with fixed button */}
-      <h1 style={{ marginBottom: 24 }}>Бүс</h1>
-
-      <Space style={{ marginBottom: 16 }} wrap>
+      <Space style={{ marginBottom: 12 }} wrap>
        
          <Button
           type="primary"

@@ -180,7 +180,6 @@ export default function RoadBudgetPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold">Төсөв / Budget Estimator</h2>
           <p className="text-sm text-muted-foreground">
             Шороо · хучилт · culvert/гүүр · нэгж үнэ · нөөц/НӨАТ — замын төсөвт тооцоо
           </p>

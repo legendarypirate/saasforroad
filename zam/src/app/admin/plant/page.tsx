@@ -87,7 +87,6 @@ export default function PlantDashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold text-foreground">Үйлдвэрийн самбар</h1>
           <p className="text-sm text-muted-foreground">
             Асфальт, цемент, бутлуур, эмульс — орлого / зарлага / үйлдвэрлэл
             {data?.period ? ` · ${data.period.start} → ${data.period.end}` : ''}

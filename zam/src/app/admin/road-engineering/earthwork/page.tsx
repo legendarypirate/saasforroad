@@ -93,7 +93,6 @@ export default function EarthworkPage() {
   return (
     <div className="space-y-4">
       <Space wrap>
-        <h2 style={{ margin: 0 }}>Шорооны ажил / Earthwork</h2>
         <ProjectSelect value={projectId} onChange={(id) => { setProjectId(id); setAlignmentId(undefined); }} />
         <AlignmentSelect projectId={projectId} value={alignmentId} onChange={setAlignmentId} />
         <Select

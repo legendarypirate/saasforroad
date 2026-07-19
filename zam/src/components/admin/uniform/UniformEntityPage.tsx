@@ -154,8 +154,7 @@ export default function UniformEntityPage({
 
   return (
     <div>
-      <Space style={{ marginBottom: 16 }} wrap>
-        <h2 style={{ margin: 0 }}>{title}</h2>
+      <Space style={{ marginBottom: 12 }} wrap>
         <Button icon={<ReloadOutlined />} onClick={load}>
           Шинэчлэх
         </Button>

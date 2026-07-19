@@ -44,7 +44,7 @@ import {
   type OrgUser,
 } from '@/lib/orgStructure';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export default function OrgStructurePage() {
   const [tree, setTree] = useState<OrgNode[]>([]);
@@ -205,9 +205,6 @@ export default function OrgStructurePage() {
     <>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
-          <Title level={4} style={{ margin: 0 }}>
-            Байгууллагын бүтэц
-          </Title>
           <Text type="secondary">
             Хязгааргүй түвшний мод бүтэц. Ажилтны доор ажилтан чирж байрлуулна. Zoom: +/- товч эсвэл Ctrl+гүйлгэх.
           </Text>

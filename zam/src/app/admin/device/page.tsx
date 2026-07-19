@@ -16,7 +16,7 @@ import type { ColumnsType } from '@/components/admin/primitives';
 import { CheckOutlined, CloseOutlined, ReloadOutlined, StopOutlined } from '@/components/admin/icons';
 import dayjs from 'dayjs';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface DeviceRow {
   id: number;
@@ -246,7 +246,6 @@ export default function DeviceApprovalPage() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
         <div>
-          <Title level={3} style={{ margin: 0 }}>Төхөөрөмж баталгаажуулалт</Title>
           <Text type="secondary">
             Ажилтан шинэ төхөөрөмжөөр нэвтэрэхэд энд харагдана. Зөвхөн хамгийн сүүлд зөвшөөрөгдсөн төхөөрөмж ирц бүртгэнэ.
           </Text>

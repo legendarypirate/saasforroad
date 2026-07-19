@@ -103,8 +103,7 @@ export default function FactoryCatalogPage() {
         <div className="space-y-3 border-b border-border p-4">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <h1 className="text-xl font-semibold tracking-tight">Үйлдвэр</h1>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Баталгаажсан үйлдвэрүүд — газрын зураг + холбоо барих.
               </p>
             </div>

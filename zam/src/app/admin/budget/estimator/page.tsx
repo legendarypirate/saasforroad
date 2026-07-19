@@ -87,7 +87,6 @@ export default function BudgetEstimatorPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Төсвийн тооцоолуур</h2>
         <p className="text-sm text-muted-foreground">
           Замын инженерийн өгөгдлөөс (шороо, хучилт, culvert/гүүр, BOQ) нэгж үнээр автомат төсөв гаргана.
         </p>

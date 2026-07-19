@@ -38,7 +38,7 @@ import {
   type SalaryRow,
 } from '@/lib/salary';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 type EditableField =
   | 'totalWorkedHours'
@@ -573,9 +573,6 @@ export default function SalaryCalculationPage() {
     <div className="-m-4 space-y-4">
       <div className="sticky top-16 z-20 flex flex-wrap items-center justify-between gap-3 border-b bg-background px-1 pb-4">
         <div>
-          <Title level={5} style={{ margin: 0 }}>
-            Цалин тооцоолол
-          </Title>
           <Text type="secondary" style={{ fontSize: 11 }}>
             Тасалсан = цаг (хасалт = цагийн хөлс × цаг) · НДШ 11.5% · ХХОАТ 10% · шар талбар = засварлана
           </Text>

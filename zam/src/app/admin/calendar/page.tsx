@@ -9,7 +9,7 @@ import StyledFullCalendar, {
   taskPriorityColor,
 } from '@/components/StyledFullCalendar';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
 const PRIORITY_LEGEND = [
@@ -156,14 +156,9 @@ const CalendarPage = () => {
           >
             <CalendarOutlined style={{ fontSize: 26, color: '#fff' }} />
           </div>
-          <div>
-            <Title level={3} style={{ color: '#fff', margin: 0 }}>
-              Даалгаврын календарь
-            </Title>
-            <Text style={{ color: 'rgba(255,255,255,0.85)' }}>
-              {loading ? 'Ачааллаж байна...' : `${taskCount} даалгавар хугацаанд`}
-            </Text>
-          </div>
+          <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 15 }}>
+            {loading ? 'Ачааллаж байна...' : `${taskCount} даалгавар хугацаанд`}
+          </Text>
         </div>
       </Card>
 

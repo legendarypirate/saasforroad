@@ -16,7 +16,7 @@ import type { ColumnsType } from '@/components/admin/primitives';
 import { CheckOutlined, CloseOutlined, ReloadOutlined } from '@/components/admin/icons';
 import dayjs from 'dayjs';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface LeaveRow {
   id: number;
@@ -229,9 +229,6 @@ export default function LeaveRequestPage() {
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Title level={3} style={{ margin: 0 }}>
-            Чөлөөний хүсэлт
-          </Title>
           <Text type="secondary">
             Апп-аас ирсэн цалинтай/цалингүй чөлөөний хүсэлтийг зөвшөөрөх, татгалзах
           </Text>

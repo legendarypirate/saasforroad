@@ -262,8 +262,7 @@ export default function UsersPage() {
 
   return (
     <div>
-      <h1 style={{ marginBottom: 24 }}>Хэрэглэгч</h1>
-      <div className="mb-4 flex flex-wrap items-center gap-2">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         <Select
           allowClear
           showSearch
@@ -280,7 +279,7 @@ export default function UsersPage() {
           icon={<PlusOutlined />}
           onClick={() => setDrawerVisible(true)}
         >
-          + Хэрэглэгч үүсгэх
+          Хэрэглэгч үүсгэх
         </Button>
       </div>
 

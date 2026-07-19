@@ -124,7 +124,6 @@ export default function FuelConsumptionPage() {
   return (
     <div>
       <Space style={{ marginBottom: 16 }} wrap>
-        <h2 style={{ margin: 0 }}>Зарцуулалт (Л/100км)</h2>
         <Select
           allowClear
           placeholder="Техник"

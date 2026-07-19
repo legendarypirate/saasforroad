@@ -72,7 +72,6 @@ export default function RoadReportsPage() {
   return (
     <div className="space-y-4">
       <Space wrap>
-        <h2 style={{ margin: 0 }}>Тайлангууд</h2>
         <Select
           style={{ minWidth: 200 }}
           value={type}

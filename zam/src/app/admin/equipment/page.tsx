@@ -37,7 +37,7 @@ import {
   type EquipmentStatus,
 } from '@/lib/equipment';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 function EquipmentPageContent() {
   const router = useRouter();
@@ -256,9 +256,6 @@ function EquipmentPageContent() {
       <div
         className="mb-4 flex flex-nowrap items-center gap-3 overflow-x-auto rounded-xl border border-border bg-card px-4 py-3 shadow-sm"
       >
-        <Title level={4} style={{ margin: 0, whiteSpace: 'nowrap', flexShrink: 0 }}>
-          Техник
-        </Title>
         <div className="ml-auto flex flex-nowrap items-center gap-2">
           <div style={{ width: 200, flexShrink: 0 }}>
             <Input

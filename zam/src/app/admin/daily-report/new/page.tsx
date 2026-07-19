@@ -130,8 +130,7 @@ export default function NewDailyReportPage() {
   return (
     <form onSubmit={handleSubmit} className="mx-auto max-w-3xl space-y-5">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Шинэ өдрийн тайлан</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           Төслийн менежер бөглөнө — захирал зөвхөн товч хардаг
         </p>
       </div>

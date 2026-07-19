@@ -63,7 +63,6 @@ export default function RoadEngineeringDashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-foreground">Замын инженеринг</h2>
         <p className="text-sm text-muted-foreground">
           Төсөл, тэнхлэг, профиль, шорооны ажил — нэгтгэсэн самбар
         </p>

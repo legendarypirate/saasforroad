@@ -107,7 +107,6 @@ export default function BudgetComparePage() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-xl font-semibold">Төсөв харьцуулалт</h2>
         <p className="text-sm text-muted-foreground">Хоёр хувилбарын дүн, ангилал, ₮/км-ийг харьцуулна.</p>
       </div>
 

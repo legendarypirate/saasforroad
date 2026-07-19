@@ -204,7 +204,6 @@ export default function FuelIssuesPage() {
   return (
     <div>
       <Space style={{ marginBottom: 16 }} wrap>
-        <h2 style={{ margin: 0 }}>Шатахуун олголт</h2>
         <Input.Search allowClear placeholder="Дугаар / тэмдэглэл…" style={{ width: 220 }} onSearch={setQ} />
         <Button icon={<ReloadOutlined />} onClick={load}>
           Шинэчлэх

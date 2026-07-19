@@ -406,7 +406,6 @@ export default function BrigadeListPage() {
     <div>
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="mb-1 text-2xl font-semibold">Бригад</h1>
           <p className="text-sm text-muted-foreground">
             Платформын бригад (бүртгэл: brigad app / admin.rcos.mn). Компани зөвхөн hire / үнэлгээ өгнө.
           </p>

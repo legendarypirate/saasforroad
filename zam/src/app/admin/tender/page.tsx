@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Button, Table, Tag, Modal, Form, Input, message, Space } from '@/components/admin/primitives';
-import { PlusOutlined, FileTextOutlined } from '@/components/admin/icons';
+import { PlusOutlined } from '@/components/admin/icons';
 import { useRouter } from 'next/navigation';
 import { createTender, fetchTenders, STATUS_LABELS, type TenderPackage } from '@/lib/tender';
 
@@ -48,13 +48,9 @@ export default function TenderListPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>
-          <h2 style={{ margin: 0, color: '#082c5c' }}>
-            <FileTextOutlined style={{ marginRight: 8 }} />
-            Тендерийн материал
-          </h2>
-          <p style={{ margin: '4px 0 0', color: '#888' }}>
+          <p style={{ margin: 0, color: '#888' }}>
             Инженерийн үнэмжлэх, И-Монгол лавлагаа upload → AI боловсруулалт → DOCX татах
           </p>
         </div>
