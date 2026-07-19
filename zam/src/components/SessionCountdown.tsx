@@ -1,10 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { RefreshCw, Timer } from 'lucide-react';
 
-import { clearAuthSession, getTokenExpiresAt, renewSessionToken } from '@/lib/auth';
+import {
+  bindTokenLifetime,
+  clearAuthSession,
+  DEFAULT_SESSION_TTL_MS,
+  getToken,
+  getTokenRemainingMs,
+  refreshAuthSession,
+  renewSessionToken,
+} from '@/lib/auth';
 import { uiToast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 
@@ -16,33 +24,72 @@ function formatCountdown(ms: number) {
 }
 
 /**
- * Shows time remaining until JWT auto-logout (server issues 30m tokens).
+ * Countdown uses a *relative* TTL from login/renew time (not JWT exp vs wall clock),
+ * so a wrong Windows system time cannot force an instant logout loop.
+ * When local TTL hits 0, we still confirm with the server before logging out.
  */
 export default function SessionCountdown() {
   const router = useRouter();
   const [remainingMs, setRemainingMs] = useState<number | null>(null);
   const [renewing, setRenewing] = useState(false);
   const [tickKey, setTickKey] = useState(0);
+  const verifyingRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
-    let loggedOut = false;
 
     const tick = () => {
-      const exp = getTokenExpiresAt();
-      if (!exp) {
+      if (!getToken()) {
         if (!cancelled) setRemainingMs(null);
         return;
       }
-      const left = Math.max(0, exp - Date.now());
+
+      const left = getTokenRemainingMs();
       if (!cancelled) setRemainingMs(left);
 
-      if (left <= 0 && !loggedOut) {
-        loggedOut = true;
-        clearAuthSession();
-        uiToast.error('Хугацаа дууссан — дахин нэвтэрнэ үү');
-        router.replace('/login');
-      }
+      if (left > 0) return;
+      if (verifyingRef.current) return;
+      verifyingRef.current = true;
+
+      (async () => {
+        try {
+          // Local TTL ended — try renew; server clock is authoritative
+          const renewed = await renewSessionToken();
+          if (cancelled) return;
+          if (renewed) {
+            setRemainingMs(getTokenRemainingMs());
+            setTickKey((k) => k + 1);
+            return;
+          }
+
+          const session = await refreshAuthSession();
+          if (cancelled) return;
+          if (session) {
+            // Token still valid on server — extend local grace, avoid API spam
+            const token = getToken();
+            if (token) {
+              try {
+                localStorage.setItem('token_received_at', String(Date.now()));
+                localStorage.setItem(
+                  'token_ttl_ms',
+                  String(Math.min(5 * 60 * 1000, DEFAULT_SESSION_TTL_MS)),
+                );
+              } catch {
+                bindTokenLifetime(token);
+              }
+            }
+            setRemainingMs(getTokenRemainingMs());
+            setTickKey((k) => k + 1);
+            return;
+          }
+
+          clearAuthSession();
+          uiToast.error('Хугацаа дууссан — дахин нэвтэрнэ үү');
+          router.replace('/login');
+        } finally {
+          verifyingRef.current = false;
+        }
+      })();
     };
 
     tick();
@@ -59,11 +106,17 @@ export default function SessionCountdown() {
     try {
       const ok = await renewSessionToken();
       if (!ok) {
-        uiToast.error('Хугацаа шинэчилж чадсангүй');
+        const session = await refreshAuthSession();
+        if (!session) {
+          uiToast.error('Хугацаа шинэчилж чадсангүй — дахин нэвтэрнэ үү');
+          clearAuthSession();
+          router.replace('/login');
+          return;
+        }
+        uiToast.error('Шинэчилж чадсангүй — дахин оролдоно уу');
         return;
       }
-      const exp = getTokenExpiresAt();
-      setRemainingMs(exp ? Math.max(0, exp - Date.now()) : null);
+      setRemainingMs(getTokenRemainingMs());
       setTickKey((k) => k + 1);
       uiToast.success('Сесс 30 минутаар шинэчлэгдлээ');
     } finally {

@@ -225,6 +225,7 @@ exports.login = async (req, res) => {
     res.json({
       success: true,
       token,
+      expiresIn: 30 * 60,
       user: buildAuthUserPayload(user, roleInfo, req.tenant),
     });
   } catch (err) {

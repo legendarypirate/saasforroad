@@ -133,7 +133,18 @@ export default function LoginPage() {
 
       if (res.ok && data.success) {
         uiToast.success('Амжилттай нэвтэрлээ!');
-        setAuthSession(data.token, data.user);
+        const saved = setAuthSession(data.token, data.user, {
+          expiresInSec:
+            typeof data.expiresIn === 'number' ? data.expiresIn : 30 * 60,
+          resetLifetime: true,
+        });
+        if (!saved) {
+          clearAuthSession();
+          uiToast.error(
+            'Хөтөч localStorage хадгалж чадсангүй. Private mode / antivirus / disk quota шалгана уу.',
+          );
+          return;
+        }
         if (data.user?.tenant) {
           setStoredTenant(data.user.tenant);
         } else {
