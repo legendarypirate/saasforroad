@@ -42,7 +42,9 @@ interface User {
   updatedAt: string;
 }
 
+/** Treat null/empty as active — older creates left is_active unset and vanished from the active tab. */
 function isUserActive(value: User['is_active']) {
+  if (value === undefined || value === null || value === '') return true;
   return value === true || value === 1 || value === '1' || value === 'true';
 }
 
@@ -144,12 +146,18 @@ export default function UsersPage() {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user`, {
         method: 'POST',
         headers: tenantHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify(values),
+        body: JSON.stringify({ ...values, is_active: '1' }),
       });
       const result = await response.json();
       if (response.ok && result.success) {
         message.success('Хэрэглэгч үүслээ');
-        fetchUsers(roleFilter);
+        const createdRoleId = result.data?.role_id as number | undefined;
+        // Role filter would hide a user created with a different role
+        if (roleFilter && createdRoleId && roleFilter !== createdRoleId) {
+          setRoleFilter(undefined);
+        } else {
+          await fetchUsers(roleFilter);
+        }
         setStatusTab('active');
         handleDrawerClose();
       } else {

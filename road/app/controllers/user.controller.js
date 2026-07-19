@@ -34,9 +34,27 @@ async function resolveRoleFields(body, tenantId) {
   return { role_id: role.id, role: role.name };
 }
 
+/** Normalize active flag — DB stores STRING "1" / "0". */
+function normalizeIsActive(value, fallback = "1") {
+  if (value === undefined || value === null || value === "") return fallback;
+  if (value === true || value === 1 || value === "1" || value === "true") return "1";
+  if (value === false || value === 0 || value === "0" || value === "false") return "0";
+  return fallback;
+}
+
+function assertSameTenant(req, user) {
+  if (req.tenant?.id && user.tenant_id && user.tenant_id !== req.tenant.id) {
+    return false;
+  }
+  return true;
+}
+
 exports.create = async (req, res) => {
   if (!req.body.username || !req.body.password) {
-    res.status(400).send({ message: "Username and password are required!" });
+    res.status(400).send({
+      success: false,
+      message: "Username and password are required!",
+    });
     return;
   }
 
@@ -50,14 +68,17 @@ exports.create = async (req, res) => {
       phone: req.body.phone,
       password: hashedPassword,
       tenant_id: req.tenant?.id || req.body.tenant_id || null,
+      // Default active — admin list tabs filter on is_active; null looked "missing"
+      is_active: normalizeIsActive(req.body.is_active, "1"),
       ...roleFields,
     };
 
     const data = await User.create(user);
     const full = await User.findByPk(data.id, { include: userInclude });
-    res.send({ success: true, data: full });
+    res.status(201).send({ success: true, data: full });
   } catch (err) {
     res.status(500).send({
+      success: false,
       message: err.message || "Some error occurred while creating the User.",
     });
   }
@@ -99,6 +120,22 @@ exports.findAll = async (req, res) => {
   }
 
   try {
+    // Heal legacy creates that left is_active null (showed as "missing" on active tab)
+    if (req.tenant?.id) {
+      await User.update(
+        { is_active: "1" },
+        {
+          where: {
+            tenant_id: req.tenant.id,
+            [Op.or]: [
+              { is_active: { [Op.is]: null } },
+              { is_active: "" },
+            ],
+          },
+        }
+      );
+    }
+
     const data = await User.findAll({
       where: condition,
       include: userInclude,
@@ -114,20 +151,30 @@ exports.findAll = async (req, res) => {
   }
 };
 
-exports.findOne = (req, res) => {
+exports.findOne = async (req, res) => {
   const id = req.params.id;
 
-  User.findByPk(id, { include: userInclude })
-    .then(data => {
-      if (data) {
-        res.send({ success: true, data });
-      } else {
-        res.status(404).send({ message: `Cannot find User with id=${id}.` });
-      }
-    })
-    .catch(err => {
-      res.status(500).send({ message: "Error retrieving User with id=" + id });
+  try {
+    const data = await User.findByPk(id, { include: userInclude });
+    if (!data) {
+      return res.status(404).send({
+        success: false,
+        message: `Cannot find User with id=${id}.`,
+      });
+    }
+    if (!assertSameTenant(req, data)) {
+      return res.status(403).send({
+        success: false,
+        message: "User belongs to another tenant",
+      });
+    }
+    res.send({ success: true, data });
+  } catch (err) {
+    res.status(500).send({
+      success: false,
+      message: "Error retrieving User with id=" + id,
     });
+  }
 };
 
 exports.uploadProfileImage = (req, res) => {
@@ -148,6 +195,12 @@ exports.uploadProfileImage = (req, res) => {
       const existingUser = await User.findByPk(id);
       if (!existingUser) {
         return res.status(404).json({ success: false, message: `User with id=${id} not found.` });
+      }
+      if (!assertSameTenant(req, existingUser)) {
+        return res.status(403).json({
+          success: false,
+          message: "User belongs to another tenant",
+        });
       }
 
       const result = await uploadImage(req.file.buffer, req.file.mimetype, {
@@ -182,7 +235,10 @@ exports.update = async (req, res) => {
     email: req.body.email !== undefined ? req.body.email : undefined,
     phone: req.body.phone !== undefined ? req.body.phone : undefined,
     end_date: req.body.end_date !== undefined ? req.body.end_date : undefined,
-    is_active: req.body.is_active !== undefined ? req.body.is_active : undefined,
+    is_active:
+      req.body.is_active !== undefined
+        ? normalizeIsActive(req.body.is_active)
+        : undefined,
     gender: req.body.gender !== undefined ? req.body.gender : undefined,
     department_number: req.body.department_number !== undefined ? req.body.department_number : undefined,
     personal_case_number: req.body.personal_case_number !== undefined ? req.body.personal_case_number : undefined,
@@ -288,6 +344,12 @@ exports.changePassword = async (req, res) => {
         message: `User with id=${id} not found.`,
       });
     }
+    if (!assertSameTenant(req, existingUser)) {
+      return res.status(403).json({
+        success: false,
+        message: "User belongs to another tenant",
+      });
+    }
 
     const hashedPassword = await bcrypt.hash(String(password).trim(), saltRounds);
     await User.update({ password: hashedPassword }, { where: { id } });
@@ -304,30 +366,56 @@ exports.changePassword = async (req, res) => {
   }
 };
 
-exports.delete = (req, res) => {
+exports.delete = async (req, res) => {
   const id = req.params.id;
 
-  User.destroy({ where: { id } })
-    .then(num => {
-      if (num == 1) {
-        res.send({ message: "User was deleted successfully!" });
-      } else {
-        res.send({ message: `Cannot delete User with id=${id}.` });
-      }
-    })
-    .catch(err => {
-      res.status(500).send({ message: "Could not delete User with id=" + id });
+  try {
+    const existingUser = await User.findByPk(id);
+    if (!existingUser) {
+      return res.status(404).send({
+        success: false,
+        message: `Cannot delete User with id=${id}.`,
+      });
+    }
+    if (!assertSameTenant(req, existingUser)) {
+      return res.status(403).send({
+        success: false,
+        message: "User belongs to another tenant",
+      });
+    }
+
+    const num = await User.destroy({ where: { id } });
+    if (num === 1) {
+      res.send({ success: true, message: "User was deleted successfully!" });
+    } else {
+      res.status(400).send({
+        success: false,
+        message: `Cannot delete User with id=${id}.`,
+      });
+    }
+  } catch (err) {
+    res.status(500).send({
+      success: false,
+      message: "Could not delete User with id=" + id,
     });
+  }
 };
 
-exports.deleteAll = (req, res) => {
-  User.destroy({ where: {}, truncate: false })
-    .then(nums => {
-      res.send({ message: `${nums} User were deleted successfully!` });
-    })
-    .catch(err => {
-      res.status(500).send({ message: err.message || "Some error occurred while removing all User." });
+exports.deleteAll = async (req, res) => {
+  try {
+    const where = {};
+    if (req.tenant?.id) where.tenant_id = req.tenant.id;
+    const nums = await User.destroy({ where, truncate: false });
+    res.send({
+      success: true,
+      message: `${nums} User were deleted successfully!`,
     });
+  } catch (err) {
+    res.status(500).send({
+      success: false,
+      message: err.message || "Some error occurred while removing all User.",
+    });
+  }
 };
 
 exports.findAllPublished = (req, res) => {
