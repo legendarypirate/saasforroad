@@ -331,11 +331,23 @@ exports.findAll = async (req, res) => {
   if (stage) where.stage = stage;
   if (province) where.province = { [Op.iLike]: `%${province}%` };
   if (contract_type) where.contract_type = contract_type;
-  if (req.tenant?.id) where.tenant_id = req.tenant.id;
 
   try {
+    const tenantId = req.tenant?.id || null;
+    const scopedWhere = tenantId
+      ? {
+          [Op.and]: [
+            where,
+            {
+              [Op.or]: [{ tenant_id: tenantId }, { tenant_id: null }],
+            },
+          ],
+        }
+      : where;
+
     const data = await Project.findAll({
-      where,
+      where: scopedWhere,
+      skipTenantScope: true,
       include: [
         {
           model: db.users,
@@ -358,6 +370,15 @@ exports.findAll = async (req, res) => {
       ],
       order: [["createdAt", "DESC"]],
     });
+
+    // Heal legacy null-tenant projects for this tenant
+    if (tenantId) {
+      for (const p of data) {
+        if (p.tenant_id == null) {
+          await p.update({ tenant_id: tenantId }, { skipTenantScope: true });
+        }
+      }
+    }
 
     const expenseMap = {};
     if (db.fin_expenses) {

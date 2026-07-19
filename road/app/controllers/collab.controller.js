@@ -49,9 +49,20 @@ function serializeAd(ad, extras = {}) {
 }
 
 async function loadOwnerProject(projectId, tid) {
-  return Project.findOne({
-    where: { id: projectId, tenant_id: tid },
+  const project = await Project.findOne({
+    where: { id: projectId },
+    skipTenantScope: true,
   });
+  if (!project) return null;
+
+  const ownerTid = project.tenant_id;
+  if (ownerTid == null) {
+    // Legacy rows before tenant isolation — claim for current tenant
+    await project.update({ tenant_id: tid }, { skipTenantScope: true });
+    return project;
+  }
+  if (Number(ownerTid) !== Number(tid)) return null;
+  return project;
 }
 
 async function companyNameForTenant(tid) {

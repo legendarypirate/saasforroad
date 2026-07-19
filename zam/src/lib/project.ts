@@ -1,9 +1,24 @@
+import { tenantHeaders } from '@/lib/tenant';
+
 const API = process.env.NEXT_PUBLIC_API_URL || '';
+
+function projectAuthHeaders(json = false): HeadersInit {
+  const token =
+    typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const extra: Record<string, string> = {};
+  if (json) extra['Content-Type'] = 'application/json';
+  if (token) extra['Authorization'] = token;
+  return tenantHeaders(extra);
+}
 
 async function projectFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API}/api${path}`, {
     ...init,
-    headers: { 'Content-Type': 'application/json', ...init?.headers },
+    headers: {
+      ...projectAuthHeaders(Boolean(init?.body)),
+      ...init?.headers,
+    },
+    cache: 'no-store',
   });
   const json = await res.json();
   if (!json.success) throw new Error(json.message || 'Алдаа гарлаа');

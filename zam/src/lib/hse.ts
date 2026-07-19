@@ -1,3 +1,5 @@
+import { tenantHeaders } from '@/lib/tenant';
+
 const API = process.env.NEXT_PUBLIC_API_URL || '';
 
 async function hseFetch<T>(path: string, init?: RequestInit): Promise<T | null> {
@@ -156,7 +158,13 @@ export async function fetchHseReport(type: string, from?: string, to?: string) {
 }
 
 export async function fetchProjects(): Promise<Array<{ id: number; name: string }>> {
-  const res = await fetch(`${API}/api/project`);
+  const token =
+    typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const headers: Record<string, string> = {
+    ...(tenantHeaders() as Record<string, string>),
+  };
+  if (token) headers.Authorization = token;
+  const res = await fetch(`${API}/api/project`, { headers, cache: 'no-store' });
   const json = await res.json();
   return json.success ? json.data || [] : [];
 }
