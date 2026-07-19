@@ -307,6 +307,7 @@ export default function FinanceInvoicePage({ title, direction }: Props) {
                 }}
               />
               <InputNumber
+                money
                 min={0}
                 value={line.unit_price}
                 onChange={(v) => {

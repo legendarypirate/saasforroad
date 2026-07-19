@@ -503,10 +503,10 @@ export default function RentalContractsPage() {
               rules={[{ required: true, message: 'Заавал' }]}
               extra={`Сарын ойролцоо: ${formatMnt(monthlyFromDaily(watchDaily))} (×30). Бодит төлбөр = өдөр × тухайн сарын хоног.`}
             >
-              <InputNumber style={{ width: '100%' }} min={0} step={1000} />
+              <InputNumber money style={{ width: '100%' }} min={0} />
             </Form.Item>
             <Form.Item name="deposit_amount" label="Барьцаа (₮)">
-              <InputNumber style={{ width: '100%' }} min={0} />
+              <InputNumber money style={{ width: '100%' }} min={0} />
             </Form.Item>
             <Form.Item name="motor_hours_start" label="Мото цаг (эхлэх)">
               <InputNumber style={{ width: '100%' }} min={0} />
@@ -543,7 +543,7 @@ export default function RentalContractsPage() {
             </Text>
             <Form form={payForm} layout="vertical">
               <Form.Item name="amount_paid" label="Төлсөн дүн (₮)" rules={[{ required: true }]}>
-                <InputNumber style={{ width: '100%' }} min={0} />
+                <InputNumber money style={{ width: '100%' }} min={0} />
               </Form.Item>
               <Form.Item name="paid_date" label="Төлсөн огноо" rules={[{ required: true }]} {...dateFormItemProps()}>
                 <DatePicker format={DATE_FORMAT} style={{ width: '100%' }} />

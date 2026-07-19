@@ -610,7 +610,7 @@ export default function ProjectPage() {
               <Select options={[...CURRENCIES]} />
             </Form.Item>
             <Form.Item label="Төсөв" name="budget" rules={[{ required: true, type: 'number', min: 0 }]}>
-              <InputNumber className="w-full" min={0} />
+              <InputNumber money className="w-full" min={0} />
             </Form.Item>
             <Form.Item label="Хадгалалт %" name="retention_pct">
               <InputNumber className="w-full" min={0} max={100} />

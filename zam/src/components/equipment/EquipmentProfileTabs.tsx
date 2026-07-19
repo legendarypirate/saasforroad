@@ -170,7 +170,7 @@ export function GeneralTab({ item, onSaved }: { item: EquipmentItem; onSaved: (i
             </Form.Item>
           </Col>
           <Col xs={24} sm={8}><Form.Item name="motor_hours" label="Мото цаг"><InputNumber style={{ width: '100%' }} min={0} /></Form.Item></Col>
-          <Col xs={24} sm={8}><Form.Item name="default_daily_rate" label="Өдрийн түрээс ₮"><InputNumber style={{ width: '100%' }} min={0} /></Form.Item></Col>
+          <Col xs={24} sm={8}><Form.Item name="default_daily_rate" label="Өдрийн түрээс ₮"><InputNumber money style={{ width: '100%' }} min={0} /></Form.Item></Col>
           <Col span={24}><Form.Item name="notes" label="Тэмдэглэл"><Input.TextArea rows={2} /></Form.Item></Col>
         </Row>
       </Form>
@@ -502,7 +502,7 @@ export function ServiceTab({ item, onRefresh }: { item: EquipmentItem; onRefresh
                 <Select options={['ТО', 'Засвар', 'Бусад'].map((v) => ({ value: v, label: v }))} />
               </Form.Item>
             </Col>
-            <Col span={12}><Form.Item name="cost" label="Зардал ₮"><InputNumber style={{ width: '100%' }} min={0} /></Form.Item></Col>
+            <Col span={12}><Form.Item name="cost" label="Зардал ₮"><InputNumber money style={{ width: '100%' }} min={0} /></Form.Item></Col>
             <Col span={24}><Form.Item name="description" label="Хийсэн ажил"><Input /></Form.Item></Col>
             <Col span={24}><Form.Item name="parts_replaced" label="Орлуулсан эд анги"><Input /></Form.Item></Col>
             <Col span={12}><Form.Item name="service_provider" label="Гүйцэтгэсэн газар"><Input /></Form.Item></Col>
@@ -735,12 +735,12 @@ export function FinanceTab({ item, onRefresh }: { item: EquipmentItem; onRefresh
               }}
             />
           </Form.Item>
-          <Form.Item name="rental_income" label="Орлого"><InputNumber min={0} /></Form.Item>
-          <Form.Item name="operator_salary" label="Цалин"><InputNumber min={0} /></Form.Item>
-          <Form.Item name="oil_cost" label="Тос"><InputNumber min={0} /></Form.Item>
-          <Form.Item name="service_cost" label="ТО"><InputNumber min={0} /></Form.Item>
-          <Form.Item name="fuel_cost" label="Шатахуун"><InputNumber min={0} /></Form.Item>
-          <Form.Item name="other_cost" label="Бусад"><InputNumber min={0} /></Form.Item>
+          <Form.Item name="rental_income" label="Орлого"><InputNumber money min={0} /></Form.Item>
+          <Form.Item name="operator_salary" label="Цалин"><InputNumber money min={0} /></Form.Item>
+          <Form.Item name="oil_cost" label="Тос"><InputNumber money min={0} /></Form.Item>
+          <Form.Item name="service_cost" label="ТО"><InputNumber money min={0} /></Form.Item>
+          <Form.Item name="fuel_cost" label="Шатахуун"><InputNumber money min={0} /></Form.Item>
+          <Form.Item name="other_cost" label="Бусад"><InputNumber money min={0} /></Form.Item>
           <Button type="primary" htmlType="submit" icon={<SaveOutlined />}>Сар хадгалах</Button>
         </Form>
       </Card>

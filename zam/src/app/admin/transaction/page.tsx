@@ -436,7 +436,7 @@ export default function TransactionPage() {
                       />
                     </Form.Item>
                     <Form.Item {...field} name={[field.name, 'unit_cost']} style={{ marginBottom: 0 }}>
-                      <InputNumber style={{ width: '100%' }} min={0} placeholder="Үнэ" />
+                      <InputNumber money style={{ width: '100%' }} min={0} placeholder="Үнэ" />
                     </Form.Item>
                     <Button danger type="text" onClick={() => remove(field.name)}>
                       ×

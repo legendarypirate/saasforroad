@@ -221,7 +221,7 @@ export default function RentalPaymentsPage() {
             </Text>
             <Form form={payForm} layout="vertical">
               <Form.Item name="amount_paid" label="Төлөх дүн (₮)" rules={[{ required: true }]}>
-                <InputNumber style={{ width: '100%' }} min={0} />
+                <InputNumber money style={{ width: '100%' }} min={0} />
               </Form.Item>
               <Form.Item name="paid_date" label="Огноо" rules={[{ required: true }]} {...dateFormItemProps()}>
                 <DatePicker format={DATE_FORMAT} style={{ width: '100%' }} />

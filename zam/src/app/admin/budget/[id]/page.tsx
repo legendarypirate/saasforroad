@@ -6,6 +6,7 @@ import {
   Button,
   Form,
   Input,
+  MoneyInput,
   Modal,
   Select,
   Space,
@@ -446,7 +447,7 @@ export default function RoadBudgetDetailPage() {
               <Input type="number" step="any" />
             </Form.Item>
             <Form.Item name="unit_price" label="Нэгж үнэ" rules={[{ required: true }]}>
-              <Input type="number" step="any" />
+              <MoneyInput className="w-full" min={0} />
             </Form.Item>
           </Space>
           <Form.Item name="remarks" label="Тэмдэглэл">

@@ -32,6 +32,7 @@ declare module '@/components/admin/primitives' {
   export const Button: any;
   export const Input: any;
   export const InputNumber: any;
+  export const MoneyInput: any;
   export const Select: any;
   export const Switch: any;
   export const Form: {

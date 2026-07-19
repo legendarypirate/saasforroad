@@ -254,7 +254,7 @@ function DocHistoryPanel({
                     ) : f.key === 'issued_at' || f.key === 'expires_at' ? (
                       <DatePicker format={DATE_FORMAT} style={{ width: '100%' }} />
                     ) : f.key === 'amount' ? (
-                      <InputNumber style={{ width: '100%' }} min={0} />
+                      <InputNumber money style={{ width: '100%' }} min={0} />
                     ) : f.key === 'paid' ? (
                       <Switch />
                     ) : f.key === 'notes' ? (

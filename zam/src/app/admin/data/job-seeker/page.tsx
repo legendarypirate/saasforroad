@@ -294,14 +294,7 @@ function JobSeekerPanel() {
             <Input placeholder="Жишээ: Экскаваторчин" />
           </Form.Item>
           <Form.Item name="salary_offer" label="Санал болгох цалин (₮)">
-            <InputNumber
-              className="w-full"
-              min={0}
-              step={100000}
-              formatter={(v) =>
-                `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-              }
-            />
+            <InputNumber money className="w-full" min={0} />
           </Form.Item>
           <Form.Item name="start_date" label="Эхлэх огноо">
             <Input type="date" />

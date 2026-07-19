@@ -21,6 +21,7 @@ import {
   TeamOutlined,
 } from '@/components/admin/icons';
 import { fetchProjects, type ProjectRecord } from '@/lib/project';
+import { formatMoneyTyping } from '@/lib/money';
 import {
   AD_STATUS_COLORS,
   AD_STATUS_LABELS,
@@ -34,11 +35,9 @@ import {
 function formatBudgetNote(raw: string): string {
   const trimmed = raw.trim();
   if (!trimmed) return '';
-  const digitsOnly = trimmed.replace(/[^\d]/g, '');
-  if (!digitsOnly) return raw;
   const withoutSep = trimmed.replace(/,/g, '');
   if (!/^\d+$/.test(withoutSep)) return raw;
-  return Number(digitsOnly).toLocaleString('en-US');
+  return formatMoneyTyping(withoutSep, 0);
 }
 
 export default function CollabMyAdsPage() {

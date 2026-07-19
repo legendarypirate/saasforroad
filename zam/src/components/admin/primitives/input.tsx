@@ -5,6 +5,11 @@ import { Search as SearchIcon, X } from 'lucide-react';
 
 import { Input as UiInput } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  formatMoneyGrouped,
+  formatMoneyTyping,
+  parseMoneyInput,
+} from '@/lib/money';
 import { cn } from '@/lib/utils';
 
 type InputProps = Omit<React.ComponentProps<typeof UiInput>, 'prefix'> & {
@@ -227,7 +232,7 @@ export const Input = Object.assign(BaseInput, {
   Search: SearchInput,
 });
 
-type InputNumberProps = Omit<React.ComponentProps<typeof UiInput>, 'onChange' | 'value'> & {
+type InputNumberProps = Omit<React.ComponentProps<typeof UiInput>, 'onChange' | 'value' | 'type'> & {
   min?: number;
   max?: number;
   step?: number;
@@ -235,6 +240,9 @@ type InputNumberProps = Omit<React.ComponentProps<typeof UiInput>, 'onChange' | 
   addonBefore?: React.ReactNode;
   onChange?: (value: number | string | null) => void;
   value?: number | string | null;
+  /** Show 4,000,000-style grouping; still emits number | null */
+  money?: boolean;
+  maxFractionDigits?: number;
 };
 
 export function InputNumber({
@@ -246,8 +254,26 @@ export function InputNumber({
   addonBefore,
   onChange,
   value,
+  money,
+  maxFractionDigits = 2,
   ...props
 }: InputNumberProps) {
+  if (money) {
+    return (
+      <MoneyInput
+        className={className}
+        min={min}
+        max={max}
+        addonAfter={addonAfter}
+        addonBefore={addonBefore}
+        onChange={onChange}
+        value={value}
+        maxFractionDigits={maxFractionDigits}
+        {...props}
+      />
+    );
+  }
+
   const input = (
     <UiInput
       type="number"
@@ -276,3 +302,92 @@ export function InputNumber({
 
   return input;
 }
+
+type MoneyInputProps = Omit<InputNumberProps, 'money' | 'step' | 'type'>;
+
+/** Money amount input: displays 4,000,000, emits number | null for forms/APIs. */
+export function MoneyInput({
+  className,
+  min,
+  max,
+  addonAfter,
+  addonBefore,
+  onChange,
+  value,
+  maxFractionDigits = 2,
+  onBlur,
+  onFocus,
+  size: _size,
+  controls: _controls,
+  formatter: _formatter,
+  parser: _parser,
+  ...props
+}: MoneyInputProps & {
+  size?: unknown;
+  controls?: unknown;
+  formatter?: unknown;
+  parser?: unknown;
+}) {
+  void _size;
+  void _controls;
+  void _formatter;
+  void _parser;
+  const [text, setText] = React.useState(() =>
+    formatMoneyGrouped(value as number | string | null | undefined, maxFractionDigits),
+  );
+  const [focused, setFocused] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!focused) {
+      setText(formatMoneyGrouped(value as number | string | null | undefined, maxFractionDigits));
+    }
+  }, [value, focused, maxFractionDigits]);
+
+  const emit = (raw: string) => {
+    let n = parseMoneyInput(raw);
+    if (n !== null) {
+      if (min !== undefined && n < min) n = min;
+      if (max !== undefined && n > max) n = max;
+    }
+    onChange?.(n);
+  };
+
+  const input = (
+    <UiInput
+      inputMode="decimal"
+      autoComplete="off"
+      value={text}
+      className={cn('h-10 tabular-nums', className)}
+      onFocus={(e) => {
+        setFocused(true);
+        onFocus?.(e);
+      }}
+      onBlur={(e) => {
+        setFocused(false);
+        const n = parseMoneyInput(text);
+        setText(formatMoneyGrouped(n, maxFractionDigits));
+        emit(text);
+        onBlur?.(e);
+      }}
+      onChange={(e) => {
+        const next = formatMoneyTyping(e.target.value, maxFractionDigits);
+        setText(next);
+        emit(next);
+      }}
+      {...props}
+    />
+  );
+
+  if (addonBefore || addonAfter) {
+    return (
+      <div className="flex w-full items-center gap-2">
+        {addonBefore}
+        <div className="min-w-0 flex-1">{input}</div>
+        {addonAfter}
+      </div>
+    );
+  }
+
+  return input;
+}
+

@@ -83,12 +83,14 @@ function CellNum({
   saving,
   step = 1,
   danger,
+  money,
 }: {
   value: number;
   onCommit: (v: number) => void;
   saving?: boolean;
   step?: number;
   danger?: boolean;
+  money?: boolean;
 }) {
   const [local, setLocal] = useState<number | null>(value);
   const [focused, setFocused] = useState(false);
@@ -99,6 +101,7 @@ function CellNum({
 
   return (
     <InputNumber
+      money={money}
       value={local}
       min={0}
       step={step}
@@ -494,6 +497,7 @@ export default function SalaryCalculationPage() {
       align: 'right',
       render: (v, r) => (
         <CellNum
+          money
           value={v}
           step={100}
           danger
@@ -509,6 +513,7 @@ export default function SalaryCalculationPage() {
       align: 'right',
       render: (v, r) => (
         <CellNum
+          money
           value={v}
           step={100}
           danger
@@ -524,6 +529,7 @@ export default function SalaryCalculationPage() {
       align: 'right',
       render: (v, r) => (
         <CellNum
+          money
           value={v}
           step={1000}
           danger
@@ -539,6 +545,7 @@ export default function SalaryCalculationPage() {
       align: 'right',
       render: (v, r) => (
         <CellNum
+          money
           value={v}
           step={1000}
           danger

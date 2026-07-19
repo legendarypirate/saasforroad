@@ -251,7 +251,7 @@ export default function EquipmentFormDrawer({
           </Col>
           <Col span={12}>
             <Form.Item name="default_daily_rate" label="Өдрийн түрээс (₮)">
-              <InputNumber style={{ width: '100%' }} min={0} />
+              <InputNumber money style={{ width: '100%' }} min={0} />
             </Form.Item>
           </Col>
           <Col span={12}>

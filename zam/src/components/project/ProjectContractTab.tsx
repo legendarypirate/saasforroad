@@ -75,19 +75,19 @@ export default function ProjectContractTab({ project, onSaved }: Props) {
             <Select options={[...CURRENCIES]} />
           </Form.Item>
           <Form.Item name="budget" label="Гэрээний дүн">
-            <InputNumber className="w-full" min={0} />
+            <InputNumber money className="w-full" min={0} />
           </Form.Item>
           <Form.Item name="retention_pct" label="Хадгалалт %">
             <InputNumber className="w-full" min={0} max={100} step={0.5} />
           </Form.Item>
           <Form.Item name="liquidated_damages_per_day" label="LD / өдөр">
-            <InputNumber className="w-full" min={0} />
+            <InputNumber money className="w-full" min={0} />
           </Form.Item>
           <Form.Item name="contingency_pct" label="Нөөц %">
             <InputNumber className="w-full" min={0} max={100} />
           </Form.Item>
           <Form.Item name="committed_amount" label="Амласан зардал">
-            <InputNumber className="w-full" min={0} />
+            <InputNumber money className="w-full" min={0} />
           </Form.Item>
           <Form.Item name="funding_source" label="Санхүүжилтын эх үүсвэр" className="sm:col-span-2">
             <Input placeholder="Жишээ: АХБ / Улсын төсөв / PPP" />

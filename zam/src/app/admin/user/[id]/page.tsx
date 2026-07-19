@@ -740,7 +740,7 @@ export default function UserDetailPage() {
                   <Input placeholder="Албан тушаал" />
                 </Form.Item>
                 <Form.Item name="salary" label="Суурь цалин (₮)">
-                  <InputNumber min={0} step={10000} style={{ width: '100%' }} addonAfter="₮" />
+                  <InputNumber money min={0} style={{ width: '100%' }} addonAfter="₮" />
                 </Form.Item>
                 <Form.Item name="gender" label="Хүйс">
                   <Select

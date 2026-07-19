@@ -1090,7 +1090,7 @@ export default function ProjectDetailPage() {
             </Form.Item>
           </div>
           <Form.Item name="budget" label="Төсөв (₮)">
-            <InputNumber className="w-full" min={0} />
+            <InputNumber money className="w-full" min={0} />
           </Form.Item>
           <Form.Item name="season_note" label="Улирлын тэмдэглэл">
             <Input />

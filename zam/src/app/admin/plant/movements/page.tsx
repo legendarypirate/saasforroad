@@ -7,6 +7,7 @@ import {
   Drawer,
   Form,
   Input,
+  MoneyInput,
   Select,
   Space,
   Table,
@@ -194,7 +195,7 @@ export default function Page() {
             <Input type="number" />
           </Form.Item>
           <Form.Item name="unit_cost" label="Нэгж өртөг (₮)">
-            <Input type="number" />
+            <MoneyInput className="w-full" min={0} />
           </Form.Item>
           <Form.Item name="movement_date" label="Огноо" rules={[{ required: true }]}>
             <DatePicker style={{ width: '100%' }} />

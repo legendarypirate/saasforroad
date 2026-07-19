@@ -5,6 +5,7 @@ import {
   Button,
   Form,
   Input,
+  MoneyInput,
   Drawer,
   Select,
   Space,
@@ -15,6 +16,7 @@ import {
 } from '@/components/admin/primitives';
 import type { ColumnsType } from '@/components/admin/primitives';
 import { DeleteOutlined, PlusOutlined, ReloadOutlined } from '@/components/admin/icons';
+import { isMoneyFormField } from '@/lib/money';
 import dayjs from 'dayjs';
 import {
   createRoadRecord,
@@ -26,7 +28,7 @@ import {
 export type RoadFieldDef = {
   key: string;
   label: string;
-  type?: 'text' | 'textarea' | 'select' | 'number' | 'date';
+  type?: 'text' | 'textarea' | 'select' | 'number' | 'money' | 'date';
   options?: Array<{ value: string | number; label: string }>;
   required?: boolean;
 };
@@ -105,7 +107,7 @@ export default function RoadEntityPage({
       fields.forEach((f) => {
         let v = values[f.key];
         if (f.type === 'date' && v) v = dayjs(v).format('YYYY-MM-DD');
-        if (f.type === 'number' && v !== undefined && v !== null && v !== '') v = Number(v);
+        if ((f.type === 'number' || f.type === 'money' || isMoneyFormField(f.key, f.label)) && v !== undefined && v !== null && v !== '') v = Number(v);
         body[f.key] = v;
       });
 
@@ -203,6 +205,8 @@ export default function RoadEntityPage({
                 <Select options={f.options} allowClear />
               ) : f.type === 'date' ? (
                 <DatePicker style={{ width: '100%' }} />
+              ) : f.type === 'money' || (f.type === 'number' && isMoneyFormField(f.key, f.label)) ? (
+                <MoneyInput className="w-full" min={0} />
               ) : f.type === 'number' ? (
                 <Input type="number" step="any" />
               ) : (

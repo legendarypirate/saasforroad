@@ -218,7 +218,7 @@ export default function MaterialPage() {
               <InputNumber style={{ width: '100%' }} min={0} />
             </Form.Item>
             <Form.Item name="standard_cost" label="Стандарт үнэ">
-              <InputNumber style={{ width: '100%' }} min={0} />
+              <InputNumber money style={{ width: '100%' }} min={0} />
             </Form.Item>
             <Form.Item name="default_warehouse_id" label="Үндсэн агуулах">
               <Select

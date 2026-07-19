@@ -10,7 +10,7 @@ export type UploadFile = {
 };
 export { Table } from './table';
 export { Button } from './button';
-export { Input, InputNumber } from './input';
+export { Input, InputNumber, MoneyInput } from './input';
 export { Select } from './select';
 export { Switch } from './switch';
 export { Form } from './form';
