@@ -9,6 +9,8 @@ type SwitchProps = {
   checked?: boolean;
   defaultChecked?: boolean;
   onChange?: (checked: boolean) => void;
+  /** Form.Item with valuePropName="checked" injects this */
+  onCheckedChange?: (checked: boolean) => void;
   disabled?: boolean;
   className?: string;
   checkedChildren?: React.ReactNode;
@@ -20,17 +22,23 @@ type SwitchProps = {
 export function Switch({
   checked,
   onChange,
+  onCheckedChange,
   disabled,
   className,
   checkedChildren,
   unCheckedChildren,
   style,
 }: SwitchProps) {
+  const handleChange = (next: boolean) => {
+    onCheckedChange?.(next);
+    onChange?.(next);
+  };
+
   return (
-    <label className="inline-flex items-center gap-2">
+    <div className="inline-flex items-center gap-2">
       <UiSwitch
         checked={checked}
-        onCheckedChange={onChange}
+        onCheckedChange={handleChange}
         disabled={disabled}
         className={className}
         style={style}
@@ -40,6 +48,6 @@ export function Switch({
           {checked ? checkedChildren : unCheckedChildren}
         </span>
       )}
-    </label>
+    </div>
   );
 }

@@ -30,6 +30,17 @@ import {
   type JobAdStatus,
 } from '@/lib/collab';
 
+/** Format digit runs as 4,000,000; keep free-text notes otherwise. */
+function formatBudgetNote(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+  const digitsOnly = trimmed.replace(/[^\d]/g, '');
+  if (!digitsOnly) return raw;
+  const withoutSep = trimmed.replace(/,/g, '');
+  if (!/^\d+$/.test(withoutSep)) return raw;
+  return Number(digitsOnly).toLocaleString('en-US');
+}
+
 export default function CollabMyAdsPage() {
   const router = useRouter();
   const [rows, setRows] = useState<JobAd[]>([]);
@@ -81,7 +92,9 @@ export default function CollabMyAdsPage() {
       role_sought: row.role_sought,
       province: row.province,
       location: row.location,
-      budget_note: row.budget_note,
+      budget_note: row.budget_note
+        ? formatBudgetNote(String(row.budget_note))
+        : row.budget_note,
       starts_at: row.starts_at,
       closes_at: row.closes_at,
     });
@@ -244,10 +257,13 @@ export default function CollabMyAdsPage() {
         open={open}
         onClose={() => setOpen(false)}
         width={440}
-        extra={
-          <Button type="primary" loading={saving} onClick={save}>
-            Хадгалах
-          </Button>
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button onClick={() => setOpen(false)}>Болих</Button>
+            <Button type="primary" loading={saving} onClick={save}>
+              {editing ? 'Хадгалах' : 'Үүсгэх'}
+            </Button>
+          </div>
         }
       >
         <Form form={form} layout="vertical">
@@ -291,7 +307,14 @@ export default function CollabMyAdsPage() {
             <Input />
           </Form.Item>
           <Form.Item name="budget_note" label="Төсөв / тэмдэглэл">
-            <Input />
+            <Input
+              inputMode="decimal"
+              placeholder="4,000,000"
+              onChange={(e) => {
+                const next = formatBudgetNote(e.target.value);
+                form.setFieldValue('budget_note', next);
+              }}
+            />
           </Form.Item>
           {!editing && (
             <Form.Item name="publish" label="Шууд нийтлэх" valuePropName="checked">
