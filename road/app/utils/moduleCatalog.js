@@ -26,6 +26,7 @@ const MODULE_CATALOG = [
   { id: "data-brigade", key: "brigada:module", label: "Data · Бригада" },
   { id: "data-laboratory", key: "laboratory:module", label: "Data · Лаборатори" },
   { id: "data-job-seeker", key: "job_seeker:module", label: "Data · Ажил горилогч" },
+  { id: "data-collab", key: "collab:module", label: "Data · Хамтын ажиллагаа" },
   { id: "data-student", key: "student:module", label: "Data · Оюутан" },
   { id: "data-road-sign", key: "road_sign:module", label: "Data · Замын тэмдэг" },
   { id: "uniform-supply", key: "uniform:module", label: "Хувцас хэрэглэл хангамж" },

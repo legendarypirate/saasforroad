@@ -160,6 +160,15 @@ db.brigade_members = require("./brigade_member.model.js")(sequelize, Sequelize);
 db.brigade_equipment = require("./brigade_equipment.model.js")(sequelize, Sequelize);
 db.hire_requests = require("./hire_request.model.js")(sequelize, Sequelize);
 db.hire_request_history = require("./hire_request_history.model.js")(sequelize, Sequelize);
+db.job_ads = require("./job_ad.model.js")(sequelize, Sequelize);
+db.collaboration_requests = require("./collaboration_request.model.js")(
+  sequelize,
+  Sequelize
+);
+db.project_collaborators = require("./project_collaborator.model.js")(
+  sequelize,
+  Sequelize
+);
 db.brigade_reviews = require("./brigade_review.model.js")(sequelize, Sequelize);
 db.brigade_documents = require("./brigade_document.model.js")(sequelize, Sequelize);
 db.brigade_timeline_events = require("./brigade_timeline_event.model.js")(sequelize, Sequelize);
@@ -346,6 +355,38 @@ db.hire_request_history.belongsTo(db.hire_requests, {
   as: "hireRequest",
 });
 db.hire_request_history.belongsTo(db.users, { foreignKey: "changed_by", as: "changer" });
+
+db.job_ads.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
+db.projects.hasMany(db.job_ads, { foreignKey: "project_id", as: "jobAds" });
+db.job_ads.hasMany(db.collaboration_requests, {
+  foreignKey: "job_ad_id",
+  as: "requests",
+  onDelete: "CASCADE",
+});
+db.collaboration_requests.belongsTo(db.job_ads, {
+  foreignKey: "job_ad_id",
+  as: "job_ad",
+});
+db.collaboration_requests.belongsTo(db.projects, {
+  foreignKey: "project_id",
+  as: "project",
+});
+db.projects.hasMany(db.collaboration_requests, {
+  foreignKey: "project_id",
+  as: "collaborationRequests",
+});
+db.project_collaborators.belongsTo(db.projects, {
+  foreignKey: "project_id",
+  as: "project",
+});
+db.projects.hasMany(db.project_collaborators, {
+  foreignKey: "project_id",
+  as: "collaborators",
+});
+db.project_collaborators.belongsTo(db.collaboration_requests, {
+  foreignKey: "collaboration_request_id",
+  as: "collaborationRequest",
+});
 
 db.brigades.hasMany(db.brigade_reviews, {
   foreignKey: "brigade_id",

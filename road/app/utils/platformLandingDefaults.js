@@ -105,6 +105,12 @@ const DEFAULT_DATA_ITEMS = [
     enabled: true,
   },
   {
+    id: "data-collab",
+    label: "Хамтын ажиллагаа",
+    blurb: "Төслийн зар, туслан гүйцэтгэгч / түнш хайх.",
+    enabled: true,
+  },
+  {
     id: "data-student",
     label: "Оюутан",
     blurb: "Оюутны дадлага, холбоо барих мэдээлэл.",

@@ -202,6 +202,15 @@ const MODULES = [
       { menuId: 'hire_requests', label: 'Авах хүсэлт' },
     ],
   },
+  {
+    index: 'collab',
+    label: 'Хамтын ажиллагаа',
+    menus: [
+      { menuId: 'marketplace', label: 'Зар зах зээл', actions: ['read'] },
+      { menuId: 'ads', label: 'Миний зарууд', actions: ['read', 'create', 'update', 'delete', 'write'] },
+      { menuId: 'requests', label: 'Хүсэлтүүд', actions: ['read', 'update', 'write'] },
+    ],
+  },
 ];
 
 // Fix finance menus (avoid duplicate reports from the hack above)

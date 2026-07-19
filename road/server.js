@@ -93,6 +93,7 @@ function registerRoutes() {
   require("./app/routes/job_seeker.routes")(app);
   require("./app/routes/jobseeker_app.routes")(app);
   require("./app/routes/jobseeker_tenant.routes")(app);
+  require("./app/routes/collab.routes")(app);
   require("./app/routes/brigade.routes")(app);
   require("./app/routes/angilal.routes")(app);
   require("./app/routes/material.routes")(app);

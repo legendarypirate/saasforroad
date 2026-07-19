@@ -421,6 +421,34 @@ export const ADMIN_DATA_FOLDERS: ModuleConfig[] = [
     ],
   },
   {
+    id: 'data-collab',
+    index: 'collab',
+    moduleKey: 'collab:module',
+    label: 'Хамтын ажиллагаа',
+    description: 'Төслийн зар, туслан гүйцэтгэгч / түнш хайх, хүсэлт хүлээн авах',
+    color: '#0d9488',
+    items: [
+      {
+        path: '/admin/data/collab',
+        label: 'Зах зээл',
+        menuId: 'marketplace',
+        permission: mk('collab', 'marketplace'),
+      },
+      {
+        path: '/admin/data/collab/my-ads',
+        label: 'Миний зарууд',
+        menuId: 'ads',
+        permission: mk('collab', 'ads'),
+      },
+      {
+        path: '/admin/data/collab/requests',
+        label: 'Хүсэлтүүд',
+        menuId: 'requests',
+        permission: mk('collab', 'requests'),
+      },
+    ],
+  },
+  {
     id: 'data-student',
     index: 'student',
     moduleKey: 'student:module',
@@ -555,6 +583,7 @@ export const ADMIN_FOLDER_SECTIONS: AdminFolderSection[] = [
       'data-brigade',
       'data-laboratory',
       'data-job-seeker',
+      'data-collab',
       'data-student',
       'data-road-sign',
       'uniform-supply',
