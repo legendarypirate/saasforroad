@@ -347,6 +347,23 @@ async function ensurePermissionColumns(sequelize) {
   }
 }
 
+async function ensurePersonalNoteReminderColumns(sequelize) {
+  const [rows] = await sequelize.query(`
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'personal_note_reminders'
+  `);
+  if (rows.length === 0) return;
+
+  try {
+    await sequelize.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS personal_note_reminders_note_type_deadline_uq
+      ON personal_note_reminders (personal_note_id, reminder_type, deadline_date);
+    `);
+  } catch (err) {
+    console.warn("ensurePersonalNoteReminderColumns:", err.message);
+  }
+}
+
 async function ensurePersonalNoteColumns(sequelize) {
   const [rows] = await sequelize.query(`
     SELECT 1 FROM information_schema.tables
@@ -378,6 +395,7 @@ async function ensureSchema(sequelize, UserModel) {
   await ensureDmsColumns(sequelize);
   await ensureNotificationColumns(sequelize);
   await ensurePersonalNoteColumns(sequelize);
+  await ensurePersonalNoteReminderColumns(sequelize);
   await ensurePlantSiteColumns(sequelize);
   await ensureEquipmentCategoryColumns(sequelize);
   await ensureStudentColumns(sequelize);
@@ -536,6 +554,7 @@ module.exports = {
   ensureDmsColumns,
   ensureNotificationColumns,
   ensurePersonalNoteColumns,
+  ensurePersonalNoteReminderColumns,
   ensurePlantSiteColumns,
   ensureEquipmentCategoryColumns,
   ensureStudentColumns,

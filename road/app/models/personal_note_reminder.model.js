@@ -13,12 +13,6 @@ module.exports = (sequelize, Sequelize) => {
     },
     {
       tableName: "personal_note_reminders",
-      indexes: [
-        {
-          unique: true,
-          fields: ["personal_note_id", "reminder_type", "deadline_date"],
-        },
-      ],
     }
   );
 };
