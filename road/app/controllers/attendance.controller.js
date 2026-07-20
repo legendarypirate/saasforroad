@@ -12,14 +12,13 @@ const {
 const { validateGeofence } = require("../utils/geo");
 const { groupApprovedLeavesByUser } = require("../utils/leaveCalculator");
 
-const OfficeLocation = db.office_locations;
 const LeaveRequest = db.leave_requests;
 
 function todayDateString() {
   return new Date().toISOString().slice(0, 10);
 }
 
-async function resolveGeofence(latitude, longitude) {
+async function resolveGeofence(latitude, longitude, tid) {
   if (latitude === undefined || latitude === null || longitude === undefined || longitude === null) {
     const err = new Error("Байршлын зөвшөөрөл шаардлагатай. GPS асаана уу.");
     err.statusCode = 400;
@@ -34,7 +33,8 @@ async function resolveGeofence(latitude, longitude) {
     throw err;
   }
 
-  const offices = await OfficeLocation.findAll({ where: { is_active: true } });
+  const { listTenantOffices } = require("./office_location.controller");
+  const offices = await listTenantOffices(tid || null, { activeOnly: true });
   const result = validateGeofence(lat, lng, offices);
   if (!result.ok) {
     const err = new Error(result.message);
@@ -115,7 +115,11 @@ exports.checkIn = async (req, res) => {
     });
 
     const now = new Date();
-    const location = await resolveGeofence(latitude, longitude);
+    const location = await resolveGeofence(
+      latitude,
+      longitude,
+      req.tenant?.id || req.user?.tenant_id || user.tenant_id
+    );
 
     if (record) {
       await record.update({
@@ -170,7 +174,11 @@ exports.checkOut = async (req, res) => {
       where: { user_id, work_date: workDate },
     });
 
-    const location = await resolveGeofence(latitude, longitude);
+    const location = await resolveGeofence(
+      latitude,
+      longitude,
+      req.tenant?.id || req.user?.tenant_id
+    );
     const now = new Date();
 
     if (record) {

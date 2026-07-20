@@ -18,7 +18,7 @@ import {
 } from '@/components/admin/primitives';
 import { DeleteOutlined, EnvironmentOutlined, PlusOutlined } from '@/components/admin/icons';
 import {
-  OFFICE_API,
+  officeLocationApi,
   type OfficeLocation,
   type OfficeLocationFormValues,
   type OfficeLocationPayload,
@@ -56,9 +56,9 @@ export default function OfficeLocationPage() {
   const fetchOffices = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(OFFICE_API);
-      const json = (await res.json()) as { success?: boolean; data?: OfficeLocation[] };
+      const json = await officeLocationApi.list();
       if (json.success && Array.isArray(json.data)) setOffices(json.data);
+      else message.error(json.message || 'Оффисын жагсаалт ачаалахад алдаа');
     } catch {
       message.error('Оффисын жагсаалт ачаалахад алдаа');
     } finally {
@@ -171,17 +171,9 @@ export default function OfficeLocationPage() {
         is_active: values.is_active !== false,
       };
 
-      const url = selected ? `${OFFICE_API}/${selected.id}` : OFFICE_API;
-      const res = await fetch(url, {
-        method: selected ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const json = (await res.json()) as {
-        success?: boolean;
-        message?: string;
-        data?: OfficeLocation;
-      };
+      const json = selected
+        ? await officeLocationApi.update(selected.id, payload)
+        : await officeLocationApi.create(payload);
 
       if (!json.success) {
         message.error(json.message || 'Хадгалахад алдаа');
@@ -197,8 +189,7 @@ export default function OfficeLocationPage() {
   };
 
   const deleteOffice = async (id: number) => {
-    const res = await fetch(`${OFFICE_API}/${id}`, { method: 'DELETE' });
-    const json = (await res.json()) as { success?: boolean };
+    const json = await officeLocationApi.remove(id);
     if (json.success) {
       message.success('Устгагдлаа');
       if (selected?.id === id) startNew();
