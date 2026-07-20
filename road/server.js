@@ -188,6 +188,9 @@ async function start() {
 
     registerRoutes();
 
+    const { schedulePersonalNoteDeadlineJob } = require("./app/jobs/personalNoteDeadlineJob");
+    schedulePersonalNoteDeadlineJob();
+
     const PORT = process.env.PORT || 3201;
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}.`);

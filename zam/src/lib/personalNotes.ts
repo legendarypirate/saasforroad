@@ -11,6 +11,7 @@ export type PersonalNote = {
   icon?: string | null;
   is_favorite?: boolean;
   sort_order?: number;
+  deadline_date?: string | null;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -51,6 +52,7 @@ export const personalNotesApi = {
     parent_id?: number | null;
     icon?: string | null;
     is_favorite?: boolean;
+    deadline_date?: string | null;
   }) {
     return req<{ data: PersonalNote }>('/', {
       method: 'POST',
@@ -66,6 +68,7 @@ export const personalNotesApi = {
       icon: string | null;
       is_favorite: boolean;
       sort_order: number;
+      deadline_date: string | null;
     }>,
   ) {
     return req<{ data: PersonalNote }>(`/${id}`, {

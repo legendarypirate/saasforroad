@@ -7,7 +7,7 @@ import {
   SearchOutlined,
   StarOutlined,
 } from '@/components/admin/icons';
-import { Button, Input, message } from '@/components/admin/primitives';
+import { Button, DatePicker, Input, message } from '@/components/admin/primitives';
 import RichTextEditor from '@/components/RichTextEditor';
 import {
   buildNoteTree,
@@ -16,6 +16,7 @@ import {
   type PersonalNote,
 } from '@/lib/personalNotes';
 import { cn } from '@/lib/utils';
+import dayjs, { type Dayjs } from 'dayjs';
 
 function useDebouncedCallback<Args extends unknown[]>(
   fn: (...args: Args) => void,
@@ -71,6 +72,11 @@ function NoteTreeItem({
         </span>
         {node.is_favorite ? (
           <StarOutlined className="size-3.5 shrink-0 fill-amber-500 text-amber-500" />
+        ) : null}
+        {node.deadline_date ? (
+          <span className="shrink-0 rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+            {node.deadline_date.slice(5).replace('-', '/')}
+          </span>
         ) : null}
       </button>
       {node.children.map((child) => (
@@ -200,6 +206,20 @@ export default function PersonalNotesPage() {
     }
   };
 
+  const onDeadlineChange = async (value: Dayjs | null) => {
+    if (!active) return;
+    const deadline_date = value ? value.format('YYYY-MM-DD') : null;
+    try {
+      const updated = await personalNotesApi.update(active.id, { deadline_date });
+      setNotes((prev) =>
+        prev.map((n) => (n.id === active.id ? { ...n, ...updated } : n)),
+      );
+      message.success(deadline_date ? 'Хугацаа тохирууллаа' : 'Хугацаа арилгалаа');
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : 'Хадгалж чадсангүй');
+    }
+  };
+
   const deleteNote = async () => {
     if (!active) return;
     if (!window.confirm('Энэ хуудас болон дэд хуудсуудыг устгах уу?')) return;
@@ -310,6 +330,14 @@ export default function PersonalNotesPage() {
               >
                 Дэд хуудас
               </Button>
+              <DatePicker
+                size="small"
+                allowClear
+                placeholder="Хугацаа (сонголттой)"
+                value={active.deadline_date ? dayjs(active.deadline_date) : null}
+                onChange={onDeadlineChange}
+                className="min-w-[160px]"
+              />
               <Button
                 size="small"
                 danger

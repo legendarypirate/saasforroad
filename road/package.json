@@ -9,7 +9,8 @@
     "dev": "nodemon server.js",
     "ensure-schema": "node scripts/ensure-db-schema.js",
     "seed:permissions": "node scripts/seed-permissions.js",
-    "test:fuel": "node scripts/test-fuel-api.js"
+    "test:fuel": "node scripts/test-fuel-api.js",
+    "reminders:notes": "node scripts/run-personal-note-reminders.js"
   },
   "keywords": [
     "nodejs",

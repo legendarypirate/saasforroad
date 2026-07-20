@@ -195,6 +195,41 @@ exports.archive = async (req, res) => {
   }
 };
 
+exports.findForMobile = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Нэвтрэх шаардлагатай" });
+    }
+    const tenantId = req.tenant?.id || req.user?.tenant_id || null;
+
+    const where = {
+      status: "published",
+      [Op.and]: [
+        { [Op.or]: [{ user_id: userId }, { audience: "all" }] },
+        { [Op.or]: [{ expires_at: null }, { expires_at: { [Op.gte]: new Date() } }] },
+      ],
+    };
+    if (tenantId) where.tenant_id = tenantId;
+
+    const data = await Notification.findAll({
+      where,
+      attributes: ["id", "title", "description", "priority", "published_at", "createdAt"],
+      order: [
+        ["priority", "DESC"],
+        ["published_at", "DESC"],
+        ["createdAt", "DESC"],
+      ],
+    });
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message || "Мэдэгдэл татахад алдаа гарлаа",
+    });
+  }
+};
+
 exports.delete = async (req, res) => {
   try {
     const num = await Notification.destroy({ where: { id: req.params.id } });

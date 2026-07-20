@@ -347,6 +347,22 @@ async function ensurePermissionColumns(sequelize) {
   }
 }
 
+async function ensurePersonalNoteColumns(sequelize) {
+  const [rows] = await sequelize.query(`
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'personal_notes'
+  `);
+  if (rows.length === 0) return;
+
+  try {
+    await sequelize.query(
+      `ALTER TABLE "personal_notes" ADD COLUMN IF NOT EXISTS "deadline_date" DATE;`
+    );
+  } catch (err) {
+    console.warn("ensurePersonalNoteColumns deadline_date:", err.message);
+  }
+}
+
 async function ensureSchema(sequelize, UserModel) {
   if (!UserModel) {
     throw new Error("User model is required for ensureSchema");
@@ -361,6 +377,7 @@ async function ensureSchema(sequelize, UserModel) {
   await ensureProjectColumns(sequelize);
   await ensureDmsColumns(sequelize);
   await ensureNotificationColumns(sequelize);
+  await ensurePersonalNoteColumns(sequelize);
   await ensurePlantSiteColumns(sequelize);
   await ensureEquipmentCategoryColumns(sequelize);
   await ensureStudentColumns(sequelize);
@@ -518,6 +535,7 @@ module.exports = {
   ensureProjectColumns,
   ensureDmsColumns,
   ensureNotificationColumns,
+  ensurePersonalNoteColumns,
   ensurePlantSiteColumns,
   ensureEquipmentCategoryColumns,
   ensureStudentColumns,

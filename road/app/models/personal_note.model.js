@@ -21,6 +21,7 @@ module.exports = (sequelize, Sequelize) => {
         allowNull: false,
         defaultValue: 0,
       },
+      deadline_date: { type: Sequelize.DATEONLY, allowNull: true },
       tenant_id: { type: Sequelize.INTEGER, allowNull: true },
     },
     { tableName: "personal_notes" }

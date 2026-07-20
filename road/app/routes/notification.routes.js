@@ -1,7 +1,9 @@
 module.exports = (app) => {
   const notification = require("../controllers/notification.controller.js");
+  const { verifyToken } = require("../controllers/auth.controller.js");
   const router = require("express").Router();
 
+  router.get("/mobile", verifyToken, notification.findForMobile);
   router.get("/stats", notification.stats);
   router.post("/", notification.create);
   router.get("/", notification.findAll);
