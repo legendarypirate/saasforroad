@@ -100,12 +100,37 @@ function signTenantToken(payload) {
   );
 }
 
+/** Long-lived token for Road mobile app (30 days). */
+function signMobileToken(payload) {
+  return jwt.sign(
+    {
+      type: "tenant",
+      client: "mobile",
+      id: payload.id,
+      username: payload.username,
+      role: payload.role,
+      role_id: payload.role_id,
+      tenant_id: payload.tenant_id,
+      is_tenant_superadmin: !!payload.is_tenant_superadmin,
+    },
+    secretKey,
+    { expiresIn: "30d" }
+  );
+}
+
+function isMobileAuthRequest(req) {
+  const deviceId = req.headers["x-device-id"] || req.headers["X-Device-Id"];
+  return Boolean(deviceId && String(deviceId).trim());
+}
+
 module.exports = {
   resolveTenant,
   requireTenant,
   verifyPlatformToken,
   signPlatformToken,
   signTenantToken,
+  signMobileToken,
+  isMobileAuthRequest,
   serializeTenant,
   secretKey,
 };

@@ -4,11 +4,11 @@ const db = require("../models");
 const User = db.users;
 const { resolveUserRole } = require("../utils/roleHelper");
 const { registerOrUpdateDevice, serializeDevice } = require("../utils/deviceHelper");
-const { signTenantToken } = require("../middleware/tenant");
+const { signTenantToken, signMobileToken, isMobileAuthRequest } = require("../middleware/tenant");
 const { serializeTenant, normalizeModules } = require("../utils/tenantHelper");
 const { MODULE_CATALOG } = require("../utils/moduleCatalog");
 const secretKey = process.env.JWT_SECRET || "your_secret_key";
-const axios = require("axios");
+const MOBILE_TOKEN_SECONDS = 30 * 24 * 60 * 60;
 
 function normalizePhone(phone) {
   if (!phone) return "";
@@ -284,7 +284,7 @@ exports.mobile_login = async (req, res) => {
       });
     }
 
-    const token = signTenantToken({
+    const token = signMobileToken({
       id: user.id,
       username: user.username,
       role: roleInfo.role,
@@ -296,6 +296,7 @@ exports.mobile_login = async (req, res) => {
     res.json({
       success: true,
       token,
+      expiresIn: MOBILE_TOKEN_SECONDS,
       user: {
         id: user.id,
         phone: user.phone,
@@ -392,7 +393,7 @@ exports.updatePreferences = async (req, res) => {
   }
 };
 
-/** Issue a fresh 30m JWT for the currently authenticated user. */
+/** Issue a fresh JWT — 30 days for mobile (X-Device-Id), 30m for web admin. */
 exports.refresh = async (req, res) => {
   try {
     const user = await User.findByPk(req.user.id);
@@ -400,19 +401,46 @@ exports.refresh = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
     const roleInfo = await resolveUserRole(user);
-    const token = signTenantToken({
+    const payload = {
       id: user.id,
       username: user.username,
       role: roleInfo.role,
       role_id: roleInfo.role_id,
       tenant_id: user.tenant_id,
       is_tenant_superadmin: user.is_tenant_superadmin,
-    });
+    };
+    const mobile = isMobileAuthRequest(req) || req.user?.client === "mobile";
+    const token = mobile ? signMobileToken(payload) : signTenantToken(payload);
     res.json({
       success: true,
       token,
-      expiresIn: 30 * 60,
+      expiresIn: mobile ? MOBILE_TOKEN_SECONDS : 30 * 60,
     });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+/** Mobile logout — acknowledge sign-out (JWT cleared client-side). */
+exports.mobile_logout = async (req, res) => {
+  try {
+    const deviceId =
+      req.headers["x-device-id"] ||
+      req.headers["X-Device-Id"] ||
+      req.body?.device_id;
+    if (deviceId && req.user?.id) {
+      const device = await db.user_devices.findOne({
+        where: {
+          user_id: req.user.id,
+          device_id: String(deviceId).trim(),
+        },
+      });
+      if (device) {
+        await device.update({ last_seen_at: new Date() });
+      }
+    }
+    res.json({ success: true, message: "Signed out" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Internal server error" });
