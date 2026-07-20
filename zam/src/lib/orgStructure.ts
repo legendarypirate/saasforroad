@@ -1,3 +1,5 @@
+import { tenantHeaders } from '@/lib/tenant';
+
 export const ORG_API = `${process.env.NEXT_PUBLIC_API_URL}/api/org_structure`;
 
 export interface OrgUser {
@@ -48,7 +50,7 @@ export function depthLabel(depth: number) {
 }
 
 export async function fetchOrgTree(): Promise<OrgTreeResponse> {
-  const res = await fetch(`${ORG_API}/tree`);
+  const res = await fetch(`${ORG_API}/tree`, { headers: tenantHeaders() });
   const json = await res.json();
   if (!json.success) throw new Error(json.message || 'Ачаалахад алдаа');
   return json.data;
@@ -57,7 +59,7 @@ export async function fetchOrgTree(): Promise<OrgTreeResponse> {
 export async function createDepartment(name: string, parentId?: number | null) {
   const res = await fetch(`${ORG_API}/department`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: tenantHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ name, parent_id: parentId ?? null }),
   });
   const json = await res.json();
@@ -72,7 +74,7 @@ export async function assignUser(
 ) {
   const res = await fetch(`${ORG_API}/assign`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: tenantHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({
       user_id: userId,
       parent_id: parentId,
@@ -91,7 +93,7 @@ export async function moveNode(
 ) {
   const res = await fetch(`${ORG_API}/move`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: tenantHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({
       node_id: nodeId,
       parent_id: parentId,
@@ -109,7 +111,7 @@ export async function updateNode(
 ) {
   const res = await fetch(`${ORG_API}/${id}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: tenantHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(data),
   });
   const json = await res.json();
@@ -118,13 +120,13 @@ export async function updateNode(
 }
 
 export async function deleteNode(id: number) {
-  const res = await fetch(`${ORG_API}/${id}`, { method: 'DELETE' });
+  const res = await fetch(`${ORG_API}/${id}`, { method: 'DELETE', headers: tenantHeaders() });
   const json = await res.json();
   if (!json.success) throw new Error(json.message);
 }
 
 export async function unassignUser(nodeId: number) {
-  const res = await fetch(`${ORG_API}/user-node/${nodeId}`, { method: 'DELETE' });
+  const res = await fetch(`${ORG_API}/user-node/${nodeId}`, { method: 'DELETE', headers: tenantHeaders() });
   const json = await res.json();
   if (!json.success) throw new Error(json.message);
 }

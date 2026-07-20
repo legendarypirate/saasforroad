@@ -1,3 +1,5 @@
+import { tenantHeaders } from '@/lib/tenant';
+
 export type DailyReportRow = {
   id: number;
   report_date: string;
@@ -68,7 +70,9 @@ export type DailySummary = {
 const API = process.env.NEXT_PUBLIC_API_URL || '';
 
 export async function fetchDailySummary(date: string): Promise<DailySummary | null> {
-  const res = await fetch(`${API}/api/daily-report/summary?date=${encodeURIComponent(date)}`);
+  const res = await fetch(`${API}/api/daily-report/summary?date=${encodeURIComponent(date)}`, {
+    headers: tenantHeaders(),
+  });
   const json = await res.json();
   return json.success ? json.data : null;
 }
@@ -80,7 +84,7 @@ export async function fetchDailyReports(params?: {
   const q = new URLSearchParams();
   if (params?.date) q.set('date', params.date);
   if (params?.project_id) q.set('project_id', String(params.project_id));
-  const res = await fetch(`${API}/api/daily-report?${q.toString()}`);
+  const res = await fetch(`${API}/api/daily-report?${q.toString()}`, { headers: tenantHeaders() });
   const json = await res.json();
   return json.success ? json.data || [] : [];
 }
@@ -90,7 +94,7 @@ export async function saveDailyReport(
 ): Promise<{ ok: boolean; data?: DailyReportRow; message?: string }> {
   const res = await fetch(`${API}/api/daily-report`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: tenantHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body),
   });
   const json = await res.json();
@@ -98,7 +102,7 @@ export async function saveDailyReport(
 }
 
 export async function deleteDailyReport(id: number): Promise<boolean> {
-  const res = await fetch(`${API}/api/daily-report/${id}`, { method: 'DELETE' });
+  const res = await fetch(`${API}/api/daily-report/${id}`, { method: 'DELETE', headers: tenantHeaders() });
   const json = await res.json();
   return !!json.success;
 }

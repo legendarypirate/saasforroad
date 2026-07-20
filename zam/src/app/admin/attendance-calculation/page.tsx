@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { tenantHeaders } from '@/lib/tenant';
 import {
   Card,
   Col,
@@ -167,7 +168,7 @@ export default function AttendanceCalculationPage() {
 
   useEffect(() => {
     document.title = 'Ирц тооцоолол';
-    fetch(`${apiBase}/api/user`)
+    fetch(`${apiBase}/api/user`, { headers: tenantHeaders() })
       .then((r) => r.json())
       .then((json) => {
         if (json.success && json.data?.length) {
@@ -183,7 +184,8 @@ export default function AttendanceCalculationPage() {
     setLoadingCalendar(true);
     try {
       const res = await fetch(
-        `${apiBase}/api/attendance/calendar?user_id=${selectedUserId}&month=${monthStr}`
+        `${apiBase}/api/attendance/calendar?user_id=${selectedUserId}&month=${monthStr}`,
+        { headers: tenantHeaders() },
       );
       const json = await res.json();
       if (!json.success) throw new Error(json.message || 'Алдаа');
@@ -208,7 +210,9 @@ export default function AttendanceCalculationPage() {
   const fetchPayroll = useCallback(async () => {
     setLoadingPayroll(true);
     try {
-      const res = await fetch(`${apiBase}/api/attendance/payroll-summary?month=${monthStr}`);
+      const res = await fetch(`${apiBase}/api/attendance/payroll-summary?month=${monthStr}`, {
+        headers: tenantHeaders(),
+      });
       const json = await res.json();
       if (!json.success) throw new Error(json.message || 'Алдаа');
       setPayrollRows(json.data.rows || []);
@@ -235,7 +239,7 @@ export default function AttendanceCalculationPage() {
     try {
       const res = await fetch(`${apiBase}/api/attendance/schedule/${selectedUserId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: tenantHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           work_schedule_type: values.work_schedule_type,
           cycle_start_date: values.cycle_start_date
@@ -268,7 +272,7 @@ export default function AttendanceCalculationPage() {
     try {
       const res = await fetch(`${apiBase}/api/schedule_exception`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: tenantHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           user_id: selectedUserId,
           start_date: start.format('YYYY-MM-DD'),
@@ -293,7 +297,10 @@ export default function AttendanceCalculationPage() {
 
   const deleteException = async (id: number) => {
     try {
-      const res = await fetch(`${apiBase}/api/schedule_exception/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${apiBase}/api/schedule_exception/${id}`, {
+        method: 'DELETE',
+        headers: tenantHeaders(),
+      });
       const json = await res.json();
       if (!json.success) throw new Error(json.message || 'Алдаа');
       message.success('Устгагдлаа');

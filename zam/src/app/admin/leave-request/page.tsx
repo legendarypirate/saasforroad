@@ -14,6 +14,7 @@ import {
 } from '@/components/admin/primitives';
 import type { ColumnsType } from '@/components/admin/primitives';
 import { CheckOutlined, CloseOutlined, ReloadOutlined } from '@/components/admin/icons';
+import { tenantHeaders } from '@/lib/tenant';
 import dayjs from 'dayjs';
 
 const { Text } = Typography;
@@ -83,7 +84,7 @@ export default function LeaveRequestPage() {
     setLoading(true);
     try {
       const q = statusFilter ? `?status=${statusFilter}` : '';
-      const res = await fetch(`${baseUrl}/api/leave-request${q}`);
+      const res = await fetch(`${baseUrl}/api/leave-request${q}`, { headers: tenantHeaders() });
       const json = await res.json();
       if (json.success) setRows(json.data || []);
     } catch (err) {
@@ -112,7 +113,7 @@ export default function LeaveRequestPage() {
     try {
       const res = await fetch(`${baseUrl}/api/leave-request/${activeRow.id}/review`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: tenantHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           status: reviewAction,
           review_note: reviewNote.trim() || null,

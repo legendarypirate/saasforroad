@@ -1,3 +1,5 @@
+import { tenantHeaders } from '@/lib/tenant';
+
 const API = process.env.NEXT_PUBLIC_API_URL || '';
 
 async function notifFetch<T = unknown>(
@@ -8,6 +10,7 @@ async function notifFetch<T = unknown>(
     ...init,
     headers: {
       ...(init?.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+      ...tenantHeaders(),
       ...init?.headers,
     },
   });

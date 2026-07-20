@@ -1,3 +1,5 @@
+import { tenantHeaders } from '@/lib/tenant';
+
 const API = process.env.NEXT_PUBLIC_API_URL || '';
 
 export interface TenderDocument {
@@ -43,13 +45,13 @@ export const STATUS_LABELS: Record<string, string> = {
 };
 
 export async function fetchTenders(): Promise<TenderPackage[]> {
-  const res = await fetch(`${API}/api/tender`);
+  const res = await fetch(`${API}/api/tender`, { headers: tenantHeaders() });
   const json = await res.json();
   return json.success ? json.data : [];
 }
 
 export async function fetchTender(id: string): Promise<TenderPackage | null> {
-  const res = await fetch(`${API}/api/tender/${id}`);
+  const res = await fetch(`${API}/api/tender/${id}`, { headers: tenantHeaders() });
   const json = await res.json();
   return json.success ? json.data : null;
 }
@@ -57,7 +59,7 @@ export async function fetchTender(id: string): Promise<TenderPackage | null> {
 export async function createTender(body: Partial<TenderPackage>): Promise<TenderPackage | null> {
   const res = await fetch(`${API}/api/tender`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: tenantHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body),
   });
   const json = await res.json();
@@ -76,6 +78,7 @@ export async function uploadTenderDocument(
   form.append('engineer_name', engineerName);
   const res = await fetch(`${API}/api/tender/${packageId}/documents`, {
     method: 'POST',
+    headers: tenantHeaders(),
     body: form,
   });
   const json = await res.json();
@@ -83,13 +86,16 @@ export async function uploadTenderDocument(
 }
 
 export async function processAllDocuments(packageId: number): Promise<TenderPackage | null> {
-  const res = await fetch(`${API}/api/tender/${packageId}/process-all`, { method: 'POST' });
+  const res = await fetch(`${API}/api/tender/${packageId}/process-all`, {
+    method: 'POST',
+    headers: tenantHeaders(),
+  });
   const json = await res.json();
   return json.success ? json.data : null;
 }
 
 export async function exportTenderDocx(packageId: number): Promise<string | null> {
-  const res = await fetch(`${API}/api/tender/${packageId}/export-docx`);
+  const res = await fetch(`${API}/api/tender/${packageId}/export-docx`, { headers: tenantHeaders() });
   const json = await res.json();
   return json.success ? json.data?.url : null;
 }

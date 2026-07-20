@@ -1,3 +1,5 @@
+import { tenantHeaders } from '@/lib/tenant';
+
 const API = process.env.NEXT_PUBLIC_API_URL || '';
 
 export const BRIGADA_API = `${API}/api/brigada`;
@@ -224,6 +226,7 @@ async function brigadaFetch<T>(path = '', init?: RequestInit) {
       ...(init?.body && !(init.body instanceof FormData)
         ? { 'Content-Type': 'application/json' }
         : {}),
+      ...tenantHeaders(),
       ...init?.headers,
     },
   });

@@ -5,7 +5,7 @@ const API = process.env.NEXT_PUBLIC_API_URL || '';
 async function hseFetch<T>(path: string, init?: RequestInit): Promise<T | null> {
   const res = await fetch(`${API}/api/hse${path}`, {
     ...init,
-    headers: { 'Content-Type': 'application/json', ...init?.headers },
+    headers: { 'Content-Type': 'application/json', ...tenantHeaders(), ...init?.headers },
   });
   const json = await res.json();
   return json.success ? json.data : null;
@@ -92,7 +92,7 @@ export async function fetchDailyInstructions(): Promise<DailyInstruction[]> {
 export async function createDailyInstruction(body: Partial<DailyInstruction> & { created_by?: number }) {
   const res = await fetch(`${API}/api/hse/daily-instructions`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: tenantHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body),
   });
   const json = await res.json();
@@ -102,7 +102,7 @@ export async function createDailyInstruction(body: Partial<DailyInstruction> & {
 export async function updateDailyInstruction(id: number, body: Partial<DailyInstruction> & { updated_by?: number }) {
   const res = await fetch(`${API}/api/hse/daily-instructions/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: tenantHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body),
   });
   const json = await res.json();
@@ -110,7 +110,10 @@ export async function updateDailyInstruction(id: number, body: Partial<DailyInst
 }
 
 export async function deleteDailyInstruction(id: number) {
-  const res = await fetch(`${API}/api/hse/daily-instructions/${id}`, { method: 'DELETE' });
+  const res = await fetch(`${API}/api/hse/daily-instructions/${id}`, {
+    method: 'DELETE',
+    headers: tenantHeaders(),
+  });
   const json = await res.json();
   return json.success === true;
 }
@@ -127,7 +130,7 @@ export async function fetchHseList<T>(resource: string): Promise<T[]> {
 export async function createHseRecord<T>(resource: string, body: Record<string, unknown>): Promise<T | null> {
   const res = await fetch(`${API}/api/hse/${resource}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: tenantHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body),
   });
   const json = await res.json();
@@ -137,7 +140,7 @@ export async function createHseRecord<T>(resource: string, body: Record<string, 
 export async function updateHseRecord<T>(resource: string, id: number, body: Record<string, unknown>): Promise<T | null> {
   const res = await fetch(`${API}/api/hse/${resource}/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: tenantHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body),
   });
   const json = await res.json();
@@ -145,7 +148,10 @@ export async function updateHseRecord<T>(resource: string, id: number, body: Rec
 }
 
 export async function deleteHseRecord(resource: string, id: number) {
-  const res = await fetch(`${API}/api/hse/${resource}/${id}`, { method: 'DELETE' });
+  const res = await fetch(`${API}/api/hse/${resource}/${id}`, {
+    method: 'DELETE',
+    headers: tenantHeaders(),
+  });
   const json = await res.json();
   return json.success === true;
 }
@@ -170,13 +176,13 @@ export async function fetchProjects(): Promise<Array<{ id: number; name: string 
 }
 
 export async function fetchUsers(): Promise<Array<{ id: number; username: string }>> {
-  const res = await fetch(`${API}/api/user`);
+  const res = await fetch(`${API}/api/user`, { headers: tenantHeaders() });
   const json = await res.json();
   return json.success ? json.data || [] : [];
 }
 
 export async function fetchEquipment(): Promise<Array<{ id: number; name: string }>> {
-  const res = await fetch(`${API}/api/equipment`);
+  const res = await fetch(`${API}/api/equipment`, { headers: tenantHeaders() });
   const json = await res.json();
   return json.success ? json.data || [] : [];
 }

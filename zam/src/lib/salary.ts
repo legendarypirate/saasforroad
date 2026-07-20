@@ -1,3 +1,5 @@
+import { tenantHeaders } from '@/lib/tenant';
+
 export const SALARY_API = `${process.env.NEXT_PUBLIC_API_URL}/api/salary`;
 
 export const NDSH_RATE = 0.115;
@@ -67,8 +69,15 @@ export type SalaryAdjustmentPayload = {
   note?: string;
 };
 
+function salaryHeaders(json = false): HeadersInit {
+  return tenantHeaders(json ? { 'Content-Type': 'application/json' } : undefined);
+}
+
 export async function fetchSalaryCalculation(month: string): Promise<SalaryCalculationResponse> {
-  const res = await fetch(`${SALARY_API}/calculation?month=${month}`);
+  const res = await fetch(`${SALARY_API}/calculation?month=${month}`, {
+    headers: salaryHeaders(),
+    cache: 'no-store',
+  });
   const json = await res.json();
   if (!json.success) throw new Error(json.message || 'Ачаалахад алдаа');
   return json.data;
@@ -80,7 +89,7 @@ export async function saveMonthExpectedHours(
 ): Promise<SalaryCalculationResponse> {
   const res = await fetch(`${SALARY_API}/month-setting`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: salaryHeaders(true),
     body: JSON.stringify({ month, expected_hours: expectedHours }),
   });
   const json = await res.json();
@@ -94,7 +103,7 @@ export async function saveSalaryAdjustment(
 ): Promise<SalaryRow> {
   const res = await fetch(`${SALARY_API}/adjustment`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: salaryHeaders(true),
     body: JSON.stringify({ month, ...payload }),
   });
   const json = await res.json();
@@ -108,7 +117,7 @@ export async function saveSalaryAdjustmentsBulk(
 ): Promise<SalaryCalculationResponse> {
   const res = await fetch(`${SALARY_API}/adjustments/bulk`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: salaryHeaders(true),
     body: JSON.stringify({ month, rows }),
   });
   const json = await res.json();
@@ -119,7 +128,7 @@ export async function saveSalaryAdjustmentsBulk(
 export async function sendBulkSalaryEmails(month: string, userIds?: number[]) {
   const res = await fetch(`${SALARY_API}/send-bulk`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: salaryHeaders(true),
     body: JSON.stringify({ month, user_ids: userIds }),
   });
   const json = await res.json();

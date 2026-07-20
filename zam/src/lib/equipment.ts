@@ -1,3 +1,5 @@
+import { tenantHeaders } from '@/lib/tenant';
+
 export const EQUIPMENT_API = `${process.env.NEXT_PUBLIC_API_URL}/api/equipment`;
 export const EQUIPMENT_CATEGORIES_API = `${EQUIPMENT_API}/categories`;
 
@@ -12,7 +14,7 @@ export type EquipmentCategory = {
 
 export async function fetchEquipmentCategories(activeOnly = false) {
   const q = activeOnly ? '?active=1' : '';
-  const res = await fetch(`${EQUIPMENT_CATEGORIES_API}${q}`);
+  const res = await fetch(`${EQUIPMENT_CATEGORIES_API}${q}`, { headers: tenantHeaders() });
   const json = await res.json();
   return (json.success ? json.data : []) as EquipmentCategory[];
 }

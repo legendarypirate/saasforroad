@@ -1,3 +1,5 @@
+import { tenantHeaders } from '@/lib/tenant';
+
 export const RENTAL_API = `${process.env.NEXT_PUBLIC_API_URL}/api/equipment_rental`;
 export const EQUIPMENT_API = `${process.env.NEXT_PUBLIC_API_URL}/api/equipment`;
 
@@ -128,7 +130,7 @@ export function paymentProgress(payments?: RentalPayment[]) {
 export async function rentalJson(url: string, init?: RequestInit) {
   const res = await fetch(url, {
     ...init,
-    headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
+    headers: { 'Content-Type': 'application/json', ...tenantHeaders(), ...(init?.headers || {}) },
   });
   const json = await res.json();
   if (!json.success) throw new Error(json.message || 'Алдаа гарлаа');

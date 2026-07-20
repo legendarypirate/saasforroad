@@ -1,4 +1,5 @@
 import { getToken } from '@/lib/auth';
+import { tenantHeaders } from '@/lib/tenant';
 import type { AdminFolderSectionId } from '@/config/adminNavigation';
 
 const API = process.env.NEXT_PUBLIC_API_URL || '';
@@ -104,10 +105,10 @@ export async function saveFolderOrderToServer(order: FolderOrderMap) {
   try {
     await fetch(`${API}/api/auth/me/preferences`, {
       method: 'PUT',
-      headers: {
+      headers: tenantHeaders({
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
-      },
+      }),
       body: JSON.stringify({ folderOrder: order }),
     });
   } catch {

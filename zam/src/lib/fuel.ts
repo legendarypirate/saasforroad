@@ -1,9 +1,11 @@
+import { tenantHeaders } from '@/lib/tenant';
+
 const API = process.env.NEXT_PUBLIC_API_URL || '';
 
 async function fuelFetch<T>(path: string, init?: RequestInit): Promise<T | null> {
   const res = await fetch(`${API}/api/fuel${path}`, {
     ...init,
-    headers: { 'Content-Type': 'application/json', ...init?.headers },
+    headers: { 'Content-Type': 'application/json', ...tenantHeaders(), ...init?.headers },
   });
   const json = await res.json();
   if (!json.success) throw new Error(json.message || 'Алдаа');

@@ -14,6 +14,17 @@ const {
 } = require("../utils/salaryCalculator");
 const { sendMail, isConfigured } = require("../utils/mailer");
 const { groupApprovedLeavesByUser } = require("../utils/leaveCalculator");
+const { getCurrentTenantId } = require("../middleware/tenantScope");
+
+function requireScopedTenantId() {
+  const tenantId = getCurrentTenantId();
+  if (!tenantId) {
+    const err = new Error("Tenant context required");
+    err.statusCode = 404;
+    throw err;
+  }
+  return tenantId;
+}
 
 const userAttrs = [
   "id",
@@ -45,10 +56,11 @@ const ADJUSTMENT_FIELDS = [
  * Safety net: exclude any leftover brigada markers from payroll.
  * Brigade identity now lives on `brigades` — should not appear in users.
  */
-async function getExcludedBrigadaUserIds() {
+async function getExcludedBrigadaUserIds(tenantId) {
   const affiliated = await User.findAll({
     attributes: ["id"],
     where: {
+      tenant_id: tenantId,
       [Op.or]: [{ affiliation: "brigada" }, { role: "brigada" }],
     },
     raw: true,
@@ -134,13 +146,14 @@ function pickAdjustmentUpdates(source) {
   return updates;
 }
 
-async function getMonthExpectedHours(month) {
-  const setting = await SalaryMonthSetting.findOne({ where: { month } });
+async function getMonthExpectedHours(month, tenantId) {
+  const setting = await SalaryMonthSetting.findOne({ where: { month, tenant_id: tenantId } });
   if (setting) return Number(setting.expected_hours) || 0;
   return defaultExpectedHoursForMonth(month);
 }
 
 async function buildMonthlyRows(month, userIds = null) {
+  const tenantId = requireScopedTenantId();
   const [year, mon] = String(month).split("-").map(Number);
   if (!year || !mon) {
     const err = new Error("month формат буруу (YYYY-MM)");
@@ -149,10 +162,10 @@ async function buildMonthlyRows(month, userIds = null) {
   }
 
   const { from, to } = monthRange(year, mon);
-  const expectedHours = await getMonthExpectedHours(month);
-  const excludedIds = await getExcludedBrigadaUserIds();
+  const expectedHours = await getMonthExpectedHours(month, tenantId);
+  const excludedIds = await getExcludedBrigadaUserIds(tenantId);
 
-  const userWhere = {};
+  const userWhere = { tenant_id: tenantId };
   if (userIds?.length) {
     const allowed = userIds.filter((id) => !excludedIds.includes(Number(id)));
     userWhere.id = allowed.length ? { [Op.in]: allowed } : { [Op.in]: [-1] };
@@ -171,12 +184,14 @@ async function buildMonthlyRows(month, userIds = null) {
   const [records, adjustments] = await Promise.all([
     Attendance.findAll({
       where: {
+        tenant_id: tenantId,
         work_date: { [Op.between]: [from, to] },
         ...(userIds?.length ? { user_id: userIds } : {}),
       },
     }),
     SalaryAdjustment.findAll({
       where: {
+        tenant_id: tenantId,
         month,
         ...(userIds?.length ? { user_id: userIds } : {}),
       },
@@ -321,16 +336,17 @@ exports.updateMonthSetting = async (req, res) => {
       return res.status(400).json({ success: false, message: "Ажиллавал зохих цаг буруу" });
     }
 
+    const tenantId = requireScopedTenantId();
     const [setting] = await SalaryMonthSetting.findOrCreate({
-      where: { month },
-      defaults: { expected_hours: hours },
+      where: { month, tenant_id: tenantId },
+      defaults: { expected_hours: hours, tenant_id: tenantId },
     });
     await setting.update({ expected_hours: hours });
 
     const data = await buildMonthlyRows(month);
     res.json({ success: true, data: publicPayload(data) });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(err.statusCode || 500).json({ success: false, message: err.message });
   }
 };
 
@@ -345,15 +361,16 @@ exports.upsertAdjustment = async (req, res) => {
   }
 
   try {
+    const tenantId = requireScopedTenantId();
     const user = await User.findByPk(user_id);
-    if (!user) {
+    if (!user || Number(user.tenant_id) !== Number(tenantId)) {
       return res.status(404).json({ success: false, message: "Хэрэглэгч олдсонгүй" });
     }
 
     const updates = pickAdjustmentUpdates(req.body);
     const [row] = await SalaryAdjustment.findOrCreate({
-      where: { user_id, month },
-      defaults: updates,
+      where: { user_id, month, tenant_id: tenantId },
+      defaults: { ...updates, tenant_id: tenantId },
     });
     await row.update(updates);
 
@@ -363,7 +380,7 @@ exports.upsertAdjustment = async (req, res) => {
 
     res.json({ success: true, data: publicRow });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(err.statusCode || 500).json({ success: false, message: err.message });
   }
 };
 
@@ -377,12 +394,15 @@ exports.bulkUpsertAdjustments = async (req, res) => {
   }
 
   try {
+    const tenantId = requireScopedTenantId();
     for (const item of rows) {
       if (!item.user_id) continue;
+      const user = await User.findByPk(item.user_id);
+      if (!user || Number(user.tenant_id) !== Number(tenantId)) continue;
       const updates = pickAdjustmentUpdates(item);
       const [row] = await SalaryAdjustment.findOrCreate({
-        where: { user_id: item.user_id, month },
-        defaults: updates,
+        where: { user_id: item.user_id, month, tenant_id: tenantId },
+        defaults: { ...updates, tenant_id: tenantId },
       });
       await row.update(updates);
     }
@@ -390,7 +410,7 @@ exports.bulkUpsertAdjustments = async (req, res) => {
     const data = await buildMonthlyRows(month);
     res.json({ success: true, data: publicPayload(data) });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(err.statusCode || 500).json({ success: false, message: err.message });
   }
 };
 

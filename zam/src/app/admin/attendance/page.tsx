@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Table, DatePicker, Card, Statistic, Row, Col, Tag, Space } from '@/components/admin/primitives';
 import type { ColumnsType } from '@/components/admin/primitives';
 import dayjs, { Dayjs } from 'dayjs';
+import { tenantHeaders } from '@/lib/tenant';
 
 interface AttendanceRow {
   id: number;
@@ -39,8 +40,12 @@ export default function AttendancePage() {
     setLoading(true);
     try {
       const [listRes, summaryRes] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/attendance?date=${dateStr}`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/attendance/summary?date=${dateStr}`),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/attendance?date=${dateStr}`, {
+          headers: tenantHeaders(),
+        }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/attendance/summary?date=${dateStr}`, {
+          headers: tenantHeaders(),
+        }),
       ]);
       const listJson = await listRes.json();
       const summaryJson = await summaryRes.json();
