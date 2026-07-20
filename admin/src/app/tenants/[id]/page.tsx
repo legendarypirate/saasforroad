@@ -228,6 +228,12 @@ export default function TenantDetailPage() {
                 custom domain, point DNS (Cloudflare proxy recommended) at your VPS — saving keeps
                 the <code>.rcos.mn</code> subdomain as an alias.
               </p>
+              <p className="muted" style={{ margin: "0.55rem 0 0", maxWidth: "62ch", lineHeight: 1.5 }}>
+                Mobile (road) app: all tenants use shared <code>https://api.rcos.mn</code>. Build each
+                store binary with{" "}
+                <code>--dart-define=TENANT_DOMAIN={tenant.domain || saasDomain}</code> (this domain /
+                slug) — do not store a separate backend URL per tenant.
+              </p>
             </div>
           </div>
           <div className="grid-2">

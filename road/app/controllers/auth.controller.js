@@ -243,8 +243,16 @@ exports.mobile_login = async (req, res) => {
     return res.status(400).json({ message: "phone and password are required!" });
   }
 
+  // Shared API (api.rcos.mn) requires X-Tenant-Domain — same as web login.
+  if (!req.tenant?.id) {
+    return res.status(404).json({
+      message: "Tenant not found",
+      hint: "Send X-Tenant-Domain header with the tenant domain from admin.rcos.mn",
+    });
+  }
+
   try {
-    const tenantId = req.tenant?.id || null;
+    const tenantId = req.tenant.id;
     const user = await findUserByPhone(phone, tenantId);
 
     if (!user) {
