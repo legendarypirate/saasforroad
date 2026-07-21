@@ -145,12 +145,12 @@ optgroup {
   --road-accent: #00e0a5;
   --road-dark: #1c1c1e;
 
-  /* shadcn default theme — neutral base (dark) */
-  --background: oklch(0.145 0 0);
+  /* shadcn default theme — neutral base (dark), bg darkened for card contrast */
+  --background: oklch(0.125 0 0);
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
+  --card: oklch(0.216 0 0);
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
+  --popover: oklch(0.216 0 0);
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.922 0 0);
   --primary-foreground: oklch(0.205 0 0);
@@ -177,6 +177,56 @@ optgroup {
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* ── Dark mode surface polish ── */
+.dark .admin-shell {
+  background: var(--background);
+}
+
+/* Give cards clear separation from the page: lighter surface + visible edge */
+.dark [data-slot='card'] {
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+/* Table / panel container edge */
+.dark .admin-shell main .ring-foreground\/10 {
+  --tw-ring-color: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Inputs & selects: a touch more contrast against dark cards */
+.dark [data-slot='input'],
+.dark [data-slot='select-trigger'],
+.dark [data-slot='textarea'] {
+  background-color: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.dark [data-slot='input']:focus-visible,
+.dark [data-slot='select-trigger']:focus-visible,
+.dark [data-slot='textarea']:focus-visible {
+  border-color: var(--neon-green);
+}
+
+/* Popovers / dropdowns / dialogs sit above cards — lift them a bit more */
+.dark [data-slot='popover-content'],
+.dark [data-slot='select-content'],
+.dark [data-slot='dropdown-menu-content'],
+.dark [data-slot='dialog-content'],
+.dark [data-slot='sheet-content'] {
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 10px 30px -12px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+/* Muted hover surfaces a touch more visible */
+.dark .hover\:bg-muted:hover {
+  background-color: rgba(255, 255, 255, 0.06);
 }
 
 /* Admin: fix hardcoded light surfaces in dark mode */

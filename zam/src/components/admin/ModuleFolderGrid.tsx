@@ -145,11 +145,11 @@ function SortableModuleFolder({
           if (e.key === 'Enter' || e.key === ' ') handleOpen();
         }}
         className={cn(
-          'relative h-full transition-all duration-200',
+          'relative h-full transition-all duration-200 dark:bg-[oklch(0.26_0_0)] dark:ring-white/12',
           isDragging && 'shadow-lg ring-2 ring-primary/30',
           isComingSoon
             ? 'cursor-not-allowed opacity-70'
-            : 'cursor-pointer hover:-translate-y-1 hover:shadow-lg dark:hover:border-[color:var(--neon-border)] dark:hover:shadow-[var(--neon-glow-sm)]',
+            : 'cursor-pointer hover:-translate-y-1 hover:shadow-lg dark:hover:bg-[oklch(0.29_0_0)] dark:hover:border-[color:var(--neon-border)] dark:hover:shadow-[var(--neon-glow-sm)]',
         )}
         style={
           !isComingSoon
@@ -179,7 +179,7 @@ function SortableModuleFolder({
         )}
         <CardContent className="flex h-full flex-col items-center p-6 text-center">
           <div
-            className="relative mb-4 flex size-[72px] items-center justify-center rounded-2xl"
+            className="relative mb-4 flex size-[72px] items-center justify-center rounded-2xl ring-1 ring-inset ring-black/5 dark:ring-white/10"
             style={{
               backgroundColor: `${mod.color}18`,
               color: mod.color,
