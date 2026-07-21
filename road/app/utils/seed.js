@@ -205,7 +205,7 @@ const DEFAULT_ROLES = [
   {
     name: "Шатахуун менежер",
     description: "Автопарк — шатахуун удирдлага (бүрэн эрх)",
-    mobile_access: false,
+    mobile_access: true,
     permissionKeys: [
       "admin:dashboard",
       "fuel:*",

@@ -304,6 +304,8 @@ exports.mobile_login = async (req, res) => {
         role: roleInfo.role,
         role_id: roleInfo.role_id,
         tenant_id: user.tenant_id,
+        mobile_access: roleInfo.mobile_access,
+        permissions: roleInfo.permissions,
       },
       device: serializeDevice(device),
     });

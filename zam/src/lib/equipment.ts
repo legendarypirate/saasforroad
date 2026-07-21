@@ -81,6 +81,18 @@ export interface ServiceLogRecord {
   notes?: string;
 }
 
+export interface InsuranceRecord {
+  id: number;
+  equipment_id: number;
+  company?: string | null;
+  status?: string | null;
+  contract_no?: string | null;
+  amount?: number | null;
+  start_date?: string | null;
+  expiry?: string | null;
+  notes?: string | null;
+}
+
 export interface EquipmentDocRecord {
   id: number;
   equipment_id: number;
@@ -137,12 +149,6 @@ export interface EquipmentItem {
   is_rentable?: boolean;
   status?: EquipmentStatus | string;
   motor_hours?: number;
-  insurance_company?: string;
-  insurance_status?: string;
-  insurance_expiry?: string;
-  insurance_amount?: number;
-  insurance_contract_no?: string;
-  insurance_notes?: string;
   road_tax_amount?: number;
   atboyahat_amount?: number;
   air_pollution_fee?: number;
@@ -176,6 +182,7 @@ export interface EquipmentItem {
   oilChanges?: OilChangeRecord[];
   serviceLogs?: ServiceLogRecord[];
   documents?: EquipmentDocRecord[];
+  insurances?: InsuranceRecord[];
   monthlyFinances?: MonthlyFinanceRecord[];
   projects?: { id: number; name: string }[];
   responsibleUser?: { id: number; username: string; position?: string; phone?: string };
@@ -213,6 +220,17 @@ export function equipmentAllImageUrls(item?: EquipmentItem | null): string[] {
   return [item.photo_front, item.photo_back, item.photo_left, item.photo_right]
     .filter(Boolean)
     .map((u) => assetUrl(u!) || u!) as string[];
+}
+
+/** Newest insurance record (by expiry) — used for summary tags. */
+export function latestInsurance(item?: EquipmentItem | null): InsuranceRecord | null {
+  const list = item?.insurances ?? [];
+  if (!list.length) return null;
+  return [...list].sort((a, b) => {
+    const ax = a.expiry ? new Date(a.expiry).getTime() : 0;
+    const bx = b.expiry ? new Date(b.expiry).getTime() : 0;
+    return bx - ax;
+  })[0];
 }
 
 /** Expiry traffic-light: red expired, orange ≤90 days, green ok */

@@ -31,6 +31,7 @@ import {
   EQUIPMENT_STATUS_COLORS,
   EQUIPMENT_STATUS_LABELS,
   expiryTone,
+  latestInsurance,
   type EquipmentItem,
   type EquipmentStatus,
 } from '@/lib/equipment';
@@ -116,6 +117,7 @@ export default function EquipmentDetailPage() {
 
   const status = (item.status || 'in_service') as EquipmentStatus;
   const rentable = item.is_rentable === true;
+  const insurance = latestInsurance(item);
 
   return (
     <div>
@@ -151,8 +153,8 @@ export default function EquipmentDetailPage() {
               <Tag color={rentable ? 'green' : 'default'}>
                 {rentable ? 'Түрээслэх боломжтой' : 'Түрээсгүй'}
               </Tag>
-              <Tag color={expiryTone(item.insurance_expiry)}>
-                Даатгал {item.insurance_expiry || '—'}
+              <Tag color={expiryTone(insurance?.expiry)}>
+                Даатгал {insurance?.expiry || '—'}
               </Tag>
               <Tag color={expiryTone(item.certificate_expiry)}>
                 Гэрчилгээ {item.certificate_expiry || '—'}

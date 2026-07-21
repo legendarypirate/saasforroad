@@ -1,3 +1,4 @@
+const crypto = require("crypto");
 const { Op } = require("sequelize");
 const db = require("../models");
 const { makeCrud, todayISO } = require("../utils/uniformCrud");
@@ -385,7 +386,16 @@ exports.deletePurchase = async (req, res) => {
 };
 
 // ── Issues ────────────────────────────────────────────────
-const issueInclude = [equipmentInc, userInc("driver"), userInc("issuer"), projectInc, tankInc];
+const issueInclude = [
+  equipmentInc,
+  userInc("driver"),
+  userInc("issuer"),
+  userInc("verifier"),
+  projectInc,
+  tankInc,
+];
+
+const VERIFY_TOKEN_TTL_HOURS = 24;
 
 function issueWhere(q) {
   const where = {};
@@ -394,6 +404,7 @@ function issueWhere(q) {
   if (q.tank_id) where.tank_id = q.tank_id;
   if (q.fuel_type) where.fuel_type = q.fuel_type;
   if (q.project_id) where.project_id = q.project_id;
+  if (q.status) where.status = q.status;
   if (q.from || q.to) {
     where.issue_date = {};
     if (q.from) where.issue_date[Op.gte] = q.from;
@@ -496,6 +507,15 @@ exports.createIssue = async (req, res) => {
 
     const tank = await adjustTankStock(body.tank_id, -quantity, t);
 
+    // When the disbursement is created from the mobile app it must be confirmed
+    // by the fuel receiver (driver) scanning a QR code — start it as "pending".
+    const requireVerification =
+      body.require_verification === true || body.require_verification === "true";
+    const verifyToken = requireVerification ? crypto.randomBytes(24).toString("hex") : null;
+    const verifyExpiresAt = requireVerification
+      ? new Date(Date.now() + VERIFY_TOKEN_TTL_HOURS * 3600 * 1000)
+      : null;
+
     const issue = await Issue.create(
       {
         number: body.number || (await nextNumber(Issue, "FUEL")),
@@ -513,6 +533,9 @@ exports.createIssue = async (req, res) => {
             : null,
         issued_by: body.issued_by || body.created_by || null,
         notes: body.notes || null,
+        status: requireVerification ? "pending" : "verified",
+        verify_token: verifyToken,
+        verify_expires_at: verifyExpiresAt,
       },
       { transaction: t }
     );
@@ -611,6 +634,74 @@ exports.deleteIssue = async (req, res) => {
     await row.destroy({ transaction: t });
     await t.commit();
     res.json({ success: true, message: "Устгагдлаа" });
+  } catch (err) {
+    await t.rollback();
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ── Issue verification (QR — receiver confirms disbursement) ──
+function verifyStateError(issue) {
+  if (!issue) return "Гүйлгээ олдсонгүй эсвэл QR буруу байна";
+  if (issue.status === "verified") return "Энэ олголт аль хэдийн баталгаажсан байна";
+  if (issue.status !== "pending") return "Энэ олголтыг баталгаажуулах боломжгүй";
+  if (issue.verify_expires_at && new Date(issue.verify_expires_at).getTime() < Date.now()) {
+    return "QR-ийн хугацаа дууссан байна";
+  }
+  return null;
+}
+
+/** Receiver (driver) preview: look up a pending issue by its QR token. */
+exports.getIssueByToken = async (req, res) => {
+  try {
+    const token = req.params.token;
+    if (!token) return res.status(400).json({ success: false, message: "Token шаардлагатай" });
+    const row = await Issue.findOne({ where: { verify_token: token }, include: issueInclude });
+    const err = verifyStateError(row);
+    if (err) return res.status(row ? 409 : 404).json({ success: false, message: err });
+    res.json({ success: true, data: row });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+/** Receiver scans the QR and confirms receipt → both sides verified. */
+exports.verifyIssue = async (req, res) => {
+  const t = await db.sequelize.transaction();
+  try {
+    const token = (req.body && (req.body.token || req.body.verify_token)) || null;
+    if (!token) {
+      await t.rollback();
+      return res.status(400).json({ success: false, message: "QR token шаардлагатай" });
+    }
+    const row = await Issue.findOne({
+      where: { verify_token: token },
+      transaction: t,
+      lock: t.LOCK.UPDATE,
+    });
+    const stateErr = verifyStateError(row);
+    if (stateErr) {
+      await t.rollback();
+      return res.status(row ? 409 : 404).json({ success: false, message: stateErr });
+    }
+
+    const receiverId = req.user?.id || req.body.verified_by_user_id || null;
+    await row.update(
+      {
+        status: "verified",
+        verified_at: new Date(),
+        verified_by_user_id: receiverId,
+        // The scanner becomes the recorded receiver when none was pre-assigned.
+        driver_user_id: row.driver_user_id || receiverId,
+        verify_token: null,
+        verify_expires_at: null,
+      },
+      { transaction: t }
+    );
+
+    await t.commit();
+    const full = await Issue.findByPk(row.id, { include: issueInclude });
+    res.json({ success: true, data: full, message: "Олголт баталгаажлаа" });
   } catch (err) {
     await t.rollback();
     res.status(500).json({ success: false, message: err.message });

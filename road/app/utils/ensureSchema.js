@@ -214,12 +214,6 @@ async function ensureInventoryColumns(sequelize) {
     `ALTER TABLE "equipments" ADD COLUMN IF NOT EXISTS "phone" VARCHAR(64);`,
     `ALTER TABLE "equipments" ADD COLUMN IF NOT EXISTS "responsible_user_id" INTEGER;`,
     `ALTER TABLE "equipments" ADD COLUMN IF NOT EXISTS "operator_user_id" INTEGER;`,
-    `ALTER TABLE "equipments" ADD COLUMN IF NOT EXISTS "insurance_company" VARCHAR(255);`,
-    `ALTER TABLE "equipments" ADD COLUMN IF NOT EXISTS "insurance_status" VARCHAR(64);`,
-    `ALTER TABLE "equipments" ADD COLUMN IF NOT EXISTS "insurance_expiry" DATE;`,
-    `ALTER TABLE "equipments" ADD COLUMN IF NOT EXISTS "insurance_amount" DECIMAL(14,2);`,
-    `ALTER TABLE "equipments" ADD COLUMN IF NOT EXISTS "insurance_contract_no" VARCHAR(128);`,
-    `ALTER TABLE "equipments" ADD COLUMN IF NOT EXISTS "insurance_notes" TEXT;`,
     `ALTER TABLE "equipments" ADD COLUMN IF NOT EXISTS "road_tax_amount" DECIMAL(14,2);`,
     `ALTER TABLE "equipments" ADD COLUMN IF NOT EXISTS "atboyahat_amount" DECIMAL(14,2);`,
     `ALTER TABLE "equipments" ADD COLUMN IF NOT EXISTS "air_pollution_fee" DECIMAL(14,2);`,
@@ -400,6 +394,41 @@ async function ensureSchema(sequelize, UserModel) {
   await ensureEquipmentCategoryColumns(sequelize);
   await ensureStudentColumns(sequelize);
   await ensurePermissionColumns(sequelize);
+  await ensureFuelIssueColumns(sequelize);
+}
+
+async function ensureFuelIssueColumns(sequelize) {
+  const [rows] = await sequelize.query(`
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'fuel_issues'
+  `);
+  if (rows.length === 0) return;
+
+  const columns = [
+    `ALTER TABLE "fuel_issues" ADD COLUMN IF NOT EXISTS "status" VARCHAR(20) DEFAULT 'verified';`,
+    `ALTER TABLE "fuel_issues" ADD COLUMN IF NOT EXISTS "verify_token" VARCHAR(80);`,
+    `ALTER TABLE "fuel_issues" ADD COLUMN IF NOT EXISTS "verify_expires_at" TIMESTAMPTZ;`,
+    `ALTER TABLE "fuel_issues" ADD COLUMN IF NOT EXISTS "verified_at" TIMESTAMPTZ;`,
+    `ALTER TABLE "fuel_issues" ADD COLUMN IF NOT EXISTS "verified_by_user_id" INTEGER;`,
+  ];
+  for (const sql of columns) {
+    try {
+      await sequelize.query(sql);
+    } catch (err) {
+      console.warn("ensureFuelIssueColumns:", err.message);
+    }
+  }
+
+  try {
+    await sequelize.query(
+      `UPDATE "fuel_issues" SET "status" = 'verified' WHERE "status" IS NULL;`
+    );
+    await sequelize.query(
+      `CREATE UNIQUE INDEX IF NOT EXISTS "fuel_issues_verify_token_uidx" ON "fuel_issues" ("verify_token") WHERE "verify_token" IS NOT NULL;`
+    );
+  } catch (err) {
+    console.warn("ensureFuelIssueColumns backfill:", err.message);
+  }
 }
 
 async function ensureEquipmentCategoryColumns(sequelize) {

@@ -8,6 +8,7 @@ import {
   EQUIPMENT_STATUS_COLORS,
   EQUIPMENT_STATUS_LABELS,
   expiryTone,
+  latestInsurance,
   type EquipmentItem,
   type EquipmentStatus,
 } from '@/lib/equipment';
@@ -32,7 +33,7 @@ export default function EquipmentDetailPanel({
         </Tag>
         {item.registration_number && <Tag color="blue">{item.registration_number}</Tag>}
         <Tag color="orange">Мот/цаг: {Number(item.motor_hours ?? 0).toLocaleString()}</Tag>
-        <Tag color={expiryTone(item.insurance_expiry)}>Даатгал</Tag>
+        <Tag color={expiryTone(latestInsurance(item)?.expiry)}>Даатгал</Tag>
       </Space>
       <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
         {[item.model, item.site, item.serial_number].filter(Boolean).join(' · ') || 'Нэмэлт мэдээлэл байхгүй'}

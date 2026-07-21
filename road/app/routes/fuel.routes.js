@@ -1,6 +1,7 @@
 module.exports = (app) => {
   const router = require("express").Router();
   const ctrl = require("../controllers/fuel.controller");
+  const { verifyToken } = require("../controllers/auth.controller");
 
   router.get("/dashboard", ctrl.dashboard);
   router.get("/reports", ctrl.reports);
@@ -25,6 +26,9 @@ module.exports = (app) => {
 
   router.get("/issues", ctrl.listIssues);
   router.post("/issues", ctrl.createIssue);
+  // QR verification (receiver confirms) — keep before "/issues/:id"
+  router.post("/issues/verify", verifyToken, ctrl.verifyIssue);
+  router.get("/issues/token/:token", ctrl.getIssueByToken);
   router.get("/issues/:id", ctrl.getIssue);
   router.put("/issues/:id", ctrl.updateIssue);
   router.delete("/issues/:id", ctrl.deleteIssue);

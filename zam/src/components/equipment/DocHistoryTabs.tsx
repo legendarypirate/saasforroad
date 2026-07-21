@@ -27,8 +27,10 @@ import { DATE_FORMAT, dateFormItemProps } from '@/lib/userDates';
 import {
   EQUIPMENT_API,
   expiryTone,
+  latestInsurance,
   type EquipmentDocRecord,
   type EquipmentItem,
+  type InsuranceRecord,
 } from '@/lib/equipment';
 
 const { Text } = Typography;
@@ -273,6 +275,8 @@ function DocHistoryPanel({
   );
 }
 
+const INSURANCE_STATUSES = ['Хүчинтэй', 'Хугацаа дууссан', '90 хоногт дуусна'];
+
 export function InsuranceTab({
   item,
   onRefresh,
@@ -280,59 +284,201 @@ export function InsuranceTab({
   item: EquipmentItem;
   onRefresh: (equipment?: EquipmentItem) => void;
 }) {
+  const [form] = Form.useForm();
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<InsuranceRecord | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const rows = item.insurances || [];
+  const latest = latestInsurance(item);
+
+  const openCreate = () => {
+    setEditing(null);
+    form.resetFields();
+    form.setFieldsValue({ status: 'Хүчинтэй' });
+    setOpen(true);
+  };
+
+  const openEdit = (row: InsuranceRecord) => {
+    setEditing(row);
+    form.setFieldsValue({
+      company: row.company ?? undefined,
+      status: row.status ?? undefined,
+      contract_no: row.contract_no ?? undefined,
+      amount: row.amount ?? undefined,
+      start_date: row.start_date ? dayjs(row.start_date) : undefined,
+      expiry: row.expiry ? dayjs(row.expiry) : undefined,
+      notes: row.notes ?? undefined,
+    });
+    setOpen(true);
+  };
+
+  const save = async () => {
+    try {
+      const values = await form.validateFields();
+      setSaving(true);
+      const body = {
+        company: values.company ?? null,
+        status: values.status ?? null,
+        contract_no: values.contract_no ?? null,
+        amount: values.amount ?? null,
+        start_date: dayjs.isDayjs(values.start_date)
+          ? values.start_date.format(DATE_FORMAT)
+          : values.start_date || null,
+        expiry: dayjs.isDayjs(values.expiry)
+          ? values.expiry.format(DATE_FORMAT)
+          : values.expiry || null,
+        notes: values.notes ?? null,
+      };
+      const url = editing
+        ? `${EQUIPMENT_API}/${item.id}/insurances/${editing.id}`
+        : `${EQUIPMENT_API}/${item.id}/insurances`;
+      const res = await fetch(url, {
+        method: editing ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || 'Алдаа');
+      message.success(editing ? 'Шинэчлэгдлээ' : 'Нэмэгдлээ');
+      setOpen(false);
+      onRefresh(json.equipment);
+    } catch (e) {
+      if (e && typeof e === 'object' && 'errorFields' in e) return;
+      message.error(e instanceof Error ? e.message : 'Алдаа');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remove = async (id: number) => {
+    const res = await fetch(`${EQUIPMENT_API}/${item.id}/insurances/${id}`, { method: 'DELETE' });
+    const json = await res.json();
+    if (!json.success) {
+      message.error(json.message || 'Алдаа');
+      return;
+    }
+    message.success('Устгагдлаа');
+    onRefresh(json.equipment);
+  };
+
+  const columns: ColumnsType<InsuranceRecord> = [
+    { title: 'Байгууллага', dataIndex: 'company' },
+    { title: 'Төлөв', dataIndex: 'status', width: 130 },
+    { title: 'Гэрээ №', dataIndex: 'contract_no', width: 120 },
+    { title: 'Дүн', dataIndex: 'amount', width: 110, render: (v) => (v != null ? fmt(v) : '—') },
+    { title: 'Эхлэх', dataIndex: 'start_date', width: 110, render: (v) => v || '—' },
+    {
+      title: 'Дуусах',
+      dataIndex: 'expiry',
+      width: 120,
+      render: (v) => (v ? <Tag color={expiryTone(v)}>{v}</Tag> : '—'),
+    },
+    { title: 'Тэмдэглэл', dataIndex: 'notes', ellipsis: true },
+    {
+      title: '',
+      key: 'actions',
+      width: 90,
+      fixed: 'right',
+      render: (_, r) => (
+        <Space>
+          <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit(r)} />
+          <Popconfirm title="Устгах уу?" onConfirm={() => remove(r.id)}>
+            <Button type="text" danger size="small" icon={<DeleteOutlined />} />
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
+
   return (
-    <DocHistoryPanel
-      item={item}
-      onRefresh={onRefresh}
-      config={{
-        docType: 'insurance',
-        title: (
-          <Space>
-            <span>Даатгалын түүх</span>
-            <Tag color={expiryTone(item.insurance_expiry)}>
-              {item.insurance_status || item.insurance_expiry || 'одоогийн'}
-            </Tag>
-          </Space>
-        ),
-        addLabel: 'Даатгал нэмэх',
-        emptyText: 'Даатгалын түүх байхгүй',
-        defaults: { name: 'Даатгал', status: 'Хүчинтэй' },
-        fields: [
-          { key: 'issuer', label: 'Байгууллага', required: true },
-          {
-            key: 'status',
-            label: 'Төлөв',
-            options: ['Хүчинтэй', 'Хугацаа дууссан', '90 хоногт дуусна'].map((v) => ({
-              value: v,
-              label: v,
-            })),
-          },
-          { key: 'number', label: 'Гэрээ №' },
-          { key: 'amount', label: 'Дүн ₮' },
-          { key: 'issued_at', label: 'Эхлэх огноо' },
-          { key: 'expires_at', label: 'Дуусах огноо', required: true },
-          { key: 'notes', label: 'Тэмдэглэл' },
-        ],
-        mapFromForm: (v) => ({
-          ...v,
-          name: v.issuer || 'Даатгал',
-          doc_type: 'insurance',
-        }),
-        columns: [
-          { title: 'Байгууллага', dataIndex: 'issuer', render: (v, r) => v || r.name },
-          { title: 'Төлөв', dataIndex: 'status', width: 130 },
-          { title: 'Гэрээ №', dataIndex: 'number', width: 120 },
-          { title: 'Дүн', dataIndex: 'amount', width: 110, render: (v) => (v != null ? fmt(v) : '—') },
-          {
-            title: 'Дуусах',
-            dataIndex: 'expires_at',
-            width: 120,
-            render: (v) => (v ? <Tag color={expiryTone(v)}>{v}</Tag> : '—'),
-          },
-          { title: 'Тэмдэглэл', dataIndex: 'notes', ellipsis: true },
-        ],
-      }}
-    />
+    <Card
+      size="small"
+      title={
+        <Space>
+          <span>Даатгалын түүх</span>
+          <Tag color={expiryTone(latest?.expiry)}>
+            {latest?.status || latest?.expiry || 'одоогийн'}
+          </Tag>
+        </Space>
+      }
+      extra={
+        <Button type="primary" size="small" icon={<PlusOutlined />} onClick={openCreate}>
+          Даатгал нэмэх
+        </Button>
+      }
+    >
+      <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
+        Нэг техник олон даатгалтай байж болно · шинэ бүртгэлийг drawer-ээр нэмнэ
+      </Text>
+      <Table
+        size="small"
+        rowKey="id"
+        pagination={{ pageSize: 10 }}
+        dataSource={rows}
+        columns={columns}
+        scroll={{ x: 900 }}
+        locale={{ emptyText: 'Даатгалын түүх байхгүй' }}
+      />
+
+      <Drawer
+        title={editing ? 'Засах' : 'Даатгал нэмэх'}
+        open={open}
+        onClose={() => setOpen(false)}
+        width={480}
+        destroyOnClose
+        extra={
+          <Button type="primary" loading={saving} onClick={save}>
+            Хадгалах
+          </Button>
+        }
+      >
+        <Form form={form} layout="vertical">
+          <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item name="company" label="Байгууллага" rules={[{ required: true, message: 'Заавал' }]}>
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="status" label="Төлөв">
+                <Select allowClear options={INSURANCE_STATUSES.map((v) => ({ value: v, label: v }))} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="contract_no" label="Гэрээ №">
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="amount" label="Дүн ₮">
+                <InputNumber money style={{ width: '100%' }} min={0} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="start_date" label="Эхлэх огноо" {...dateFormItemProps()}>
+                <DatePicker format={DATE_FORMAT} style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="expiry"
+                label="Дуусах огноо"
+                rules={[{ required: true, message: 'Заавал' }]}
+                {...dateFormItemProps()}
+              >
+                <DatePicker format={DATE_FORMAT} style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+            <Col span={24}>
+              <Form.Item name="notes" label="Тэмдэглэл">
+                <Input.TextArea rows={3} />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Form>
+      </Drawer>
+    </Card>
   );
 }
 

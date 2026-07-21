@@ -4,6 +4,7 @@ const EquipmentImage = db.equipment_images;
 const EquipmentOilChange = db.equipment_oil_changes;
 const EquipmentServiceLog = db.equipment_service_logs;
 const EquipmentDocument = db.equipment_documents;
+const EquipmentInsurance = db.equipment_insurances;
 const EquipmentMonthlyFinance = db.equipment_monthly_finances;
 const ProjectEquipmentLink = db.project_equipment_links;
 const Project = db.projects;
@@ -52,12 +53,6 @@ const PROFILE_FIELDS = [
   "is_rentable",
   "status",
   "motor_hours",
-  "insurance_company",
-  "insurance_status",
-  "insurance_expiry",
-  "insurance_amount",
-  "insurance_contract_no",
-  "insurance_notes",
   "road_tax_amount",
   "atboyahat_amount",
   "air_pollution_fee",
@@ -92,7 +87,6 @@ const PROFILE_FIELDS = [
 const DECIMAL_FIELDS = new Set([
   "default_daily_rate",
   "motor_hours",
-  "insurance_amount",
   "road_tax_amount",
   "atboyahat_amount",
   "air_pollution_fee",
@@ -233,6 +227,12 @@ const equipmentInclude = [
     as: "documents",
     separate: true,
     order: [["expires_at", "ASC"]],
+  },
+  {
+    model: EquipmentInsurance,
+    as: "insurances",
+    separate: true,
+    order: [["expiry", "DESC"]],
   },
   {
     model: EquipmentMonthlyFinance,
@@ -471,6 +471,7 @@ exports.delete = async (req, res) => {
     await EquipmentOilChange.destroy({ where: { equipment_id: id } });
     await EquipmentServiceLog.destroy({ where: { equipment_id: id } });
     await EquipmentDocument.destroy({ where: { equipment_id: id } });
+    await EquipmentInsurance.destroy({ where: { equipment_id: id } });
     await EquipmentMonthlyFinance.destroy({ where: { equipment_id: id } });
     await EquipmentImage.destroy({ where: { equipment_id: id } });
     const num = await Equipment.destroy({ where: { id } });
@@ -683,16 +684,7 @@ async function syncDocSnapshot(equipmentId, docType) {
     ],
   });
 
-  if (docType === "insurance") {
-    await equipment.update({
-      insurance_company: latest?.issuer || latest?.name || null,
-      insurance_status: latest?.status || null,
-      insurance_expiry: latest?.expires_at || null,
-      insurance_amount: latest?.amount ?? null,
-      insurance_contract_no: latest?.number || null,
-      insurance_notes: latest?.notes || null,
-    });
-  } else if (docType === "inspection") {
+  if (docType === "inspection") {
     await equipment.update({
       inspection_result: latest?.status || latest?.name || null,
       inspection_date: latest?.issued_at || null,
@@ -799,6 +791,86 @@ exports.deleteDocument = async (req, res) => {
     const { equipment_id, doc_type } = record;
     await record.destroy();
     await syncDocSnapshot(equipment_id, doc_type);
+    const full = await Equipment.findByPk(equipment_id, { include: equipmentInclude });
+    res.json({ success: true, equipment: full });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// —— Insurance (one-to-many) ——
+function insurancePayload(body) {
+  return {
+    company: body.company || null,
+    status: body.status || null,
+    contract_no: body.contract_no || null,
+    amount: body.amount === "" || body.amount == null ? null : Number(body.amount),
+    start_date: body.start_date || null,
+    expiry: body.expiry || null,
+    notes: body.notes || null,
+  };
+}
+
+exports.listInsurances = async (req, res) => {
+  try {
+    const data = await EquipmentInsurance.findAll({
+      where: { equipment_id: req.params.id },
+      order: [["expiry", "DESC"]],
+    });
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.createInsurance = async (req, res) => {
+  try {
+    const equipment = await Equipment.findByPk(req.params.id);
+    if (!equipment) {
+      return res.status(404).json({ success: false, message: "Equipment not found" });
+    }
+    const payload = insurancePayload(req.body);
+    if (!payload.company && !payload.contract_no) {
+      return res.status(400).json({ success: false, message: "company or contract_no is required" });
+    }
+    const record = await EquipmentInsurance.create({
+      equipment_id: equipment.id,
+      ...payload,
+      tenant_id: equipment.tenant_id ?? null,
+    });
+    const full = await Equipment.findByPk(equipment.id, { include: equipmentInclude });
+    res.json({ success: true, data: record, equipment: full });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.updateInsurance = async (req, res) => {
+  try {
+    const record = await EquipmentInsurance.findOne({
+      where: { id: req.params.insId, equipment_id: req.params.id },
+    });
+    if (!record) {
+      return res.status(404).json({ success: false, message: "Not found" });
+    }
+    await record.update(insurancePayload({ ...record.toJSON(), ...req.body }));
+    const full = await Equipment.findByPk(record.equipment_id, { include: equipmentInclude });
+    res.json({ success: true, data: record, equipment: full });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.deleteInsurance = async (req, res) => {
+  try {
+    const record = await EquipmentInsurance.findOne({
+      where: { id: req.params.insId, equipment_id: req.params.id },
+    });
+    if (!record) {
+      return res.status(404).json({ success: false, message: "Not found" });
+    }
+    const { equipment_id } = record;
+    await record.destroy();
     const full = await Equipment.findByPk(equipment_id, { include: equipmentInclude });
     res.json({ success: true, equipment: full });
   } catch (err) {

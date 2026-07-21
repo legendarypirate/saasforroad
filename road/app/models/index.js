@@ -60,6 +60,7 @@ db.project_equipment_links = require("./project_equipment_link.model.js")(sequel
 db.equipment_oil_changes = require("./equipment_oil_change.model.js")(sequelize, Sequelize);
 db.equipment_service_logs = require("./equipment_service_log.model.js")(sequelize, Sequelize);
 db.equipment_documents = require("./equipment_document.model.js")(sequelize, Sequelize);
+db.equipment_insurances = require("./equipment_insurance.model.js")(sequelize, Sequelize);
 db.equipment_monthly_finances = require("./equipment_monthly_finance.model.js")(sequelize, Sequelize);
 db.accidents = require("./accident.model.js")(sequelize, Sequelize);
 db.daily_reports = require("./daily_report.model.js")(sequelize, Sequelize);
@@ -717,6 +718,12 @@ db.equipments.hasMany(db.equipment_documents, {
   as: "documents",
 });
 
+db.equipment_insurances.belongsTo(db.equipments, { foreignKey: "equipment_id", onDelete: "CASCADE" });
+db.equipments.hasMany(db.equipment_insurances, {
+  foreignKey: "equipment_id",
+  as: "insurances",
+});
+
 db.equipments.belongsTo(db.equipment_categories, {
   foreignKey: "equipment_category_id",
   as: "equipmentCategory",
@@ -895,6 +902,7 @@ db.fuel_tanks.hasMany(db.fuel_purchases, { foreignKey: "tank_id", as: "purchases
 db.fuel_issues.belongsTo(db.equipments, { foreignKey: "equipment_id", as: "equipment" });
 db.fuel_issues.belongsTo(db.users, { foreignKey: "driver_user_id", as: "driver" });
 db.fuel_issues.belongsTo(db.users, { foreignKey: "issued_by", as: "issuer" });
+db.fuel_issues.belongsTo(db.users, { foreignKey: "verified_by_user_id", as: "verifier" });
 db.fuel_issues.belongsTo(db.projects, { foreignKey: "project_id", as: "project" });
 db.fuel_issues.belongsTo(db.fuel_tanks, { foreignKey: "tank_id", as: "tank" });
 db.equipments.hasMany(db.fuel_issues, { foreignKey: "equipment_id", as: "fuelIssues" });

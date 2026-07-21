@@ -62,13 +62,7 @@ module.exports = (sequelize, Sequelize) => {
         defaultValue: 0,
       },
 
-      // B. Даатгал (одоогийн)
-      insurance_company: { type: Sequelize.STRING, allowNull: true },
-      insurance_status: { type: Sequelize.STRING, allowNull: true },
-      insurance_expiry: { type: Sequelize.DATEONLY, allowNull: true },
-      insurance_amount: { type: Sequelize.DECIMAL(14, 2), allowNull: true },
-      insurance_contract_no: { type: Sequelize.STRING, allowNull: true },
-      insurance_notes: { type: Sequelize.TEXT, allowNull: true },
+      // B. Даатгал → equipment_insurances (one-to-many)
 
       // C. Татвар (сүүлийн)
       road_tax_amount: { type: Sequelize.DECIMAL(14, 2), allowNull: true },

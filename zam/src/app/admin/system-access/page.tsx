@@ -45,6 +45,8 @@ export default function SystemAccessPage() {
   const [loading, setLoading] = useState(false);
   const [createDrawerVisible, setCreateDrawerVisible] = useState(false);
   const [createForm] = Form.useForm();
+  const [editingRole, setEditingRole] = useState<Role | null>(null);
+  const [editForm] = Form.useForm();
 
   useEffect(() => {
     document.title = 'Эрхийн зохицуулалт';
@@ -97,6 +99,43 @@ export default function SystemAccessPage() {
     router.push(`/admin/system-access/${roleId}/permissions`);
   };
 
+  const openEditRole = (role: Role) => {
+    if (!canUpdate) {
+      message.error('Эрх засах эрхгүй');
+      return;
+    }
+    setEditingRole(role);
+    editForm.setFieldsValue({
+      name: role.name,
+      description: role.description,
+      mobile_access: !!role.mobile_access,
+    });
+  };
+
+  const handleEditRole = async () => {
+    if (!editingRole) return;
+    try {
+      const values = await editForm.validateFields();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/role/${editingRole.id}`, {
+        method: 'PUT',
+        headers: tenantHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(values),
+      });
+      const result = await res.json();
+      if (res.ok && result.success !== false) {
+        message.success('Эрх шинэчлэгдлээ');
+        setEditingRole(null);
+        editForm.resetFields();
+        fetchRoles();
+      } else {
+        message.error(result.message || 'Шинэчлэхэд алдаа гарлаа');
+      }
+    } catch (e) {
+      if (e && typeof e === 'object' && 'errorFields' in e) return;
+      message.error('Мэдээлэл буруу байна');
+    }
+  };
+
   const handleCreateRole = async () => {
     if (!canCreate) {
       message.error('Шинэ эрх үүсгэх эрхгүй');
@@ -135,6 +174,11 @@ export default function SystemAccessPage() {
       title: 'Үйлдэл',
       render: (_, record) => (
         <Space>
+          {canUpdate && (
+            <Button type="link" onClick={() => openEditRole(record)}>
+              Засах
+            </Button>
+          )}
           {canUpdate && (
             <Button type="link" icon={<EditOutlined />} onClick={() => goToPermissions(record.id)}>
               Эрх тохируулах
@@ -197,6 +241,31 @@ export default function SystemAccessPage() {
             </Form.Item>
             <Button type="primary" htmlType="submit" block>
               Үүсгээд эрх тохируулах
+            </Button>
+          </Form>
+        </Drawer>
+
+        <Drawer
+          title="Эрх засах"
+          width={400}
+          onClose={() => {
+            setEditingRole(null);
+            editForm.resetFields();
+          }}
+          open={!!editingRole && canUpdate}
+        >
+          <Form form={editForm} layout="vertical" onFinish={handleEditRole}>
+            <Form.Item name="name" label="Эрхийн нэр" rules={[{ required: true }]}>
+              <Input placeholder="Жишээ: Шатахуун менежер" />
+            </Form.Item>
+            <Form.Item name="description" label="Тайлбар">
+              <Input.TextArea rows={2} />
+            </Form.Item>
+            <Form.Item name="mobile_access" label="Апп-аар нэвтрэх эрх" valuePropName="checked">
+              <Switch />
+            </Form.Item>
+            <Button type="primary" htmlType="submit" block>
+              Хадгалах
             </Button>
           </Form>
         </Drawer>

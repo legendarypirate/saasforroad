@@ -31,6 +31,7 @@ import {
   EQUIPMENT_STATUS_COLORS,
   EQUIPMENT_STATUS_LABELS,
   expiryTone,
+  latestInsurance,
   fetchEquipmentCategories,
   type EquipmentCategory,
   type EquipmentItem,
@@ -186,14 +187,16 @@ function EquipmentPageContent() {
     },
     {
       title: 'Даатгал',
-      dataIndex: 'insurance_expiry',
+      dataIndex: 'insurances',
       width: 120,
-      render: (v, r) =>
-        v || r.insurance_status ? (
-          <Tag color={expiryTone(v)}>{r.insurance_status || v}</Tag>
+      render: (_v, r) => {
+        const ins = latestInsurance(r);
+        return ins?.expiry || ins?.status ? (
+          <Tag color={expiryTone(ins?.expiry)}>{ins?.status || ins?.expiry}</Tag>
         ) : (
           '—'
-        ),
+        );
+      },
     },
     {
       title: 'Үйлдэл',

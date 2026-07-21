@@ -199,6 +199,24 @@ export default function FuelIssuesPage() {
       title: 'Олгосон',
       render: (_, r) => (r.issuer as { username?: string })?.username || '—',
     },
+    {
+      title: 'Баталгаажилт',
+      width: 190,
+      render: (_, r) => {
+        const status = String(r.status || 'verified');
+        if (status === 'pending') {
+          return <span style={{ color: '#d48806', fontWeight: 600 }}>QR хүлээгдэж буй</span>;
+        }
+        const verifier = (r.verifier as { username?: string })?.username;
+        const at = r.verified_at ? dayjs(String(r.verified_at)).format('YYYY-MM-DD HH:mm') : null;
+        return (
+          <span style={{ color: '#389e0d', fontWeight: 600 }}>
+            ✓ Баталгаажсан
+            {verifier ? <span style={{ display: 'block', color: '#888', fontWeight: 400, fontSize: 12 }}>{verifier}{at ? ` · ${at}` : ''}</span> : null}
+          </span>
+        );
+      },
+    },
   ];
 
   return (
