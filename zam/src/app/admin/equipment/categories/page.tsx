@@ -18,6 +18,7 @@ import {
   fetchEquipmentCategories,
   type EquipmentCategory,
 } from '@/lib/equipment';
+import { tenantHeaders } from '@/lib/tenant';
 
 export default function EquipmentCategoriesPage() {
   const [rows, setRows] = useState<EquipmentCategory[]>([]);
@@ -86,7 +87,7 @@ export default function EquipmentCategoriesPage() {
         : EQUIPMENT_CATEGORIES_API;
       const res = await fetch(url, {
         method: editing ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: tenantHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(body),
       });
       const json = await res.json();
@@ -103,7 +104,10 @@ export default function EquipmentCategoriesPage() {
   };
 
   const remove = async (row: EquipmentCategory) => {
-    const res = await fetch(`${EQUIPMENT_CATEGORIES_API}/${row.id}`, { method: 'DELETE' });
+    const res = await fetch(`${EQUIPMENT_CATEGORIES_API}/${row.id}`, {
+      method: 'DELETE',
+      headers: tenantHeaders(),
+    });
     const json = await res.json();
     if (!json.success) {
       message.error(json.message || 'Устгахад алдаа');
