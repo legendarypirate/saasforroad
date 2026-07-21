@@ -1,10 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Loader2 } from 'lucide-react';
 
-import { Button as UiButton } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { RButton, type RButtonVariant, type RButtonSize } from '@/components/r/RButton';
 
 export type AntdButtonProps = {
   type?: 'primary' | 'default' | 'dashed' | 'link' | 'text';
@@ -22,19 +20,25 @@ export type AntdButtonProps = {
   [key: string]: unknown;
 };
 
-function mapVariant(type?: string, danger?: boolean): React.ComponentProps<typeof UiButton>['variant'] {
-  if (danger) return 'destructive';
-  if (type === 'link' || type === 'text') return 'link';
-  if (type === 'dashed' || type === 'default') return 'outline';
-  return 'default';
+function mapVariant(type?: string, danger?: boolean): RButtonVariant {
+  if (danger) return 'danger';
+  if (type === 'primary') return 'primary';
+  if (type === 'link') return 'link';
+  if (type === 'text') return 'ghost';
+  // default / dashed
+  return 'outline';
 }
 
-function mapSize(size?: string): React.ComponentProps<typeof UiButton>['size'] {
+function mapSize(size?: string): RButtonSize {
   if (size === 'small') return 'sm';
   if (size === 'large') return 'lg';
-  return 'default';
+  return 'md';
 }
 
+/**
+ * AntD-shaped Button, now rendered through the shared {@link RButton} kit so
+ * every page inherits the same look & behaviour.
+ */
 export function Button({
   type = 'default',
   danger,
@@ -49,16 +53,18 @@ export function Button({
   ...props
 }: AntdButtonProps) {
   return (
-    <UiButton
+    <RButton
       type={htmlType}
       variant={mapVariant(type, danger)}
       size={mapSize(size)}
-      disabled={disabled || loading}
-      className={cn(block && 'w-full', className)}
+      loading={loading}
+      iconLeft={icon}
+      block={block}
+      disabled={disabled}
+      className={className}
       {...props}
     >
-      {loading ? <Loader2 className="size-4 animate-spin" /> : icon}
       {children}
-    </UiButton>
+    </RButton>
   );
 }

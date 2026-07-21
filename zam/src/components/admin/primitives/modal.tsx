@@ -1,18 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Loader2 } from 'lucide-react';
 
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { RModal } from '@/components/r/RModal';
 import { uiToast } from '@/lib/toast';
 
-import { Button } from './button';
 import { ConfirmHost, confirmDialog } from './confirm-host';
 
 type ModalProps = {
@@ -35,6 +27,10 @@ type ModalProps = {
   [key: string]: unknown;
 };
 
+/**
+ * AntD-shaped Modal, rendered through the shared {@link RModal} kit so all
+ * CRUD dialogs & confirmations share one look & behaviour.
+ */
 function ModalComponent({
   title,
   open,
@@ -49,35 +45,21 @@ function ModalComponent({
   width,
   destroyOnClose,
 }: ModalProps) {
-  const isOpen = open ?? visible ?? false;
-
-  if (destroyOnClose && !isOpen) return null;
-
   return (
-    <Dialog open={isOpen} onOpenChange={(v) => !v && onCancel?.()}>
-      <DialogContent style={{ maxWidth: width ?? 520 }} className="sm:max-w-lg">
-        {title && (
-          <DialogHeader>
-            <DialogTitle>{title}</DialogTitle>
-          </DialogHeader>
-        )}
-        <div>{children}</div>
-        {footer !== null && (
-          <DialogFooter>
-            {footer ?? (
-              <>
-                <Button type="default" onClick={onCancel}>
-                  {cancelText}
-                </Button>
-                <Button type="primary" onClick={onOk} loading={confirmLoading}>
-                  {okText}
-                </Button>
-              </>
-            )}
-          </DialogFooter>
-        )}
-      </DialogContent>
-    </Dialog>
+    <RModal
+      open={open ?? visible ?? false}
+      onClose={() => onCancel?.()}
+      title={title}
+      footer={footer === null ? null : footer}
+      okText={okText}
+      cancelText={cancelText}
+      onOk={onOk}
+      confirmLoading={confirmLoading}
+      width={width}
+      destroyOnClose={destroyOnClose}
+    >
+      {children}
+    </RModal>
   );
 }
 

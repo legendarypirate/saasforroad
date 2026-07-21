@@ -3,10 +3,11 @@
 import React from 'react';
 import NextImage from 'next/image';
 
-import { Badge } from '@/components/ui/badge';
 import { Card as UiCard, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
+import { RText } from '@/components/r/RText';
+import { RBadge } from '@/components/r/RBadge';
 import { cn } from '@/lib/utils';
 
 type LooseProps = {
@@ -89,15 +90,30 @@ export function Col({
   );
 }
 
-const tagColors: Record<string, string> = {
-  green: 'bg-emerald-100 text-emerald-800',
-  blue: 'bg-blue-100 text-blue-800',
-  red: 'bg-red-100 text-red-800',
-  orange: 'bg-orange-100 text-orange-800',
-  purple: 'bg-purple-100 text-purple-800',
-  gold: 'bg-amber-100 text-amber-800',
+type RBadgeTone = React.ComponentProps<typeof RBadge>['tone'];
+
+const tagTone: Record<string, RBadgeTone> = {
+  green: 'success',
+  success: 'success',
+  lime: 'success',
+  blue: 'info',
+  cyan: 'info',
+  geekblue: 'info',
+  processing: 'info',
+  red: 'danger',
+  volcano: 'danger',
+  error: 'danger',
+  orange: 'warning',
+  gold: 'warning',
+  yellow: 'warning',
+  warning: 'warning',
+  purple: 'primary',
+  magenta: 'primary',
+  default: 'neutral',
+  gray: 'neutral',
 };
 
+/** AntD-shaped Tag, rendered through the shared {@link RBadge} status pill. */
 export function Tag({
   children,
   color,
@@ -110,9 +126,9 @@ export function Tag({
   style?: React.CSSProperties;
 }) {
   return (
-    <Badge variant="secondary" className={cn(color && tagColors[color], className)} style={style}>
+    <RBadge tone={(color && tagTone[color]) || 'neutral'} className={className} style={style}>
       {children}
-    </Badge>
+    </RBadge>
   );
 }
 
@@ -153,6 +169,15 @@ export function Card({
   );
 }
 
+const titleSizes: Record<number, string> = {
+  1: 'text-3xl font-extrabold',
+  2: 'text-2xl font-bold',
+  3: 'text-xl font-bold',
+  4: 'text-lg font-semibold',
+  5: 'text-base font-semibold',
+};
+
+/** AntD-shaped Title, rendered through {@link RText} (font-heading tokens). */
 function Title({
   level = 4,
   children,
@@ -166,21 +191,34 @@ function Title({
   style?: React.CSSProperties;
   onClick?: () => void;
 }) {
-  const TagName = (`h${Math.min(level, 6)}` as keyof JSX.IntrinsicElements);
-  const sizes = {
-    1: 'text-3xl font-extrabold',
-    2: 'text-2xl font-bold',
-    3: 'text-xl font-bold',
-    4: 'text-lg font-semibold',
-    5: 'text-base font-semibold',
-  };
+  const as = (`h${Math.min(level, 6)}` as keyof React.JSX.IntrinsicElements);
   return (
-    <TagName className={cn(sizes[level], className)} style={style} onClick={onClick}>
+    <RText
+      as={as}
+      variant="title"
+      className={cn(titleSizes[level], className)}
+      style={style}
+      onClick={onClick}
+    >
       {children}
-    </TagName>
+    </RText>
   );
 }
 
+function toneFor(type?: string) {
+  switch (type) {
+    case 'success':
+      return 'success' as const;
+    case 'warning':
+      return 'warning' as const;
+    case 'danger':
+      return 'danger' as const;
+    default:
+      return 'default' as const;
+  }
+}
+
+/** AntD-shaped Text, rendered through {@link RText}. */
 function Text({
   children,
   type,
@@ -198,32 +236,25 @@ function Text({
   code?: boolean;
   ellipsis?: boolean;
 }) {
-  const tone =
-    type === 'secondary'
-      ? 'text-muted-foreground'
-      : type === 'success'
-        ? 'text-emerald-600'
-        : type === 'warning'
-          ? 'text-amber-600'
-          : type === 'danger'
-            ? 'text-destructive'
-            : '';
   return (
-    <span
+    <RText
+      as="span"
+      variant={type === 'secondary' ? 'muted' : 'body'}
+      tone={toneFor(type)}
+      truncate={ellipsis ? true : undefined}
       className={cn(
-        tone,
         strong && 'font-semibold',
         code && 'rounded bg-muted px-1 font-mono text-sm',
-        ellipsis && 'block truncate',
         className,
       )}
       style={style}
     >
       {children}
-    </span>
+    </RText>
   );
 }
 
+/** AntD-shaped Paragraph, rendered through {@link RText}. */
 function Paragraph({
   children,
   type,
@@ -236,9 +267,9 @@ function Paragraph({
   style?: React.CSSProperties;
 }) {
   return (
-    <p className={cn(type === 'secondary' && 'text-muted-foreground', className)} style={style}>
+    <RText as="p" variant={type === 'secondary' ? 'muted' : 'body'} className={className} style={style}>
       {children}
-    </p>
+    </RText>
   );
 }
 

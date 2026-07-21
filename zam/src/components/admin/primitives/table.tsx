@@ -203,7 +203,10 @@ function TableComponent<T extends object = any>({
   return (
     <div className={cn('space-y-3', className)} style={style}>
       <div
-        className={cn('relative overflow-x-auto', bordered && 'rounded-lg border')}
+        className={cn(
+          'relative overflow-x-auto rounded-xl bg-card ring-1 ring-foreground/10',
+          bordered && '[&_td]:border [&_th]:border',
+        )}
         style={scroll?.y ? { maxHeight: scroll.y, overflowY: 'auto' } : undefined}
       >
         {loading && (
@@ -216,9 +219,9 @@ function TableComponent<T extends object = any>({
           className={cn('admin-data-table', size === 'small' && 'text-sm')}
         >
           <TableHeader className={scroll?.y ? 'sticky top-0 z-10 bg-muted/95 backdrop-blur-sm' : undefined}>
-            <TableRow>
+            <TableRow className="bg-muted/40 hover:bg-muted/40">
               {rowSelection && (
-                <TableHead style={{ width: selectionWidth }} className="text-center">
+                <TableHead style={{ width: selectionWidth }} className="h-11 text-center font-semibold text-muted-foreground">
                   <Checkbox
                     checked={allSelected}
                     indeterminate={someSelected}
@@ -230,6 +233,7 @@ function TableComponent<T extends object = any>({
               {columns.map((col, i) => (
                 <TableHead
                   key={col.key ?? String(col.dataIndex ?? i)}
+                  className="h-11 font-semibold text-muted-foreground"
                   style={{ width: col.width, minWidth: col.width, textAlign: col.align }}
                 >
                   {col.title}
