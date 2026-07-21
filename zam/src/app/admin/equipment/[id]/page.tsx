@@ -35,6 +35,7 @@ import {
   type EquipmentItem,
   type EquipmentStatus,
 } from '@/lib/equipment';
+import { tenantHeaders } from '@/lib/tenant';
 
 const { Title, Text } = Typography;
 
@@ -52,7 +53,9 @@ export default function EquipmentDetailPage() {
     if (!id) return;
     setLoading(true);
     try {
-      const res = await fetch(`${EQUIPMENT_API}/${id}`);
+      const res = await fetch(`${EQUIPMENT_API}/${id}`, {
+        headers: tenantHeaders(),
+      });
       const json = await res.json();
       if (!json.success) {
         message.error(json.message || 'Олдсонгүй');
@@ -86,7 +89,7 @@ export default function EquipmentDetailPage() {
     try {
       const res = await fetch(`${EQUIPMENT_API}/${item.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: tenantHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           is_rentable: next,
           ...(next && item.status === 'in_service' ? { status: 'available' } : {}),

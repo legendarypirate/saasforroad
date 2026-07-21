@@ -27,6 +27,7 @@ import {
   printTable,
   updateFuelRecord,
 } from '@/lib/fuel';
+import { tenantHeaders } from '@/lib/tenant';
 
 type EqOption = { value: number; label: string; operator_user_id?: number };
 type UserOption = { value: number; label: string };
@@ -51,9 +52,9 @@ export default function FuelIssuesPage() {
       const [issues, tanksList, eqRes, usersRes, projectsRes] = await Promise.all([
         fetchFuelList<Record<string, unknown>>('issues', { q: q || undefined }),
         fetchFuelList<Record<string, unknown>>('tanks', { status: 'active' }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/equipment`).then((r) => r.json()),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user`).then((r) => r.json()),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/project`).then((r) => r.json()),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/equipment`, { headers: tenantHeaders() }).then((r) => r.json()),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user`, { headers: tenantHeaders() }).then((r) => r.json()),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/project`, { headers: tenantHeaders() }).then((r) => r.json()),
       ]);
       setRows(issues);
       setTanks(

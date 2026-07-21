@@ -153,9 +153,13 @@ async function start() {
     await migrateBrigadeSeparation(db);
     const { migrateProjectFidic } = require("./app/utils/migrateProjectFidic");
     await migrateProjectFidic(db);
-    const { migrateLegacyEquipment } = require("./app/utils/migrateEquipment");
+    const {
+      migrateLegacyEquipment,
+      backfillEquipmentTenant,
+    } = require("./app/utils/migrateEquipment");
     await migrateLegacyEquipment(db.sequelize, db);
     await ensureDefaultTenant();
+    await backfillEquipmentTenant(db.sequelize, db);
     await seedPermissionsAndRoles();
     await ensurePlatformAdmin();
     await seedDocumentFolders();

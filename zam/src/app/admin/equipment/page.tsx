@@ -37,6 +37,7 @@ import {
   type EquipmentItem,
   type EquipmentStatus,
 } from '@/lib/equipment';
+import { tenantHeaders } from '@/lib/tenant';
 
 const { Text } = Typography;
 
@@ -64,7 +65,9 @@ function EquipmentPageContent() {
       if (status) params.set('status', status);
       if (categoryId) params.set('equipment_category_id', String(categoryId));
       if (rentableFilter) params.set('is_rentable', rentableFilter);
-      const res = await fetch(`${EQUIPMENT_API}?${params}`);
+      const res = await fetch(`${EQUIPMENT_API}?${params}`, {
+        headers: tenantHeaders(),
+      });
       const result = await res.json();
       if (result.success) setList(result.data);
       else message.error(result.message || 'Алдаа');
@@ -91,7 +94,10 @@ function EquipmentPageContent() {
   }, [highlightId, router]);
 
   const handleDelete = async (id: number) => {
-    const res = await fetch(`${EQUIPMENT_API}/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${EQUIPMENT_API}/${id}`, {
+      method: 'DELETE',
+      headers: tenantHeaders(),
+    });
     const result = await res.json();
     if (result.success) {
       message.success('Устгагдлаа');
@@ -104,7 +110,7 @@ function EquipmentPageContent() {
     try {
       const res = await fetch(`${EQUIPMENT_API}/${record.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: tenantHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           is_rentable: next,
           ...(next && record.status === 'in_service' ? { status: 'available' } : {}),

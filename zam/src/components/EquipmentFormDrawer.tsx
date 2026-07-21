@@ -23,6 +23,7 @@ import {
   type EquipmentItem,
 } from '@/lib/equipment';
 import { WorkerSelect } from '@/components/equipment/WorkerSelect';
+import { tenantHeaders } from '@/lib/tenant';
 
 interface EquipmentFormDrawerProps {
   open: boolean;
@@ -105,7 +106,7 @@ export default function EquipmentFormDrawer({
       const url = editing ? `${EQUIPMENT_API}/${editing.id}` : EQUIPMENT_API;
       const res = await fetch(url, {
         method: editing ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: tenantHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(payload),
       });
       const result = await res.json();

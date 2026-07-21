@@ -23,6 +23,7 @@ import {
   printTable,
   type FuelReports,
 } from '@/lib/fuel';
+import { tenantHeaders } from '@/lib/tenant';
 
 const REPORT_TYPES = [
   { value: 'daily', label: 'Өдрийн тайлан' },
@@ -80,8 +81,8 @@ export default function FuelReportsPage() {
     (async () => {
       try {
         const [eqRes, usersRes, sup] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/equipment`).then((r) => r.json()),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user`).then((r) => r.json()),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/equipment`, { headers: tenantHeaders() }).then((r) => r.json()),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user`, { headers: tenantHeaders() }).then((r) => r.json()),
           fetchFuelList<Record<string, unknown>>('suppliers'),
         ]);
         const eqList = eqRes.success ? (Array.isArray(eqRes.data) ? eqRes.data : eqRes.data?.rows || []) : [];

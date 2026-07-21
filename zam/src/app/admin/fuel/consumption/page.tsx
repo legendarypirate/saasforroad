@@ -19,6 +19,7 @@ import {
   printTable,
   recalcFuelConsumptions,
 } from '@/lib/fuel';
+import { tenantHeaders } from '@/lib/tenant';
 
 export default function FuelConsumptionPage() {
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
@@ -49,7 +50,7 @@ export default function FuelConsumptionPage() {
   }, [load]);
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/equipment`)
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/equipment`, { headers: tenantHeaders() })
       .then((r) => r.json())
       .then((json) => {
         const list = json.success ? (Array.isArray(json.data) ? json.data : json.data?.rows || []) : [];

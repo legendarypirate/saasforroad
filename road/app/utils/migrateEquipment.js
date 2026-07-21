@@ -56,4 +56,92 @@ async function migrateLegacyEquipment(sequelize, db) {
   }
 }
 
-module.exports = { migrateLegacyEquipment };
+/**
+ * Correct equipment that was created through the web admin without a tenant
+ * context (X-Tenant-Domain header missing) and therefore ended up either
+ * NULL-tenant or swept into the default catch-all tenant by ensureDefaultTenant.
+ *
+ * Equipment must always belong to the tenant that created it. For a
+ * single-operating-tenant deployment we can safely reattach these orphan rows
+ * to that tenant. When 0 or 2+ real tenants exist the owner is ambiguous, so we
+ * skip and leave it to be resolved manually.
+ *
+ * Runs AFTER ensureDefaultTenant so it also reclaims rows already moved to the
+ * default tenant. Idempotent — once tenant_id is correct nothing matches.
+ */
+async function backfillEquipmentTenant(sequelize, db) {
+  try {
+    const { Op } = require("sequelize");
+    const defaultSlug = process.env.DEFAULT_TENANT_SLUG || "default";
+
+    const realTenants = await db.tenants.findAll({
+      where: { is_active: true, slug: { [Op.ne]: defaultSlug } },
+      order: [["id", "ASC"]],
+      skipTenantScope: true,
+    });
+    if (realTenants.length !== 1) {
+      if (realTenants.length > 1) {
+        console.warn(
+          "backfillEquipmentTenant skipped: multiple active tenants — resolve orphan equipment ownership manually."
+        );
+      }
+      return;
+    }
+
+    const target = realTenants[0];
+    const defaultTenant = await db.tenants.findOne({
+      where: { slug: defaultSlug },
+      skipTenantScope: true,
+    });
+    const orphanIds = defaultTenant ? [defaultTenant.id] : [];
+
+    const tables = [
+      "equipments",
+      "equipment_categories",
+      "equipment_images",
+      "equipment_insurances",
+      "equipment_oil_changes",
+      "equipment_service_logs",
+      "equipment_documents",
+      "equipment_monthly_finances",
+      "project_equipment_links",
+    ];
+
+    let moved = 0;
+    for (const table of tables) {
+      const [exists] = await sequelize.query(
+        `SELECT 1 FROM information_schema.columns
+         WHERE table_schema = 'public' AND table_name = :table
+           AND column_name = 'tenant_id'`,
+        { replacements: { table } }
+      );
+      if (!exists.length) continue;
+
+      try {
+        const [, meta] = await sequelize.query(
+          `UPDATE "${table}" SET "tenant_id" = :tid
+           WHERE "tenant_id" IS DISTINCT FROM :tid
+             AND ("tenant_id" IS NULL OR "tenant_id" = ANY(:orphans))`,
+          { replacements: { tid: target.id, orphans: orphanIds } }
+        );
+        const count = typeof meta?.rowCount === "number" ? meta.rowCount : 0;
+        if (count > 0) {
+          moved += count;
+          console.log(`  ${table}: ${count} row(s) → tenant #${target.id}`);
+        }
+      } catch (err) {
+        console.warn(`backfillEquipmentTenant ${table}:`, err.message);
+      }
+    }
+
+    if (moved > 0) {
+      console.log(
+        `Reassigned ${moved} orphan equipment row(s) → tenant #${target.id} (${target.slug}).`
+      );
+    }
+  } catch (err) {
+    console.warn("backfillEquipmentTenant skipped:", err.message);
+  }
+}
+
+module.exports = { migrateLegacyEquipment, backfillEquipmentTenant };
