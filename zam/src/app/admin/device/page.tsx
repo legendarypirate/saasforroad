@@ -244,16 +244,17 @@ export default function DeviceApprovalPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-        <div>
-          <Text type="secondary">
-            Ажилтан шинэ төхөөрөмжөөр нэвтэрэхэд энд харагдана. Зөвхөн хамгийн сүүлд зөвшөөрөгдсөн төхөөрөмж ирц бүртгэнэ.
-          </Text>
-        </div>
-        <Button icon={<ReloadOutlined />} onClick={fetchRows}>Шинэчлэх</Button>
-      </div>
+      <Text type="secondary" className="mb-3 block">
+        Ажилтан шинэ төхөөрөмжөөр нэвтэрэхэд энд харагдана. Зөвхөн хамгийн сүүлд зөвшөөрөгдсөн төхөөрөмж ирц бүртгэнэ.
+      </Text>
 
-      <Space style={{ marginBottom: 16 }} wrap>
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <Input.Search
+          placeholder="Ажилтан, утас, төхөөрөмж..."
+          allowClear
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-72"
+        />
         <Select
           value={statusFilter}
           onChange={setStatusFilter}
@@ -266,13 +267,8 @@ export default function DeviceApprovalPage() {
             { value: '', label: 'Бүгд' },
           ]}
         />
-        <Input.Search
-          placeholder="Ажилтан, утас, төхөөрөмж..."
-          allowClear
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ width: 280 }}
-        />
-      </Space>
+        <Button icon={<ReloadOutlined />} onClick={fetchRows}>Шинэчлэх</Button>
+      </div>
 
       <Table
         rowKey="id"

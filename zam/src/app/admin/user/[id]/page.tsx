@@ -21,8 +21,27 @@ import {
   Upload,
   Spin,
   DatePicker,
+  isFormValidationError,
 } from '@/components/admin/primitives';
 import type { ColumnsType } from '@/components/admin/primitives';
+
+/**
+ * Surface form validation failures as a non-blocking toast instead of letting
+ * the thrown error bubble (which triggers the Next.js error overlay) or leaving
+ * inline red text that shifts inline-form rows. Returns true if handled.
+ */
+function warnValidation(
+  error: unknown,
+  form: { clearErrors: () => void },
+): boolean {
+  if (isFormValidationError(error)) {
+    const first = Object.values(error.errors)[0];
+    message.warning(first || 'Шаардлагатай талбаруудыг бөглөнө үү');
+    form.clearErrors();
+    return true;
+  }
+  return false;
+}
 import { DeleteOutlined, EditOutlined, PlusOutlined, UserOutlined, CameraOutlined } from '@/components/admin/icons';
 import { DATE_FORMAT, dateFormItemProps, formatDate } from '@/lib/userDates';
 import { tenantHeaders } from '@/lib/tenant';
@@ -337,7 +356,13 @@ export default function UserDetailPage() {
 
   const saveGeneralInfo = async () => {
     if (!userId) return;
-    const values = await generalForm.validateFields();
+    let values;
+    try {
+      values = await generalForm.validateFields();
+    } catch (e) {
+      warnValidation(e, generalForm);
+      return;
+    }
     setGeneralSaving(true);
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/${userId}`, {
@@ -359,7 +384,13 @@ export default function UserDetailPage() {
   };
 
   const addSchool = async () => {
-    const values = await schoolForm.validateFields();
+    let values;
+    try {
+      values = await schoolForm.validateFields();
+    } catch (e) {
+      warnValidation(e, schoolForm);
+      return;
+    }
     if (!userId) return;
     setSchoolSaving(true);
     try {
@@ -404,7 +435,13 @@ export default function UserDetailPage() {
   };
 
   const addFamily = async () => {
-    const values = await familyForm.validateFields();
+    let values;
+    try {
+      values = await familyForm.validateFields();
+    } catch (e) {
+      warnValidation(e, familyForm);
+      return;
+    }
     if (!userId) return;
     setFamilySaving(true);
     try {
@@ -449,7 +486,13 @@ export default function UserDetailPage() {
   };
 
   const addEmergency = async () => {
-    const values = await emergencyForm.validateFields();
+    let values;
+    try {
+      values = await emergencyForm.validateFields();
+    } catch (e) {
+      warnValidation(e, emergencyForm);
+      return;
+    }
     if (!userId) return;
     setEmergencySaving(true);
     try {
@@ -489,7 +532,13 @@ export default function UserDetailPage() {
 
   const addDisciplinaryAction = async () => {
     if (!userId) return;
-    const values = await disciplineForm.validateFields();
+    let values;
+    try {
+      values = await disciplineForm.validateFields();
+    } catch (e) {
+      warnValidation(e, disciplineForm);
+      return;
+    }
     setActionSaving(true);
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/action`, {
@@ -834,7 +883,7 @@ export default function UserDetailPage() {
             <Form.Item name="graduationYear">
               <Input placeholder="Төгссөн он" />
             </Form.Item>
-            <Button type="primary" icon={<PlusOutlined />} loading={schoolSaving} onClick={addSchool} />
+            <Button type="primary" className="mb-5" icon={<PlusOutlined />} loading={schoolSaving} onClick={addSchool} />
           </Form>
           <Table rowKey="id" columns={schoolColumns} dataSource={schools} pagination={false} />
         </Card>
@@ -858,7 +907,7 @@ export default function UserDetailPage() {
             <Form.Item name="relation">
               <Input placeholder="Хэн болох" />
             </Form.Item>
-            <Button type="primary" icon={<PlusOutlined />} loading={familySaving} onClick={addFamily} />
+            <Button type="primary" className="mb-5" icon={<PlusOutlined />} loading={familySaving} onClick={addFamily} />
           </Form>
           <Table rowKey="id" columns={familyColumns} dataSource={families} pagination={false} />
         </Card>
@@ -882,7 +931,7 @@ export default function UserDetailPage() {
             <Form.Item name="address">
               <Input placeholder="Хаяг" style={{ width: 280 }} />
             </Form.Item>
-            <Button type="primary" icon={<PlusOutlined />} loading={emergencySaving} onClick={addEmergency} />
+            <Button type="primary" className="mb-5" icon={<PlusOutlined />} loading={emergencySaving} onClick={addEmergency} />
           </Form>
           <Table rowKey="id" columns={emergencyColumns} dataSource={emergencies} pagination={false} />
         </Card>
@@ -909,7 +958,7 @@ export default function UserDetailPage() {
                 options={[{ value: 'low', label: 'low' }, { value: 'medium', label: 'medium' }, { value: 'high', label: 'high' }]}
               />
             </Form.Item>
-            <Button type="primary" icon={<PlusOutlined />} loading={actionSaving} onClick={addDisciplinaryAction} />
+            <Button type="primary" className="mb-5" icon={<PlusOutlined />} loading={actionSaving} onClick={addDisciplinaryAction} />
           </Form>
           <Table rowKey="id" columns={actionColumns} dataSource={actions} pagination={{ pageSize: 8 }} />
         </Card>

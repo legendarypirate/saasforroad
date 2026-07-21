@@ -14,7 +14,9 @@ import {
   Popconfirm,
 } from '@/components/admin/primitives';
 import type { ColumnsType } from '@/components/admin/primitives';
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/admin/icons';
+import { PlusOutlined } from '@/components/admin/icons';
+import { KeyRound } from 'lucide-react';
+import { RActionButton } from '@/components/r';
 import { PageWrapper } from '@/components/auth/PageWrapper';
 import { CanAccess } from '@/components/auth/CanAccess';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -175,14 +177,15 @@ export default function SystemAccessPage() {
       render: (_, record) => (
         <Space>
           {canUpdate && (
-            <Button type="link" onClick={() => openEditRole(record)}>
-              Засах
-            </Button>
+            <RActionButton preset="edit" onClick={() => openEditRole(record)} />
           )}
           {canUpdate && (
-            <Button type="link" icon={<EditOutlined />} onClick={() => goToPermissions(record.id)}>
-              Эрх тохируулах
-            </Button>
+            <RActionButton
+              icon={<KeyRound />}
+              label="Эрх тохируулах"
+              tone="primary"
+              onClick={() => goToPermissions(record.id)}
+            />
           )}
           {canDelete && !isAdminRole(record.name) && (
             <Popconfirm
@@ -193,9 +196,7 @@ export default function SystemAccessPage() {
               okButtonProps={{ danger: true }}
               onConfirm={() => handleDeleteRole(record)}
             >
-              <Button type="link" danger icon={<DeleteOutlined />} loading={deletingId === record.id}>
-                Устгах
-              </Button>
+              <RActionButton preset="delete" disabled={deletingId === record.id} />
             </Popconfirm>
           )}
         </Space>

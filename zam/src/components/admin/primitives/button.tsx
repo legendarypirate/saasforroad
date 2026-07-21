@@ -3,6 +3,7 @@
 import React from 'react';
 
 import { RButton, type RButtonVariant, type RButtonSize } from '@/components/r/RButton';
+import { cn } from '@/lib/utils';
 
 export type AntdButtonProps = {
   type?: 'primary' | 'default' | 'dashed' | 'link' | 'text';
@@ -35,6 +36,21 @@ function mapSize(size?: string): RButtonSize {
   return 'md';
 }
 
+/** Square dimensions for icon-only buttons so they don't render as cramped pills. */
+const ICON_ONLY_SQUARE: Record<RButtonSize, string> = {
+  sm: 'size-8 p-0',
+  md: 'size-10 p-0',
+  lg: 'size-11 p-0',
+};
+
+function isEmptyChildren(children: React.ReactNode): boolean {
+  return (
+    children == null ||
+    children === false ||
+    (typeof children === 'string' && children.trim() === '')
+  );
+}
+
 /**
  * AntD-shaped Button, now rendered through the shared {@link RButton} kit so
  * every page inherits the same look & behaviour.
@@ -52,16 +68,19 @@ export function Button({
   disabled,
   ...props
 }: AntdButtonProps) {
+  const rSize = mapSize(size);
+  const iconOnly = icon != null && isEmptyChildren(children);
+
   return (
     <RButton
       type={htmlType}
       variant={mapVariant(type, danger)}
-      size={mapSize(size)}
+      size={rSize}
       loading={loading}
       iconLeft={icon}
       block={block}
       disabled={disabled}
-      className={className}
+      className={cn(iconOnly && ICON_ONLY_SQUARE[rSize], className)}
       {...props}
     >
       {children}

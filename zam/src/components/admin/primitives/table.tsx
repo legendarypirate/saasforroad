@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
 
 import {
   Table as UiTable,
@@ -10,9 +11,154 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
+
+const DEFAULT_PAGE_SIZES = [10, 15, 20, 30, 50];
+
+/** Build a 1 … n page list with ellipsis, mirroring the reference MPagination. */
+function buildPageList(
+  current: number,
+  total: number,
+): Array<number | 'ellipsis-start' | 'ellipsis-end'> {
+  const MAX_VISIBLE = 7;
+  if (total <= MAX_VISIBLE) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+
+  const pages: Array<number | 'ellipsis-start' | 'ellipsis-end'> = [1];
+  let startPage: number;
+  let endPage: number;
+
+  if (current <= 3) {
+    startPage = 2;
+    endPage = 5;
+  } else if (current >= total - 2) {
+    startPage = total - 4;
+    endPage = total - 1;
+  } else {
+    startPage = current - 1;
+    endPage = current + 1;
+  }
+
+  if (startPage > 2) pages.push('ellipsis-start');
+  for (let i = startPage; i <= endPage; i++) {
+    if (i > 1 && i < total) pages.push(i);
+  }
+  if (endPage < total - 1) pages.push('ellipsis-end');
+  pages.push(total);
+  return pages;
+}
+
+const pageButtonClass =
+  'inline-flex h-9 min-w-9 items-center justify-center rounded-md px-2 text-sm font-medium transition-colors';
+
+function TablePaginationFooter({
+  page,
+  pageSize,
+  total,
+  totalPages,
+  pageSizeOptions,
+  showSizeChanger,
+  onPageChange,
+  onPageSizeChange,
+}: {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  pageSizeOptions: number[];
+  showSizeChanger: boolean;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (size: number) => void;
+}) {
+  const pages = buildPageList(page, totalPages);
+
+  return (
+    <div className="flex flex-col items-center gap-2 border-t px-3 py-2 md:flex-row md:justify-between">
+      <div className="text-sm text-muted-foreground">
+        Бүгд {total} мэдээлэл, {page}-р хуудас / нийт {totalPages} хуудас
+      </div>
+      <div className="flex items-center gap-2">
+        {showSizeChanger && (
+          <Select
+            value={String(pageSize)}
+            onValueChange={(v) => v && onPageSizeChange(Number(v))}
+          >
+            <SelectTrigger className="h-9 w-[72px] cursor-pointer">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {pageSizeOptions.map((s) => (
+                <SelectItem key={s} value={String(s)} className="cursor-pointer">
+                  {s}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        {totalPages > 1 && (
+          <nav className="flex items-center gap-1">
+            <button
+              type="button"
+              className={cn(
+                pageButtonClass,
+                'gap-1 px-3 hover:bg-muted',
+                page <= 1 && 'pointer-events-none opacity-50',
+              )}
+              onClick={() => onPageChange(page - 1)}
+            >
+              <ChevronLeft className="size-4" />
+              Өмнөх
+            </button>
+            {pages.map((p) =>
+              typeof p === 'string' ? (
+                <span key={p} className="inline-flex h-9 w-9 items-center justify-center text-muted-foreground">
+                  <MoreHorizontal className="size-4" />
+                </span>
+              ) : (
+                <button
+                  key={p}
+                  type="button"
+                  aria-current={p === page ? 'page' : undefined}
+                  className={cn(
+                    pageButtonClass,
+                    p === page
+                      ? 'bg-primary text-primary-foreground'
+                      : 'hover:bg-muted',
+                  )}
+                  onClick={() => onPageChange(p)}
+                >
+                  {p}
+                </button>
+              ),
+            )}
+            <button
+              type="button"
+              className={cn(
+                pageButtonClass,
+                'gap-1 px-3 hover:bg-muted',
+                page >= totalPages && 'pointer-events-none opacity-50',
+              )}
+              onClick={() => onPageChange(page + 1)}
+            >
+              Дараах
+              <ChevronRight className="size-4" />
+            </button>
+          </nav>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export type ColumnsType<T = any> = Array<{
   title?: React.ReactNode;
@@ -147,7 +293,14 @@ function TableComponent<T extends object = any>({
 }: TableProps<T>) {
   const [page, setPage] = useState(hasPagination(pagination) ? pagination.current ?? 1 : 1);
   const source = dataSource ?? [];
-  const pageSize = hasPagination(pagination) ? pagination.pageSize ?? 10 : source.length;
+  const initialPageSize = hasPagination(pagination) ? pagination.pageSize ?? 10 : source.length;
+  const [pageSize, setPageSize] = useState(initialPageSize);
+
+  useEffect(() => {
+    if (hasPagination(pagination) && pagination.pageSize) {
+      setPageSize(pagination.pageSize);
+    }
+  }, [hasPagination(pagination) ? pagination.pageSize : undefined]);
 
   const rows = useMemo(() => {
     if (!hasPagination(pagination)) return source;
@@ -158,11 +311,27 @@ function TableComponent<T extends object = any>({
   const totalPages = Math.max(1, Math.ceil(source.length / pageSize));
 
   const handlePageChange = (nextPage: number) => {
-    setPage(nextPage);
+    const clamped = Math.min(Math.max(1, nextPage), totalPages);
+    setPage(clamped);
     if (hasPagination(pagination)) {
-      pagination.onChange?.(nextPage, pageSize);
+      pagination.onChange?.(clamped, pageSize);
     }
   };
+
+  const handlePageSizeChange = (nextSize: number) => {
+    setPageSize(nextSize);
+    setPage(1);
+    if (hasPagination(pagination)) {
+      pagination.onShowSizeChange?.(1, nextSize);
+      pagination.onChange?.(1, nextSize);
+    }
+  };
+
+  const pageSizeOptions =
+    (hasPagination(pagination) && (pagination.pageSizeOptions as number[] | undefined)) ||
+    DEFAULT_PAGE_SIZES;
+  const showSizeChanger =
+    hasPagination(pagination) && pagination.showSizeChanger !== false;
 
   const selectedKeys = rowSelection?.selectedRowKeys ?? [];
   const selectableRows = rowSelection
@@ -201,10 +370,10 @@ function TableComponent<T extends object = any>({
   const totalColumns = columns.length + (rowSelection ? 1 : 0);
 
   return (
-    <div className={cn('space-y-3', className)} style={style}>
+    <div className={cn('overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10', className)} style={style}>
       <div
         className={cn(
-          'relative overflow-x-auto rounded-xl bg-card ring-1 ring-foreground/10',
+          'relative overflow-x-auto',
           bordered && '[&_td]:border [&_th]:border',
         )}
         style={scroll?.y ? { maxHeight: scroll.y, overflowY: 'auto' } : undefined}
@@ -284,28 +453,17 @@ function TableComponent<T extends object = any>({
           {summary ? summary(source) : children}
         </UiTable>
       </div>
-      {hasPagination(pagination) && source.length > pageSize && (
-        <div className="flex items-center justify-end gap-2 text-sm">
-          <button
-            type="button"
-            className="rounded border px-2 py-1 disabled:opacity-50"
-            disabled={page <= 1}
-            onClick={() => handlePageChange(page - 1)}
-          >
-            Өмнөх
-          </button>
-          <span>
-            {page} / {totalPages}
-          </span>
-          <button
-            type="button"
-            className="rounded border px-2 py-1 disabled:opacity-50"
-            disabled={page >= totalPages}
-            onClick={() => handlePageChange(page + 1)}
-          >
-            Дараах
-          </button>
-        </div>
+      {hasPagination(pagination) && source.length > 0 && (
+        <TablePaginationFooter
+          page={page}
+          pageSize={pageSize}
+          total={source.length}
+          totalPages={totalPages}
+          pageSizeOptions={pageSizeOptions}
+          showSizeChanger={showSizeChanger}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+        />
       )}
     </div>
   );

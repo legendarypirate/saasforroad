@@ -3,7 +3,7 @@
 import { resolveAssetUrl } from '@/lib/assetUrl';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Table, Space, Input, Button, Tag, message, Upload } from '@/components/admin/primitives';
+import { Table, Input, Button, Tag, message, Upload } from '@/components/admin/primitives';
 import type { ColumnsType } from '@/components/admin/primitives';
 import { UploadOutlined } from '@/components/admin/icons';
 
@@ -123,13 +123,13 @@ export default function ActionPage() {
 
   return (
     <div>
-      <Space style={{ marginBottom: 12 }} wrap>
-        <Input placeholder="username" value={username} onChange={(e) => setUsername(e.target.value)} />
-        <Input placeholder="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-        <Input placeholder="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+      <div className="mb-3 flex flex-wrap items-center gap-3">
+        <Input className="w-48" placeholder="Нэр" value={username} onChange={(e) => setUsername(e.target.value)} />
+        <Input className="w-48" placeholder="Утас" value={phone} onChange={(e) => setPhone(e.target.value)} />
+        <Input className="w-56" placeholder="И-мэйл" value={email} onChange={(e) => setEmail(e.target.value)} />
         <Button type="primary" onClick={fetchActions}>Шүүх</Button>
         <Button onClick={() => { setUsername(''); setPhone(''); setEmail(''); setTimeout(fetchActions, 0); }}>Цэвэрлэх</Button>
-      </Space>
+      </div>
 
       <Table rowKey="id" columns={columns} dataSource={rows} loading={loading} />
     </div>

@@ -17,7 +17,8 @@ import {
   isFormValidationError,
 } from '@/components/admin/primitives';
 import type { ColumnsType } from '@/components/admin/primitives';
-import { DeleteOutlined, PlusOutlined, ReloadOutlined } from '@/components/admin/icons';
+import { PlusOutlined, ReloadOutlined } from '@/components/admin/icons';
+import { RActionButton } from '@/components/r';
 import { isMoneyFormField } from '@/lib/money';
 import dayjs from 'dayjs';
 import {
@@ -183,12 +184,10 @@ export default function FuelEntityPage({
         render: (_, row) => (
           <Space>
             {canEdit ? (
-              <Button type="link" onClick={() => openEdit(row)}>
-                Засах
-              </Button>
+              <RActionButton preset="edit" onClick={() => openEdit(row)} />
             ) : null}
             {canDelete ? (
-              <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(Number(row.id))} />
+              <RActionButton preset="delete" onClick={() => handleDelete(Number(row.id))} />
             ) : null}
           </Space>
         ),

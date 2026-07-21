@@ -118,6 +118,13 @@ export class FormStore {
     this.notify();
   }
 
+  /** Clear only the inline validation errors, keeping current values. */
+  clearErrors() {
+    if (Object.keys(this.errors).length === 0) return;
+    this.errors = {};
+    this.notify();
+  }
+
   registerField(name: string, config: FormFieldConfig) {
     this.fields[name] = config;
   }
