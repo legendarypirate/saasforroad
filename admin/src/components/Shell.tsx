@@ -172,7 +172,7 @@ export default function Shell({ children }: { children: ReactNode }) {
         </div>
       </aside>
       <div className="main">
-        <div className="rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
+        <div className="w-full min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
           {children}
         </div>
       </div>

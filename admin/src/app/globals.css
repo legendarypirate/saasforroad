@@ -381,9 +381,10 @@ code {
 }
 
 .main {
-  padding: 1rem 1.25rem 1.75rem;
-  max-width: 1200px;
+  min-width: 0;
   width: 100%;
+  max-width: none;
+  padding: 1rem 1.25rem 1.75rem;
 }
 
 @media (max-width: 640px) {
