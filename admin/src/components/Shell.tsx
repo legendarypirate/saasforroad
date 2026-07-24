@@ -12,6 +12,7 @@ import {
 } from "@/lib/api";
 import { ThemeToggle } from "@/components/ThemeProvider";
 import SessionCountdown from "@/components/SessionCountdown";
+import { RButton } from "@/components/r/RButton";
 
 function IconGrid({ className = "nav-ico" }: { className?: string }) {
   return (
@@ -165,12 +166,16 @@ export default function Shell({ children }: { children: ReactNode }) {
           </div>
           <SessionCountdown />
           <ThemeToggle />
-          <button className="btn secondary" type="button" onClick={logout} style={{ width: "100%" }}>
+          <RButton variant="outline" block onClick={logout}>
             Гарах
-          </button>
+          </RButton>
         </div>
       </aside>
-      <div className="main">{children}</div>
+      <div className="main">
+        <div className="rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
+          {children}
+        </div>
+      </div>
     </div>
   );
 }

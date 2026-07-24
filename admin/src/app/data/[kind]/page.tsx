@@ -3,6 +3,17 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Shell from "@/components/Shell";
+import { AdminCrudActions } from "@/components/admin/AdminCrudActions";
+import { AdminListToolbar } from "@/components/admin/AdminListToolbar";
+import {
+  RBadge,
+  RButton,
+  RDrawer,
+  RInput,
+  RSelect,
+  RTable,
+  RTextarea,
+} from "@/components/r";
 import {
   api,
   PLATFORM_DATA_KINDS,
@@ -114,8 +125,8 @@ export default function PlatformDataKindPage() {
     setForm(emptyForm());
   }
 
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
+  async function onSubmit(e?: FormEvent) {
+    e?.preventDefault();
     if (!form.name.trim()) {
       setError("Name is required");
       return;
@@ -153,7 +164,6 @@ export default function PlatformDataKindPage() {
   }
 
   async function onDelete(row: PlatformDataEntry) {
-    if (!confirm(`Delete “${row.name}”?`)) return;
     setError("");
     try {
       await api.deleteData(row.id);
@@ -169,198 +179,173 @@ export default function PlatformDataKindPage() {
 
   return (
     <Shell>
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">{kindMeta.label}</h1>
-          <p className="page-desc">
-            Platform-owned catalog. Tenants can view and contact only — they cannot
-            create or edit these records.
-          </p>
-        </div>
-        <button type="button" className="btn" onClick={openCreate}>
-          Add entry
-        </button>
-      </div>
+      <AdminListToolbar
+        title={kindMeta.label}
+        description="Platform-owned catalog. Tenants can view and contact only — they cannot create or edit these records."
+        onReload={load}
+        onCreate={openCreate}
+        createLabel="Нэмэх"
+      />
 
-      {error ? <p className="error">{error}</p> : null}
-      {message ? <p className="flash-ok">{message}</p> : null}
+      {error ? <p className="error mb-3">{error}</p> : null}
+      {message ? <p className="flash-ok mb-3">{message}</p> : null}
 
-      {showForm ? (
-        <div className="panel" style={{ marginBottom: "1.25rem" }}>
-          <h2 style={{ margin: "0 0 1rem", fontSize: "1.1rem" }}>
-            {editing ? "Edit entry" : "New entry"}
-          </h2>
-          <form className="form-grid" onSubmit={onSubmit}>
-            <label>
-              Name *
-              <input
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                required
-              />
-            </label>
-            <label>
-              Contact name
-              <input
-                value={form.contact_name}
-                onChange={(e) =>
-                  setForm({ ...form, contact_name: e.target.value })
-                }
-              />
-            </label>
-            <label>
-              Phone
-              <input
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              />
-            </label>
-            <label>
-              Email
-              <input
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-              />
-            </label>
-            <label>
-              Province / city
-              <input
-                value={form.province}
-                onChange={(e) => setForm({ ...form, province: e.target.value })}
-              />
-            </label>
-            <label>
-              Location
-              <input
-                value={form.location}
-                onChange={(e) => setForm({ ...form, location: e.target.value })}
-              />
-            </label>
-            <label className="full">
-              Description
-              <textarea
-                rows={3}
-                value={form.description}
-                onChange={(e) =>
-                  setForm({ ...form, description: e.target.value })
-                }
-              />
-            </label>
-            <label>
-              Status
-              <select
-                value={form.status}
-                onChange={(e) => setForm({ ...form, status: e.target.value })}
-              >
-                <option value="active">active</option>
-                <option value="inactive">inactive</option>
-              </select>
-            </label>
-            <label className="check-row">
-              <input
-                type="checkbox"
-                checked={form.is_active}
-                onChange={(e) =>
-                  setForm({ ...form, is_active: e.target.checked })
-                }
-              />
-              Visible to tenants
-            </label>
-            <div className="full" style={{ display: "flex", gap: "0.65rem" }}>
-              <button className="btn" type="submit" disabled={saving}>
-                {saving ? "Saving…" : "Save"}
-              </button>
-              <button
-                className="btn secondary"
-                type="button"
-                onClick={closeForm}
-                disabled={saving}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      ) : null}
-
-      <div className="panel">
-        {loading ? <p className="muted">Loading…</p> : null}
-        {!loading ? (
-          <div className="table-wrap">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Contact</th>
-                  <th>Phone</th>
-                  <th>Email</th>
-                  <th>Location</th>
-                  <th>Status</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map((row) => (
-                  <tr key={row.id}>
-                    <td>
-                      <strong>{row.name}</strong>
-                      {row.description ? (
-                        <div
-                          className="muted"
-                          style={{ fontSize: "0.8rem", marginTop: 2 }}
-                        >
-                          {row.description.slice(0, 80)}
-                          {row.description.length > 80 ? "…" : ""}
-                        </div>
-                      ) : null}
-                    </td>
-                    <td>{row.contact_name || "—"}</td>
-                    <td>{row.phone || "—"}</td>
-                    <td>{row.email || "—"}</td>
-                    <td>
-                      {[row.province, row.location].filter(Boolean).join(" · ") ||
-                        "—"}
-                    </td>
-                    <td>
-                      <span
-                        className={`badge ${row.is_active ? "on" : "off"}`}
-                      >
-                        {row.is_active ? "Visible" : "Hidden"}
-                      </span>
-                    </td>
-                    <td style={{ whiteSpace: "nowrap" }}>
-                      <button
-                        type="button"
-                        className="btn secondary chip"
-                        onClick={() => openEdit(row)}
-                      >
-                        Edit
-                      </button>{" "}
-                      <button
-                        type="button"
-                        className="btn secondary chip"
-                        onClick={() => onDelete(row)}
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {entries.length === 0 ? (
-                  <tr>
-                    <td colSpan={7}>
-                      <div className="empty-state">
-                        No entries yet. Add the first {kindMeta.label} record.
-                      </div>
-                    </td>
-                  </tr>
+      <RTable
+        columns={[
+          {
+            key: "name",
+            title: "Нэр",
+            render: (row) => (
+              <div>
+                <div className="font-semibold">{row.name}</div>
+                {row.description ? (
+                  <div className="mt-0.5 text-xs text-muted-foreground">
+                    {row.description.slice(0, 80)}
+                    {row.description.length > 80 ? "…" : ""}
+                  </div>
                 ) : null}
-              </tbody>
-            </table>
+              </div>
+            ),
+          },
+          {
+            key: "contact",
+            title: "Холбоо барих",
+            render: (row) => row.contact_name || "—",
+          },
+          {
+            key: "phone",
+            title: "Утас",
+            render: (row) => row.phone || "—",
+          },
+          {
+            key: "email",
+            title: "Имэйл",
+            render: (row) => row.email || "—",
+          },
+          {
+            key: "location",
+            title: "Байршил",
+            render: (row) =>
+              [row.province, row.location].filter(Boolean).join(" · ") || "—",
+          },
+          {
+            key: "status",
+            title: "Төлөв",
+            render: (row) => (
+              <RBadge tone={row.is_active ? "success" : "neutral"} dot>
+                {row.is_active ? "Visible" : "Hidden"}
+              </RBadge>
+            ),
+          },
+          {
+            key: "actions",
+            title: "",
+            align: "right",
+            render: (row) => (
+              <AdminCrudActions
+                onEdit={() => openEdit(row)}
+                onDelete={() => onDelete(row)}
+                deleteTitle={`“${row.name}” устгах уу?`}
+              />
+            ),
+          },
+        ]}
+        data={entries}
+        rowKey="id"
+        loading={loading}
+        empty={
+          <div className="px-6 py-16 text-center text-sm text-muted-foreground">
+            Одоогоор бүртгэлгүй. Эхний {kindMeta.label} нэмнэ үү.
           </div>
-        ) : null}
-      </div>
+        }
+      />
+
+      <RDrawer
+        open={showForm}
+        onClose={closeForm}
+        title={editing ? "Засах" : "Шинэ бүртгэл"}
+        description={kindMeta.label}
+        destroyOnClose
+        footer={
+          <>
+            <RButton variant="outline" onClick={closeForm} disabled={saving}>
+              Болих
+            </RButton>
+            <RButton
+              variant="primary"
+              loading={saving}
+              onClick={() => void onSubmit()}
+            >
+              Хадгалах
+            </RButton>
+          </>
+        }
+      >
+        <form className="space-y-4" onSubmit={onSubmit}>
+          <RInput
+            label="Нэр"
+            required
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+          />
+          <RInput
+            label="Холбоо барих хүн"
+            value={form.contact_name}
+            onChange={(e) =>
+              setForm({ ...form, contact_name: e.target.value })
+            }
+          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <RInput
+              label="Утас"
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            />
+            <RInput
+              label="Имэйл"
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <RInput
+              label="Аймаг / хот"
+              value={form.province}
+              onChange={(e) => setForm({ ...form, province: e.target.value })}
+            />
+            <RInput
+              label="Байршил"
+              value={form.location}
+              onChange={(e) => setForm({ ...form, location: e.target.value })}
+            />
+          </div>
+          <RTextarea
+            label="Тайлбар"
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+          />
+          <RSelect
+            label="Төлөв"
+            value={form.status}
+            onChange={(v) => setForm({ ...form, status: v || "active" })}
+            options={[
+              { value: "active", label: "active" },
+              { value: "inactive", label: "inactive" },
+            ]}
+          />
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={form.is_active}
+              onChange={(e) =>
+                setForm({ ...form, is_active: e.target.checked })
+              }
+            />
+            Visible to tenants
+          </label>
+        </form>
+      </RDrawer>
     </Shell>
   );
 }

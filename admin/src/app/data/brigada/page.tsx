@@ -1,7 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Check, Ban } from "lucide-react";
 import Shell from "@/components/Shell";
+import { AdminListToolbar } from "@/components/admin/AdminListToolbar";
+import {
+  RActionButton,
+  RBadge,
+  RSelect,
+  RTable,
+  RTableActions,
+} from "@/components/r";
 import { api, PlatformBrigade } from "@/lib/api";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -68,193 +77,161 @@ export default function PlatformBrigadesPage() {
 
   return (
     <Shell>
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[13px] text-[var(--muted)]">
-          Бригад аппаас бүртгэгдсэн. Идэвхжүүлснээр компаниуд хөлслөнө.
-        </p>
-        <button type="button" className="btn secondary !px-3 !py-1.5 !text-[13px]" onClick={load}>
-          Шинэчлэх
-        </button>
-      </div>
+      <AdminListToolbar
+        title="Бригад"
+        description="Бригад аппаас бүртгэгдсэн. Идэвхжүүлснээр компаниуд хөлслөнө."
+        searchValue={q}
+        onSearchChange={setQ}
+        onSearch={() => load()}
+        onReload={load}
+        filters={
+          <RSelect
+            value={filter}
+            onChange={(v) => setFilter((v as typeof filter) || "all")}
+            options={[
+              { value: "all", label: "Бүх төлөв" },
+              { value: "active", label: "Идэвхтэй" },
+              { value: "inactive", label: "Идэвхгүй" },
+              { value: "suspended", label: "Түдгэлзүүлсэн" },
+            ]}
+            className="w-44"
+          />
+        }
+      />
 
-      <div className="stat-row">
-        <div className="stat-card">
-          <div className="label">Нийт</div>
-          <div className="value">{loading ? "—" : counts.all}</div>
-        </div>
-        <div className="stat-card">
-          <div className="label">Идэвхтэй</div>
-          <div className="value">{loading ? "—" : counts.active}</div>
-        </div>
-        <div className="stat-card">
-          <div className="label">Идэвхгүй</div>
-          <div className="value">{loading ? "—" : counts.off}</div>
-        </div>
-      </div>
-
-      <div
-        className="panel"
-        style={{
-          marginBottom: "0.75rem",
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "0.5rem",
-          alignItems: "center",
-        }}
-      >
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") load();
-          }}
-          placeholder="Нэр, нэвтрэх нэр, утас…"
-          style={{
-            flex: "1 1 200px",
-            minWidth: 160,
-            padding: "0.45rem 0.65rem",
-            borderRadius: "10px",
-            border: "1px solid var(--line-strong)",
-            background: "var(--input-bg)",
-            color: "var(--ink)",
-            fontSize: "0.82rem",
-          }}
-        />
-        <select
-          value={filter}
-          onChange={(e) =>
-            setFilter(e.target.value as typeof filter)
-          }
-          style={{
-            padding: "0.45rem 0.65rem",
-            borderRadius: "10px",
-            border: "1px solid var(--line-strong)",
-            background: "var(--input-bg)",
-            color: "var(--ink)",
-            fontSize: "0.82rem",
-          }}
-        >
-          <option value="all">Бүх төлөв</option>
-          <option value="active">Идэвхтэй</option>
-          <option value="inactive">Идэвхгүй</option>
-          <option value="suspended">Түдгэлзүүлсэн</option>
-        </select>
-        <button type="button" className="btn" onClick={load}>
-          Хайх
-        </button>
-      </div>
-
-      {error ? <p className="error">{error}</p> : null}
-      {message ? <p className="flash-ok">{message}</p> : null}
-
-      <div className="panel">
-        {loading ? <p className="muted">Ачаалж байна…</p> : null}
-        {!loading ? (
-          <div className="table-wrap">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Нэр</th>
-                  <th>Удирдагч</th>
-                  <th>Холбоо</th>
-                  <th>Байршил</th>
-                  <th>Үнэлгээ</th>
-                  <th>Төлөв</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => {
-                  const on = row.status === "active" && row.is_active;
-                  return (
-                    <tr key={row.id}>
-                      <td>
-                        <strong>{row.name}</strong>
-                        {row.description ? (
-                          <div
-                            className="muted"
-                            style={{ fontSize: "0.75rem", marginTop: 2 }}
-                          >
-                            {row.description.slice(0, 72)}
-                            {row.description.length > 72 ? "…" : ""}
-                          </div>
-                        ) : null}
-                      </td>
-                      <td>
-                        <div>{row.leader_name || "—"}</div>
-                        <div
-                          className="muted"
-                          style={{ fontSize: "0.75rem" }}
-                        >
-                          {row.username ? `@${row.username}` : "нэвтрэх нэргүй"}
-                        </div>
-                      </td>
-                      <td>
-                        <div>{row.phone || row.contact_phone || "—"}</div>
-                        <div
-                          className="muted"
-                          style={{ fontSize: "0.75rem" }}
-                        >
-                          {row.contact_email || ""}
-                        </div>
-                      </td>
-                      <td>
-                        {[row.province, row.location]
-                          .filter(Boolean)
-                          .join(" · ") || "—"}
-                      </td>
-                      <td>
-                        {(row.average_rating ?? 0).toFixed(1)}
-                        <div
-                          className="muted"
-                          style={{ fontSize: "0.7rem" }}
-                        >
-                          нэр {(row.reputation_score ?? 0).toFixed(0)}
-                        </div>
-                      </td>
-                      <td>
-                        <span className={`badge ${on ? "on" : "off"}`}>
-                          {STATUS_LABEL[row.status] || row.status}
-                        </span>
-                      </td>
-                      <td style={{ whiteSpace: "nowrap" }}>
-                        {on ? (
-                          <button
-                            type="button"
-                            className="btn secondary chip"
-                            disabled={busyId === row.id}
-                            onClick={() => setStatus(row, "inactive")}
-                          >
-                            {busyId === row.id ? "…" : "Идэвхгүй"}
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="btn chip"
-                            disabled={busyId === row.id}
-                            onClick={() => setStatus(row, "active")}
-                          >
-                            {busyId === row.id ? "…" : "Идэвхжүүлэх"}
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-                {rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={7}>
-                      <div className="empty-state">
-                        Бригад байхгүй. Бригад апп-д бүртгэгдсэний дараа энд гарна.
-                      </div>
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
+      <div className="mb-4 grid grid-cols-3 gap-2">
+        {[
+          { label: "Нийт", value: loading ? "—" : counts.all },
+          { label: "Идэвхтэй", value: loading ? "—" : counts.active },
+          { label: "Идэвхгүй", value: loading ? "—" : counts.off },
+        ].map((s) => (
+          <div
+            key={s.label}
+            className="rounded-xl border border-border bg-card px-3 py-2 shadow-sm"
+          >
+            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              {s.label}
+            </div>
+            <div className="mt-0.5 text-xl font-extrabold tabular-nums">
+              {s.value}
+            </div>
           </div>
-        ) : null}
+        ))}
       </div>
+
+      {error ? <p className="error mb-3">{error}</p> : null}
+      {message ? <p className="flash-ok mb-3">{message}</p> : null}
+
+      <RTable
+        columns={[
+          {
+            key: "name",
+            title: "Нэр",
+            render: (row) => (
+              <div>
+                <div className="font-semibold">{row.name}</div>
+                {row.description ? (
+                  <div className="mt-0.5 text-xs text-muted-foreground">
+                    {row.description.slice(0, 72)}
+                    {row.description.length > 72 ? "…" : ""}
+                  </div>
+                ) : null}
+              </div>
+            ),
+          },
+          {
+            key: "leader",
+            title: "Удирдагч",
+            render: (row) => (
+              <div>
+                <div>{row.leader_name || "—"}</div>
+                <div className="text-xs text-muted-foreground">
+                  {row.username ? `@${row.username}` : "нэвтрэх нэргүй"}
+                </div>
+              </div>
+            ),
+          },
+          {
+            key: "contact",
+            title: "Холбоо",
+            render: (row) => (
+              <div>
+                <div>{row.phone || row.contact_phone || "—"}</div>
+                <div className="text-xs text-muted-foreground">
+                  {row.contact_email || ""}
+                </div>
+              </div>
+            ),
+          },
+          {
+            key: "location",
+            title: "Байршил",
+            render: (row) =>
+              [row.province, row.location].filter(Boolean).join(" · ") || "—",
+          },
+          {
+            key: "rating",
+            title: "Үнэлгээ",
+            render: (row) => (
+              <div>
+                {(row.average_rating ?? 0).toFixed(1)}
+                <div className="text-[11px] text-muted-foreground">
+                  нэр {(row.reputation_score ?? 0).toFixed(0)}
+                </div>
+              </div>
+            ),
+          },
+          {
+            key: "status",
+            title: "Төлөв",
+            render: (row) => {
+              const on = row.status === "active" && row.is_active;
+              return (
+                <RBadge tone={on ? "success" : "neutral"} dot>
+                  {STATUS_LABEL[row.status] || row.status}
+                </RBadge>
+              );
+            },
+          },
+          {
+            key: "actions",
+            title: "",
+            align: "right",
+            render: (row) => {
+              const on = row.status === "active" && row.is_active;
+              return (
+                <RTableActions>
+                  {on ? (
+                    <RActionButton
+                      icon={<Ban strokeWidth={2} />}
+                      label="Идэвхгүй болгох"
+                      tone="danger"
+                      disabled={busyId === row.id}
+                      onClick={() => setStatus(row, "inactive")}
+                    />
+                  ) : (
+                    <RActionButton
+                      icon={<Check strokeWidth={2} />}
+                      label="Идэвхжүүлэх"
+                      tone="success"
+                      disabled={busyId === row.id}
+                      onClick={() => setStatus(row, "active")}
+                    />
+                  )}
+                </RTableActions>
+              );
+            },
+          },
+        ]}
+        data={rows}
+        rowKey="id"
+        loading={loading}
+        empty={
+          <div className="px-6 py-16 text-center text-sm text-muted-foreground">
+            Бригад байхгүй. Бригад апп-д бүртгэгдсэний дараа энд гарна.
+          </div>
+        }
+      />
     </Shell>
   );
 }
