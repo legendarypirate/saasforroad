@@ -1,14 +1,11 @@
 'use client';
 
-import React, { useCallback, useEffect, useState, Suspense } from 'react';
+import React, { useCallback, useEffect, useRef, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Button,
-  Card,
-  Input,
   Popconfirm,
   Select,
-  Space,
   Spin,
   Table,
   Tag,
@@ -17,14 +14,12 @@ import {
 } from '@/components/admin/primitives';
 import type { ColumnsType } from '@/components/admin/primitives';
 import {
-  DeleteOutlined,
-  EditOutlined,
-  EyeOutlined,
   PlusOutlined,
-  ReloadOutlined,
   DollarOutlined,
   StopOutlined,
+  UploadOutlined,
 } from '@/components/admin/icons';
+import { RActionButton, RPageToolbar, RSearch, RTableActions } from '@/components/r';
 import EquipmentFormDrawer from '@/components/EquipmentFormDrawer';
 import {
   EQUIPMENT_API,
@@ -38,6 +33,10 @@ import {
   type EquipmentStatus,
 } from '@/lib/equipment';
 import { tenantHeaders } from '@/lib/tenant';
+import {
+  extractEquipmentFromCertificate,
+  type EquipmentPrefill,
+} from '@/lib/visionEquipment';
 
 const { Text } = Typography;
 
@@ -45,6 +44,7 @@ function EquipmentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const highlightId = searchParams.get('id');
+  const certFileRef = useRef<HTMLInputElement>(null);
 
   const [list, setList] = useState<EquipmentItem[]>([]);
   const [categories, setCategories] = useState<EquipmentCategory[]>([]);
@@ -52,6 +52,8 @@ function EquipmentPageContent() {
   const [rentingId, setRentingId] = useState<number | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<EquipmentItem | null>(null);
+  const [prefill, setPrefill] = useState<EquipmentPrefill | null>(null);
+  const [scanning, setScanning] = useState(false);
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<string | undefined>();
   const [categoryId, setCategoryId] = useState<number | undefined>();
@@ -93,6 +95,28 @@ function EquipmentPageContent() {
     if (highlightId) router.replace(`/admin/equipment/${highlightId}`);
   }, [highlightId, router]);
 
+  const openCreate = () => {
+    setEditing(null);
+    setPrefill(null);
+    setFormOpen(true);
+  };
+
+  const handleCertificateUpload = async (file: File) => {
+    setScanning(true);
+    try {
+      const data = await extractEquipmentFromCertificate(file);
+      setEditing(null);
+      setPrefill(data);
+      setFormOpen(true);
+      message.success('Гэрчилгээнээс мэдээлэл танигдлаа — формыг шалгаад хадгална уу');
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : 'Зураг таних амжилтгүй');
+    } finally {
+      setScanning(false);
+      if (certFileRef.current) certFileRef.current.value = '';
+    }
+  };
+
   const handleDelete = async (id: number) => {
     const res = await fetch(`${EQUIPMENT_API}/${id}`, {
       method: 'DELETE',
@@ -124,14 +148,14 @@ function EquipmentPageContent() {
       message.success(
         next
           ? 'Түрээслэх жагсаалтад нэмэгдлээ (Дата → Техник)'
-          : 'Түрээсийн жагсаалтаас хаслаа'
+          : 'Түрээсийн жагсаалтаас хаслаа',
       );
       setList((prev) =>
         prev.map((row) =>
           row.id === record.id
             ? { ...row, ...(result.data as EquipmentItem) }
-            : row
-        )
+            : row,
+        ),
       );
     } catch {
       message.error('Түрээсийн төлөв солиход алдаа');
@@ -142,9 +166,47 @@ function EquipmentPageContent() {
 
   const columns: ColumnsType<EquipmentItem> = [
     {
+      title: '№',
+      key: 'index',
+      width: 56,
+      render: (_v, _r, index) => index + 1,
+    },
+    {
+      title: 'Үйлдэл',
+      key: 'actions',
+      width: 118,
+      render: (_, record) => (
+        <RTableActions>
+          <RActionButton
+            preset="view"
+            onClick={() => router.push(`/admin/equipment/${record.id}`)}
+          />
+          <RActionButton
+            preset="edit"
+            onClick={() => {
+              setPrefill(null);
+              setEditing(record);
+              setFormOpen(true);
+            }}
+          />
+          <Popconfirm title="Устгах уу?" onConfirm={() => handleDelete(record.id)}>
+            <span>
+              <RActionButton preset="delete" />
+            </span>
+          </Popconfirm>
+        </RTableActions>
+      ),
+    },
+    {
+      title: 'Улсын дугаар',
+      dataIndex: 'registration_number',
+      width: 120,
+      render: (v) => v || '—',
+    },
+    {
       title: 'Дотоод №',
       dataIndex: 'asset_no',
-      width: 90,
+      width: 100,
       render: (v) => v || '—',
     },
     {
@@ -155,18 +217,29 @@ function EquipmentPageContent() {
           <Text strong>{t}</Text>
           <div>
             <Text type="secondary" style={{ fontSize: 12 }}>
-              {[r.model, r.registration_number].filter(Boolean).join(' · ') || '—'}
+              {[r.model, r.serial_number].filter(Boolean).join(' · ') || '—'}
             </Text>
           </div>
         </div>
       ),
     },
-    { title: 'Талбай', dataIndex: 'site', width: 140, render: (v) => v || '—' },
+    {
+      title: 'Марк / модель',
+      key: 'model',
+      width: 140,
+      render: (_, r) => r.model || '—',
+    },
     {
       title: 'Ангилал',
       key: 'equipmentCategory',
       width: 130,
       render: (_, r) => r.equipmentCategory?.name || '—',
+    },
+    {
+      title: 'Талбай',
+      dataIndex: 'site',
+      width: 130,
+      render: (v) => v || '—',
     },
     {
       title: 'Мот/цаг',
@@ -187,9 +260,22 @@ function EquipmentPageContent() {
     {
       title: 'Түрээс',
       dataIndex: 'is_rentable',
-      width: 110,
-      render: (v: boolean | undefined) =>
-        v === true ? <Tag color="green">Тийм</Tag> : <Tag>Үгүй</Tag>,
+      width: 130,
+      render: (_v, record) => {
+        const rentable = record.is_rentable === true;
+        return (
+          <Button
+            size="small"
+            type={rentable ? 'default' : 'primary'}
+            danger={rentable}
+            icon={rentable ? <StopOutlined /> : <DollarOutlined />}
+            loading={rentingId === record.id}
+            onClick={() => setRentable(record, !rentable)}
+          >
+            {rentable ? 'Хасах' : 'Түрээслэх'}
+          </Button>
+        );
+      },
     },
     {
       title: 'Даатгал',
@@ -204,78 +290,49 @@ function EquipmentPageContent() {
         );
       },
     },
-    {
-      title: 'Үйлдэл',
-      key: 'actions',
-      width: 320,
-      fixed: 'right',
-      render: (_, record) => {
-        const rentable = record.is_rentable === true;
-        return (
-          <Space wrap>
-            <Button
-              type="primary"
-              size="small"
-              icon={<EyeOutlined />}
-              onClick={() => router.push(`/admin/equipment/${record.id}`)}
-            >
-              Дэлгэрэнгүй
-            </Button>
-            {rentable ? (
-              <Button
-                size="small"
-                danger
-                icon={<StopOutlined />}
-                loading={rentingId === record.id}
-                onClick={() => setRentable(record, false)}
-              >
-                Түрээсээс хасах
-              </Button>
-            ) : (
-              <Button
-                size="small"
-                type="default"
-                icon={<DollarOutlined />}
-                loading={rentingId === record.id}
-                onClick={() => setRentable(record, true)}
-                style={{ borderColor: '#21cda8', color: '#009778' }}
-              >
-                Түрээслэх
-              </Button>
-            )}
-            <Button
-              type="text"
-              icon={<EditOutlined />}
-              onClick={() => {
-                setEditing(record);
-                setFormOpen(true);
-              }}
-            />
-            <Popconfirm title="Устгах уу?" onConfirm={() => handleDelete(record.id)}>
-              <Button type="text" danger icon={<DeleteOutlined />} />
-            </Popconfirm>
-          </Space>
-        );
-      },
-    },
   ];
 
   return (
     <div>
-      <div
-        className="mb-4 flex flex-nowrap items-center gap-3 overflow-x-auto rounded-xl border border-border bg-card px-4 py-3 shadow-sm"
-      >
-        <div className="ml-auto flex flex-nowrap items-center gap-2">
-          <div style={{ width: 200, flexShrink: 0 }}>
-            <Input
-              allowClear
-              placeholder="Нэр, дугаар, VIN..."
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              onPressEnter={fetchList}
+      <RPageToolbar
+        title="Техник болон ангиллын бүртгэл"
+        actions={
+          <>
+            <input
+              ref={certFileRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void handleCertificateUpload(f);
+              }}
             />
-          </div>
-          <div style={{ width: 160, flexShrink: 0 }}>
+            <Button
+              icon={<UploadOutlined />}
+              loading={scanning}
+              disabled={scanning}
+              onClick={() => certFileRef.current?.click()}
+            >
+              {scanning ? 'Таниж байна…' : 'Гэрчилгээнээс'}
+            </Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+              + Техник бүртгэх
+            </Button>
+          </>
+        }
+        search={
+          <RSearch
+            showButton
+            value={q}
+            onChange={setQ}
+            onSearch={() => fetchList()}
+            placeholder="Хайлт хийх"
+            containerClassName="w-full"
+          />
+        }
+        filters={
+          <>
             <Select
               allowClear
               showSearch
@@ -284,9 +341,8 @@ function EquipmentPageContent() {
               value={categoryId}
               onChange={(v) => setCategoryId(v)}
               options={categories.map((c) => ({ value: c.id, label: c.name }))}
+              style={{ minWidth: 150 }}
             />
-          </div>
-          <div style={{ width: 140, flexShrink: 0 }}>
             <Select
               allowClear
               placeholder="Төлөв"
@@ -296,9 +352,8 @@ function EquipmentPageContent() {
                 value,
                 label,
               }))}
+              style={{ minWidth: 130 }}
             />
-          </div>
-          <div style={{ width: 150, flexShrink: 0 }}>
             <Select
               allowClear
               placeholder="Түрээс"
@@ -308,39 +363,34 @@ function EquipmentPageContent() {
                 { value: 'true', label: 'Түрээслэх' },
                 { value: 'false', label: 'Түрээсгүй' },
               ]}
+              style={{ minWidth: 130 }}
             />
-          </div>
-          <Button icon={<ReloadOutlined />} onClick={fetchList} />
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditing(null);
-              setFormOpen(true);
-            }}
-          >
-            Шинээр бүртгэх
-          </Button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
-      <Card size="small">
-        <Table
-          rowKey="id"
-          loading={loading}
-          dataSource={list}
-          columns={columns}
-          pagination={{ pageSize: 15 }}
-          scroll={{ x: 1180 }}
-        />
-      </Card>
+      <Table
+        rowKey="id"
+        loading={loading}
+        dataSource={list}
+        columns={columns}
+        pagination={{ pageSize: 30, showSizeChanger: true }}
+        scroll={{ x: 1280 }}
+      />
 
       <EquipmentFormDrawer
         open={formOpen}
         editing={editing}
-        onClose={() => setFormOpen(false)}
+        prefill={prefill}
+        onClose={() => {
+          setFormOpen(false);
+          setPrefill(null);
+        }}
         onSaved={(item) => {
-          message.success(editing ? 'Хадгалагдлаа' : 'Бүртгэгдлээ — дэлгэрэнгүй рүү шилжиж байна');
+          message.success(
+            editing ? 'Хадгалагдлаа' : 'Бүртгэгдлээ — дэлгэрэнгүй рүү шилжиж байна',
+          );
+          setPrefill(null);
           if (!editing) {
             router.push(`/admin/equipment/${item.id}`);
           } else {

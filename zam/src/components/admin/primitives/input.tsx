@@ -232,17 +232,29 @@ export const Input = Object.assign(BaseInput, {
   Search: SearchInput,
 });
 
-type InputNumberProps = Omit<React.ComponentProps<typeof UiInput>, 'onChange' | 'value' | 'type'> & {
+type InputNumberProps = Omit<
+  React.ComponentProps<typeof UiInput>,
+  'onChange' | 'value' | 'type' | 'size'
+> & {
   min?: number;
   max?: number;
   step?: number;
+  size?: 'small' | 'middle' | 'large' | string;
   addonAfter?: React.ReactNode;
   addonBefore?: React.ReactNode;
   onChange?: (value: number | string | null) => void;
   value?: number | string | null;
+  /** AntD-compatible: blur/commit on Enter. */
+  onPressEnter?: React.KeyboardEventHandler<HTMLInputElement>;
   /** Show 4,000,000-style grouping; still emits number | null */
   money?: boolean;
   maxFractionDigits?: number;
+};
+
+const NUMBER_SIZE_CLASS: Record<string, string> = {
+  small: 'h-8 text-sm',
+  middle: 'h-10',
+  large: 'h-11',
 };
 
 export function InputNumber({
@@ -250,29 +262,48 @@ export function InputNumber({
   min,
   max,
   step,
+  size = 'middle',
   addonAfter,
   addonBefore,
   onChange,
   value,
   money,
   maxFractionDigits = 2,
+  onPressEnter,
+  onKeyDown,
+  controls: _controls,
+  formatter: _formatter,
+  parser: _parser,
   ...props
-}: InputNumberProps) {
+}: InputNumberProps & {
+  controls?: unknown;
+  formatter?: unknown;
+  parser?: unknown;
+}) {
+  void _controls;
+  void _formatter;
+  void _parser;
+
   if (money) {
     return (
       <MoneyInput
         className={className}
         min={min}
         max={max}
+        size={size}
         addonAfter={addonAfter}
         addonBefore={addonBefore}
         onChange={onChange}
         value={value}
         maxFractionDigits={maxFractionDigits}
+        onPressEnter={onPressEnter}
+        onKeyDown={onKeyDown}
         {...props}
       />
     );
   }
+
+  const sizeClass = NUMBER_SIZE_CLASS[size] ?? NUMBER_SIZE_CLASS.middle;
 
   const input = (
     <UiInput
@@ -281,10 +312,14 @@ export function InputNumber({
       max={max}
       step={step}
       value={value === null || value === undefined ? '' : value}
-      className={cn('h-10', className)}
+      className={cn(sizeClass, className)}
       onChange={(e) => {
         const raw = e.target.value;
         onChange?.(raw === '' ? null : Number.isNaN(Number(raw)) ? raw : Number(raw));
+      }}
+      onKeyDown={(e) => {
+        onKeyDown?.(e);
+        if (e.key === 'Enter') onPressEnter?.(e);
       }}
       {...props}
     />
@@ -292,10 +327,25 @@ export function InputNumber({
 
   if (addonBefore || addonAfter) {
     return (
-      <div className="flex w-full items-center gap-2">
-        {addonBefore}
-        {input}
-        {addonAfter}
+      <div
+        className={cn(
+          'flex w-full items-stretch overflow-hidden rounded-lg border border-input bg-transparent',
+          size === 'small' ? 'h-8' : size === 'large' ? 'h-11' : 'h-10',
+        )}
+      >
+        {addonBefore ? (
+          <span className="flex items-center bg-muted/50 px-2 text-xs text-muted-foreground">
+            {addonBefore}
+          </span>
+        ) : null}
+        <div className="min-w-0 flex-1 [&_input]:h-full [&_input]:rounded-none [&_input]:border-0 [&_input]:shadow-none [&_input]:ring-0">
+          {input}
+        </div>
+        {addonAfter ? (
+          <span className="flex items-center bg-muted/50 px-2 text-xs text-muted-foreground">
+            {addonAfter}
+          </span>
+        ) : null}
       </div>
     );
   }
@@ -317,18 +367,20 @@ export function MoneyInput({
   maxFractionDigits = 2,
   onBlur,
   onFocus,
-  size: _size,
+  onKeyDown,
+  onPressEnter,
+  size = 'middle',
   controls: _controls,
   formatter: _formatter,
   parser: _parser,
   ...props
 }: MoneyInputProps & {
-  size?: unknown;
+  size?: 'small' | 'middle' | 'large' | string;
+  onPressEnter?: React.KeyboardEventHandler<HTMLInputElement>;
   controls?: unknown;
   formatter?: unknown;
   parser?: unknown;
 }) {
-  void _size;
   void _controls;
   void _formatter;
   void _parser;
@@ -352,12 +404,14 @@ export function MoneyInput({
     onChange?.(n);
   };
 
+  const sizeClass = NUMBER_SIZE_CLASS[size] ?? NUMBER_SIZE_CLASS.middle;
+
   const input = (
     <UiInput
       inputMode="decimal"
       autoComplete="off"
       value={text}
-      className={cn('h-10 tabular-nums', className)}
+      className={cn(sizeClass, 'tabular-nums', className)}
       onFocus={(e) => {
         setFocused(true);
         onFocus?.(e);
@@ -374,16 +428,35 @@ export function MoneyInput({
         setText(next);
         emit(next);
       }}
+      onKeyDown={(e) => {
+        onKeyDown?.(e);
+        if (e.key === 'Enter') onPressEnter?.(e);
+      }}
       {...props}
     />
   );
 
   if (addonBefore || addonAfter) {
     return (
-      <div className="flex w-full items-center gap-2">
-        {addonBefore}
-        <div className="min-w-0 flex-1">{input}</div>
-        {addonAfter}
+      <div
+        className={cn(
+          'flex w-full items-stretch overflow-hidden rounded-lg border border-input bg-transparent',
+          size === 'small' ? 'h-8' : size === 'large' ? 'h-11' : 'h-10',
+        )}
+      >
+        {addonBefore ? (
+          <span className="flex items-center bg-muted/50 px-2 text-xs text-muted-foreground">
+            {addonBefore}
+          </span>
+        ) : null}
+        <div className="min-w-0 flex-1 [&_input]:h-full [&_input]:rounded-none [&_input]:border-0 [&_input]:shadow-none [&_input]:ring-0">
+          {input}
+        </div>
+        {addonAfter ? (
+          <span className="flex items-center bg-muted/50 px-2 text-xs text-muted-foreground">
+            {addonAfter}
+          </span>
+        ) : null}
       </div>
     );
   }

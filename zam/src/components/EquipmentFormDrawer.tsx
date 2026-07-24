@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Button,
   Col,
@@ -24,6 +24,12 @@ import {
 } from '@/lib/equipment';
 import { WorkerSelect } from '@/components/equipment/WorkerSelect';
 import { tenantHeaders } from '@/lib/tenant';
+import {
+  extractEquipmentFromCertificate,
+  type EquipmentPrefill,
+} from '@/lib/visionEquipment';
+import { ScanLine, Upload } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface EquipmentFormDrawerProps {
   open: boolean;
@@ -31,6 +37,8 @@ interface EquipmentFormDrawerProps {
   onClose: () => void;
   /** Called after successful save with the saved record */
   onSaved: (item: EquipmentItem) => void;
+  /** Prefill from certificate scan (create mode) */
+  prefill?: EquipmentPrefill | null;
 }
 
 /** Create / quick-edit: only Excel sheet «Ерөнхий» section A fields. */
@@ -39,10 +47,13 @@ export default function EquipmentFormDrawer({
   editing,
   onClose,
   onSaved,
+  prefill,
 }: EquipmentFormDrawerProps) {
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [categories, setCategories] = useState<EquipmentCategory[]>([]);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -68,9 +79,25 @@ export default function EquipmentFormDrawer({
         is_rentable: false,
         motor_hours: 0,
         default_daily_rate: 0,
+        ...prefill,
       });
     }
-  }, [open, editing, form]);
+  }, [open, editing, form, prefill]);
+
+  const fillFromCertificate = async (file: File) => {
+    setScanning(true);
+    try {
+      const patch = await extractEquipmentFromCertificate(file);
+      form.setFieldsValue(patch);
+      toast.success('Гэрчилгээнээс мэдээлэл бөглөгдлөө');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Алдаа';
+      toast.error(`Зураг таних амжилтгүй: ${msg}`);
+    } finally {
+      setScanning(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
 
   const handleSave = async () => {
     try {
@@ -115,7 +142,6 @@ export default function EquipmentFormDrawer({
       onClose();
     } catch (e) {
       if (e && typeof e === 'object' && 'errorFields' in e) return;
-      // message shown by caller or leave silent for validation
     } finally {
       setSaving(false);
     }
@@ -130,13 +156,46 @@ export default function EquipmentFormDrawer({
       destroyOnClose
       footer={
         <div style={{ textAlign: 'right' }}>
-          <Button onClick={onClose} style={{ marginRight: 8 }}>Болих</Button>
+          <Button onClick={onClose} style={{ marginRight: 8 }}>
+            Болих
+          </Button>
           <Button type="primary" onClick={handleSave} loading={saving}>
             {editing ? 'Хадгалах' : 'Бүртгээд үргэлжлүүлэх'}
           </Button>
         </div>
       }
     >
+      {!editing && (
+        <div className="mb-4 rounded-lg border border-dashed border-border bg-muted/40 p-3">
+          <div className="mb-2 flex items-center gap-2 text-sm font-medium">
+            <ScanLine className="h-4 w-4" />
+            Тээврийн хэрэгслийн гэрчилгээ (JPG)
+          </div>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Зураг оруулбал AI таниад доорх талбаруудыг автоматаар бөглөнө.
+          </p>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void fillFromCertificate(f);
+            }}
+          />
+          <Button
+            type="default"
+            loading={scanning}
+            disabled={scanning}
+            onClick={() => fileRef.current?.click()}
+            icon={<Upload className="h-4 w-4" />}
+          >
+            {scanning ? 'Таниж байна…' : 'Гэрчилгээний зураг оруулах'}
+          </Button>
+        </div>
+      )}
+
       <Form form={form} layout="vertical">
         <Row gutter={12}>
           <Col span={8}>
@@ -145,7 +204,11 @@ export default function EquipmentFormDrawer({
             </Form.Item>
           </Col>
           <Col span={16}>
-            <Form.Item name="name" label="Техникийн нэр" rules={[{ required: true, message: 'Нэр оруулна уу' }]}>
+            <Form.Item
+              name="name"
+              label="Техникийн нэр"
+              rules={[{ required: true, message: 'Нэр оруулна уу' }]}
+            >
               <Input placeholder="Асфальтбетон дэвсэгч" />
             </Form.Item>
           </Col>

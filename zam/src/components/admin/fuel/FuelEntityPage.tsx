@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Button,
   Form,
@@ -8,17 +8,15 @@ import {
   MoneyInput,
   Drawer,
   Select,
-  Space,
   Table,
   Tag,
   message,
   DatePicker,
-  Modal,
   isFormValidationError,
 } from '@/components/admin/primitives';
 import type { ColumnsType } from '@/components/admin/primitives';
-import { PlusOutlined, ReloadOutlined } from '@/components/admin/icons';
-import { RActionButton } from '@/components/r';
+import { AdminCrudActions } from '@/components/admin/AdminCrudActions';
+import { AdminListToolbar } from '@/components/admin/AdminListToolbar';
 import { isMoneyFormField } from '@/lib/money';
 import dayjs from 'dayjs';
 import {
@@ -76,7 +74,7 @@ export default function FuelEntityPage({
   canCreate = true,
   canEdit = true,
   canDelete = true,
-  drawerWidth = 520,
+  drawerWidth = 560,
 }: Props) {
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
@@ -154,19 +152,14 @@ export default function FuelEntityPage({
     }
   };
 
-  const handleDelete = (id: number) => {
-    Modal.confirm({
-      title: 'Устгах уу?',
-      onOk: async () => {
-        try {
-          await deleteFuelRecord(resource, id);
-          message.success('Устгагдлаа');
-          load();
-        } catch (e) {
-          message.error(e instanceof Error ? e.message : 'Алдаа');
-        }
-      },
-    });
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteFuelRecord(resource, id);
+      message.success('Устгагдлаа');
+      load();
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : 'Алдаа');
+    }
   };
 
   const handleExport = () => {
@@ -174,67 +167,59 @@ export default function FuelEntityPage({
     downloadCsv(exportFilename || `${resource}.csv`, mapped);
   };
 
-  const actionCol: ColumnsType<Record<string, unknown>> = useMemo(
-    () => [
-      {
-        title: 'Үйлдэл',
-        key: 'actions',
-        fixed: 'right' as const,
-        width: 120,
-        render: (_, row) => (
-          <Space>
-            {canEdit ? (
-              <RActionButton preset="edit" onClick={() => openEdit(row)} />
-            ) : null}
-            {canDelete ? (
-              <RActionButton preset="delete" onClick={() => handleDelete(Number(row.id))} />
-            ) : null}
-          </Space>
-        ),
-      },
-    ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [canEdit, canDelete],
-  );
+  const actionCol: ColumnsType<Record<string, unknown>> = [
+    {
+      title: 'Үйлдэл',
+      key: 'actions',
+      width: 100,
+      render: (_, row) => (
+        <AdminCrudActions
+          onEdit={canEdit ? () => openEdit(row) : undefined}
+          onDelete={canDelete ? () => handleDelete(Number(row.id)) : undefined}
+        />
+      ),
+    },
+  ];
 
   return (
     <div>
-      <Space style={{ marginBottom: 12 }} wrap>
-        <Input.Search
-          allowClear
-          placeholder={searchPlaceholder}
-          style={{ width: 220 }}
-          onSearch={(v) => setQ(v)}
-        />
-        {filterFields?.map((f) => (
-          <Select
-            key={f.key}
-            allowClear
-            placeholder={f.label}
-            style={{ minWidth: 140 }}
-            options={f.options}
-            value={filters[f.key] || undefined}
-            onChange={(v) =>
-              setFilters((prev) => {
-                const next = { ...prev };
-                if (v == null || v === '') delete next[f.key];
-                else next[f.key] = String(v);
-                return next;
-              })
-            }
-          />
-        ))}
-        <Button icon={<ReloadOutlined />} onClick={load}>
-          Шинэчлэх
-        </Button>
-        <Button onClick={handleExport}>CSV</Button>
-        <Button onClick={() => printTable(title)}>Хэвлэх</Button>
-        {canCreate ? (
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-            Нэмэх
-          </Button>
-        ) : null}
-      </Space>
+      <AdminListToolbar
+        showSearch
+        searchValue={q}
+        onSearchChange={setQ}
+        searchPlaceholder={searchPlaceholder}
+        filters={
+          filterFields?.length
+            ? filterFields.map((f) => (
+                <Select
+                  key={f.key}
+                  allowClear
+                  placeholder={f.label}
+                  style={{ minWidth: 140 }}
+                  options={f.options}
+                  value={filters[f.key] || undefined}
+                  onChange={(v) =>
+                    setFilters((prev) => {
+                      const next = { ...prev };
+                      if (v == null || v === '') delete next[f.key];
+                      else next[f.key] = String(v);
+                      return next;
+                    })
+                  }
+                />
+              ))
+            : undefined
+        }
+        onReload={load}
+        onCreate={canCreate ? openCreate : undefined}
+        createLabel="Нэмэх"
+        actions={
+          <>
+            <Button onClick={handleExport}>CSV</Button>
+            <Button onClick={() => printTable(title)}>Хэвлэх</Button>
+          </>
+        }
+      />
 
       <div id="fuel-print-area">
         <Table
@@ -242,24 +227,25 @@ export default function FuelEntityPage({
           loading={loading}
           dataSource={rows}
           columns={canEdit || canDelete ? [...columns, ...actionCol] : columns}
-          pagination={{ pageSize: 15, showSizeChanger: true, pageSizeOptions: [15, 30, 50] }}
+          pagination={{ pageSize: 30, showSizeChanger: true }}
           scroll={{ x: 900 }}
         />
       </div>
 
       <Drawer
         title={editing ? 'Засах' : 'Шинэ бүртгэл'}
+        description="Мэдээллийг бөглөөд хадгална уу."
         open={open}
         onClose={() => setOpen(false)}
         width={drawerWidth}
         destroyOnClose
         footer={
-          <div className="flex justify-end gap-2">
+          <>
             <Button onClick={() => setOpen(false)}>Болих</Button>
             <Button type="primary" onClick={handleSave}>
               Хадгалах
             </Button>
-          </div>
+          </>
         }
       >
         <Form form={form} layout="vertical">

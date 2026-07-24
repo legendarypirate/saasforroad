@@ -30,7 +30,13 @@ export { RTable, RTableActions } from './RTable';
 export type { RTableProps, RTableColumn, RTableAlign } from './RTable';
 export { RSearch } from './RSearch';
 export type { RSearchProps } from './RSearch';
+export { RPageToolbar } from './RPageToolbar';
 export { REmpty } from './REmpty';
 export type { REmptyProps } from './REmpty';
 export { RSpinner } from './RSpinner';
 export type { RSpinnerProps } from './RSpinner';
+
+// Re-export admin list chrome used with R kit on list pages
+export { AdminListToolbar } from '@/components/admin/AdminListToolbar';
+export { AdminCrudActions } from '@/components/admin/AdminCrudActions';
+export { AdminModuleNav } from '@/components/admin/AdminModuleNav';

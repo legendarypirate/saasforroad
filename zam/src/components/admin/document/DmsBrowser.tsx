@@ -740,21 +740,23 @@ export default function DmsBrowser({
           {folders.map((folder) => (
             <div
               key={`f-${folder.id}`}
-              className="group relative flex cursor-pointer flex-col items-center rounded-xl border border-border bg-card p-4 text-center transition-all hover:border-orange-400/60 hover:bg-muted/50 hover:shadow-md"
+              className="group relative flex cursor-pointer flex-col items-center rounded-2xl border border-border/80 bg-card px-4 pb-4 pt-5 text-center transition-all hover:-translate-y-0.5 hover:border-amber-400/50 hover:bg-amber-50/40 hover:shadow-md dark:hover:bg-amber-950/20"
               onDoubleClick={() => openFolder(folder)}
             >
               <Tooltip title={folder.description || 'Давхар дарж нээх'}>
-                <div className="mb-2 flex h-[64px] items-center justify-center">
-                  <OrangeFolderIcon size={64} />
+                <div className="mb-2 flex h-[88px] w-full items-center justify-center">
+                  <OrangeFolderIcon size={84} />
                 </div>
               </Tooltip>
-              <div className="w-full truncate text-sm font-medium" title={folder.name}>
+              <div className="w-full truncate text-[13px] font-semibold text-foreground" title={folder.name}>
                 {folder.name}
               </div>
               {folder.is_system && (
-                <span className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground">Систем</span>
+                <span className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Систем
+                </span>
               )}
-              <div className="absolute right-1 top-1 flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+              <div className="absolute right-1.5 top-1.5 flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
                 <Button
                   type="text"
                   size="small"
@@ -868,8 +870,8 @@ export default function DmsBrowser({
                   onDoubleClick={() => openFolder(folder)}
                 >
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-2 font-medium">
-                      <OrangeFolderIcon size={28} />
+                    <div className="flex items-center gap-3 font-medium">
+                      <OrangeFolderIcon size={36} />
                       {folder.name}
                     </div>
                   </td>

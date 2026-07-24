@@ -16,7 +16,7 @@ import {
 import type { ColumnsType } from '@/components/admin/primitives';
 import { PlusOutlined } from '@/components/admin/icons';
 import { KeyRound } from 'lucide-react';
-import { RActionButton } from '@/components/r';
+import { RActionButton, RTableActions } from '@/components/r';
 import { PageWrapper } from '@/components/auth/PageWrapper';
 import { CanAccess } from '@/components/auth/CanAccess';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -175,7 +175,7 @@ export default function SystemAccessPage() {
     {
       title: 'Үйлдэл',
       render: (_, record) => (
-        <Space>
+        <RTableActions>
           {canUpdate && (
             <RActionButton preset="edit" onClick={() => openEditRole(record)} />
           )}
@@ -196,10 +196,12 @@ export default function SystemAccessPage() {
               okButtonProps={{ danger: true }}
               onConfirm={() => handleDeleteRole(record)}
             >
-              <RActionButton preset="delete" disabled={deletingId === record.id} />
+              <span>
+                <RActionButton preset="delete" disabled={deletingId === record.id} />
+              </span>
             </Popconfirm>
           )}
-        </Space>
+        </RTableActions>
       ),
     },
   ];

@@ -139,11 +139,22 @@ export function downloadCsv(filename: string, rows: Record<string, unknown>[]) {
 
 export async function downloadExcel(filename: string, rows: Record<string, unknown>[], sheetName = 'Sheet1') {
   if (!rows.length) return;
-  const XLSX = await import('xlsx');
-  const ws = XLSX.utils.json_to_sheet(rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0, 31));
-  XLSX.writeFile(wb, filename.endsWith('.xlsx') ? filename : `${filename}.xlsx`);
+  const ExcelJS = (await import('exceljs')).default;
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet(sheetName.slice(0, 31));
+  const columns = Object.keys(rows[0]);
+  worksheet.columns = columns.map((key) => ({ header: key, key }));
+  worksheet.addRows(rows);
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename.endsWith('.xlsx') ? filename : `${filename}.xlsx`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export function printTable(title: string) {

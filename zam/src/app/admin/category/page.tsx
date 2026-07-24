@@ -2,12 +2,19 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Button, Drawer, Form, Input, Popconfirm, Select, Space, Table, Typography, message,
+  Button,
+  Drawer,
+  Form,
+  Input,
+  Select,
+  Table,
+  message,
 } from '@/components/admin/primitives';
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/admin/icons';
+import { AdminCrudActions } from '@/components/admin/AdminCrudActions';
+import { AdminListToolbar } from '@/components/admin/AdminListToolbar';
+import { REmpty } from '@/components/r';
+import { Tags } from 'lucide-react';
 import { inventoryApi } from '@/lib/inventory';
-
-const { Text } = Typography;
 
 interface Category {
   id: number;
@@ -83,43 +90,57 @@ export default function CategoryPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <div>
-          <Text type="secondary">Барааны ангилал (олон түвшинтэй)</Text>
-        </div>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-          Ангилал нэмэх
-        </Button>
-      </div>
+      <AdminListToolbar
+        description="Барааны ангилал (олон түвшинтэй)"
+        onReload={load}
+        onCreate={openCreate}
+        createLabel="Ангилал нэмэх"
+      />
 
       <Table
         rowKey="id"
         loading={loading}
         dataSource={rows}
+        pagination={{ pageSize: 30, showSizeChanger: true }}
         columns={[
-          { title: 'Нэр', dataIndex: 'name' },
-          { title: 'Эцэг ангилал', dataIndex: 'parent_id', render: (v) => parentName(v) },
+          { title: '№', key: 'index', width: 56, render: (_v, _r, i) => i + 1 },
           {
             title: 'Үйлдэл',
-            width: 120,
+            width: 100,
             render: (_, r) => (
-              <Space>
-                <Button type="text" icon={<EditOutlined />} onClick={() => openEdit(r)} />
-                <Popconfirm title="Устгах уу?" onConfirm={() => remove(r.id)}>
-                  <Button type="text" danger icon={<DeleteOutlined />} />
-                </Popconfirm>
-              </Space>
+              <AdminCrudActions
+                onEdit={() => openEdit(r)}
+                onDelete={() => remove(r.id)}
+              />
             ),
           },
+          { title: 'Нэр', dataIndex: 'name' },
+          { title: 'Эцэг ангилал', dataIndex: 'parent_id', render: (v) => parentName(v) },
         ]}
+        empty={
+          <REmpty
+            iconType={Tags}
+            title="Ангилал олдсонгүй"
+            description="Одоогоор бүртгэгдсэн ангилал байхгүй байна."
+          />
+        }
       />
 
       <Drawer
         title={editing ? 'Ангилал засах' : 'Ангилал нэмэх'}
+        description="Ангиллын нэр болон эцэг ангиллыг сонгоно уу."
         open={open}
         onClose={() => setOpen(false)}
-        width={420}
-        extra={<Button type="primary" onClick={save}>Хадгалах</Button>}
+        width={560}
+        destroyOnClose
+        footer={
+          <>
+            <Button onClick={() => setOpen(false)}>Болих</Button>
+            <Button type="primary" onClick={save}>
+              Хадгалах
+            </Button>
+          </>
+        }
       >
         <Form form={form} layout="vertical">
           <Form.Item name="name" label="Нэр" rules={[{ required: true }]}>

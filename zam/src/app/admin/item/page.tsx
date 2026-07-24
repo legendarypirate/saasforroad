@@ -2,10 +2,20 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Button, Drawer, Form, Input, InputNumber, Popconfirm, Select, Space, Switch,
-  Table, Tag, Typography, message,
+  Button,
+  Drawer,
+  Form,
+  Input,
+  InputNumber,
+  Select,
+  Switch,
+  Table,
+  Tag,
+  Typography,
+  message,
 } from '@/components/admin/primitives';
-import { DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined } from '@/components/admin/icons';
+import { AdminCrudActions } from '@/components/admin/AdminCrudActions';
+import { AdminListToolbar } from '@/components/admin/AdminListToolbar';
 import { UNITS, formatMoney, inventoryApi } from '@/lib/inventory';
 
 const { Text } = Typography;
@@ -98,32 +108,36 @@ export default function MaterialPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <Text type="secondary">Материалын мастер бүртгэл (асфальт, хайрга, цемент, түлш...)</Text>
-        </div>
-        <Space wrap>
-          <Input
-            allowClear
-            prefix={<SearchOutlined />}
-            placeholder="Нэр, код, barcode..."
-            style={{ width: 240 }}
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            onPressEnter={load}
-          />
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-            Бараа нэмэх
-          </Button>
-        </Space>
-      </div>
+      <AdminListToolbar
+        description="Материалын мастер бүртгэл (асфальт, хайрга, цемент, түлш...)"
+        showSearch
+        searchValue={q}
+        onSearchChange={setQ}
+        onSearch={() => load()}
+        searchPlaceholder="Нэр, код, barcode..."
+        onCreate={openCreate}
+        createLabel="Бараа нэмэх"
+        onReload={load}
+      />
 
       <Table
         rowKey="id"
         loading={loading}
         dataSource={rows}
         scroll={{ x: 1100 }}
+        pagination={{ pageSize: 30, showSizeChanger: true }}
         columns={[
+          { title: '№', key: 'index', width: 56, render: (_v, _r, i) => i + 1 },
+          {
+            title: 'Үйлдэл',
+            width: 100,
+            render: (_, r) => (
+              <AdminCrudActions
+                onEdit={() => openEdit(r)}
+                onDelete={() => remove(r.id)}
+              />
+            ),
+          },
           { title: 'Код', dataIndex: 'code', width: 110 },
           { title: 'Нэр', dataIndex: 'name', width: 180 },
           {
@@ -151,34 +165,36 @@ export default function MaterialPage() {
             title: 'Төлөв',
             dataIndex: 'is_active',
             width: 90,
-            render: (v) => (v !== false ? <Tag color="green">Идэвхтэй</Tag> : <Tag>Идэвхгүй</Tag>),
-          },
-          {
-            title: 'Үйлдэл',
-            width: 100,
-            fixed: 'right',
-            render: (_, r) => (
-              <Space>
-                <Button type="text" icon={<EditOutlined />} onClick={() => openEdit(r)} />
-                <Popconfirm title="Устгах уу?" onConfirm={() => remove(r.id)}>
-                  <Button type="text" danger icon={<DeleteOutlined />} />
-                </Popconfirm>
-              </Space>
-            ),
+            render: (v) =>
+              v !== false ? <Tag color="green">Идэвхтэй</Tag> : <Tag>Идэвхгүй</Tag>,
           },
         ]}
       />
 
       <Drawer
         title={editing ? 'Бараа засах' : 'Бараа нэмэх'}
+        description="Материалын мэдээллийг бөглөөд хадгална уу."
         open={open}
         onClose={() => setOpen(false)}
-        width={520}
-        extra={<Button type="primary" onClick={save}>Хадгалах</Button>}
+        width={640}
+        destroyOnClose
+        footer={
+          <>
+            <Button onClick={() => setOpen(false)}>Болих</Button>
+            <Button type="primary" onClick={save}>
+              Хадгалах
+            </Button>
+          </>
+        }
       >
         <Form form={form} layout="vertical">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
-            <Form.Item name="name" label="Нэр" rules={[{ required: true }]} style={{ gridColumn: '1 / -1' }}>
+          <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
+            <Form.Item
+              name="name"
+              label="Нэр"
+              rules={[{ required: true }]}
+              className="sm:col-span-2"
+            >
               <Input placeholder="Жишээ: Битум 60/70, Цемент М400" />
             </Form.Item>
             {editing ? (
@@ -232,7 +248,7 @@ export default function MaterialPage() {
                 options={suppliers.map((s: any) => ({ value: s.id, label: s.name }))}
               />
             </Form.Item>
-            <Form.Item name="description" label="Тайлбар" style={{ gridColumn: '1 / -1' }}>
+            <Form.Item name="description" label="Тайлбар" className="sm:col-span-2">
               <Input.TextArea rows={2} />
             </Form.Item>
             <Form.Item name="is_consumable" label="Хэрэглээний" valuePropName="checked">

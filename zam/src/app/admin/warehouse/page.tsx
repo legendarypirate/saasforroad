@@ -2,12 +2,19 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Button, Drawer, Form, Input, InputNumber, Popconfirm, Space, Switch, Table, Tag, Typography, message,
+  Button,
+  Drawer,
+  Form,
+  Input,
+  InputNumber,
+  Switch,
+  Table,
+  Tag,
+  message,
 } from '@/components/admin/primitives';
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/admin/icons';
+import { AdminCrudActions } from '@/components/admin/AdminCrudActions';
+import { AdminListToolbar } from '@/components/admin/AdminListToolbar';
 import { inventoryApi } from '@/lib/inventory';
-
-const { Text } = Typography;
 
 interface Warehouse {
   id: number;
@@ -86,20 +93,30 @@ export default function WarehousePage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <div>
-          <Text type="secondary">Төв болон талбайн агуулахууд</Text>
-        </div>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-          Агуулах нэмэх
-        </Button>
-      </div>
+      <AdminListToolbar
+        description="Төв болон талбайн агуулахууд"
+        onReload={load}
+        onCreate={openCreate}
+        createLabel="Агуулах нэмэх"
+      />
 
       <Table
         rowKey="id"
         loading={loading}
         dataSource={rows}
+        pagination={{ pageSize: 30, showSizeChanger: true }}
         columns={[
+          { title: '№', key: 'index', width: 56, render: (_v, _r, i) => i + 1 },
+          {
+            title: 'Үйлдэл',
+            width: 100,
+            render: (_, r) => (
+              <AdminCrudActions
+                onEdit={() => openEdit(r)}
+                onDelete={() => remove(r.id)}
+              />
+            ),
+          },
           { title: 'Код', dataIndex: 'code', width: 100, render: (v) => v || '—' },
           { title: 'Нэр', dataIndex: 'name' },
           { title: 'Байршил', dataIndex: 'location', render: (v) => v || '—' },
@@ -108,49 +125,49 @@ export default function WarehousePage() {
             title: 'Төлөв',
             dataIndex: 'is_active',
             width: 100,
-            render: (v) => (v !== false ? <Tag color="green">Идэвхтэй</Tag> : <Tag>Идэвхгүй</Tag>),
-          },
-          {
-            title: 'Үйлдэл',
-            width: 120,
-            render: (_, r) => (
-              <Space>
-                <Button type="text" icon={<EditOutlined />} onClick={() => openEdit(r)} />
-                <Popconfirm title="Устгах уу?" onConfirm={() => remove(r.id)}>
-                  <Button type="text" danger icon={<DeleteOutlined />} />
-                </Popconfirm>
-              </Space>
-            ),
+            render: (v) =>
+              v !== false ? <Tag color="green">Идэвхтэй</Tag> : <Tag>Идэвхгүй</Tag>,
           },
         ]}
       />
 
       <Drawer
         title={editing ? 'Агуулах засах' : 'Агуулах нэмэх'}
+        description="Агуулахын мэдээллийг бөглөнө үү."
         open={open}
         onClose={() => setOpen(false)}
-        width={440}
-        extra={<Button type="primary" onClick={save}>Хадгалах</Button>}
+        width={560}
+        destroyOnClose
+        footer={
+          <>
+            <Button onClick={() => setOpen(false)}>Болих</Button>
+            <Button type="primary" onClick={save}>
+              Хадгалах
+            </Button>
+          </>
+        }
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="code" label="Код">
-            <Input placeholder="WH-01" />
-          </Form.Item>
-          <Form.Item name="name" label="Нэр" rules={[{ required: true }]}>
-            <Input placeholder="Төв агуулах, Талбайн агуулах..." />
-          </Form.Item>
-          <Form.Item name="location" label="Байршил">
-            <Input placeholder="Хаяг / байршил" />
-          </Form.Item>
-          <Form.Item name="description" label="Тайлбар">
-            <Input.TextArea rows={2} />
-          </Form.Item>
-          <Form.Item name="capacity" label="Багтаамж">
-            <InputNumber style={{ width: '100%' }} min={0} />
-          </Form.Item>
-          <Form.Item name="is_active" label="Идэвхтэй" valuePropName="checked">
-            <Switch />
-          </Form.Item>
+          <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
+            <Form.Item name="code" label="Код">
+              <Input placeholder="WH-01" />
+            </Form.Item>
+            <Form.Item name="name" label="Нэр" rules={[{ required: true }]}>
+              <Input placeholder="Төв агуулах, Талбайн агуулах..." />
+            </Form.Item>
+            <Form.Item name="location" label="Байршил" className="sm:col-span-2">
+              <Input placeholder="Хаяг / байршил" />
+            </Form.Item>
+            <Form.Item name="description" label="Тайлбар" className="sm:col-span-2">
+              <Input.TextArea rows={2} />
+            </Form.Item>
+            <Form.Item name="capacity" label="Багтаамж">
+              <InputNumber style={{ width: '100%' }} min={0} />
+            </Form.Item>
+            <Form.Item name="is_active" label="Идэвхтэй" valuePropName="checked">
+              <Switch />
+            </Form.Item>
+          </div>
         </Form>
       </Drawer>
     </div>

@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Spinner } from '@/components/ui/spinner';
+import { REmpty } from '@/components/r/REmpty';
 import { cn } from '@/lib/utils';
 
 const DEFAULT_PAGE_SIZES = [10, 15, 20, 30, 50];
@@ -210,6 +211,9 @@ type TableProps<T> = {
   summary?: (data: T[]) => React.ReactNode;
   expandable?: Record<string, unknown>;
   onRow?: (record: T) => Record<string, unknown>;
+  /** Custom empty state (defaults to REmpty). */
+  empty?: React.ReactNode;
+  locale?: { emptyText?: React.ReactNode };
 };
 
 function hasPagination(
@@ -290,10 +294,12 @@ function TableComponent<T extends object = any>({
   rowClassName,
   rowSelection,
   summary,
+  empty,
+  locale,
 }: TableProps<T>) {
   const [page, setPage] = useState(hasPagination(pagination) ? pagination.current ?? 1 : 1);
   const source = dataSource ?? [];
-  const initialPageSize = hasPagination(pagination) ? pagination.pageSize ?? 10 : source.length;
+  const initialPageSize = hasPagination(pagination) ? pagination.pageSize ?? 30 : source.length;
   const [pageSize, setPageSize] = useState(initialPageSize);
 
   useEffect(() => {
@@ -370,7 +376,13 @@ function TableComponent<T extends object = any>({
   const totalColumns = columns.length + (rowSelection ? 1 : 0);
 
   return (
-    <div className={cn('overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10', className)} style={style}>
+    <div
+      className={cn(
+        'overflow-hidden rounded-xl border border-[#e5e7eb] bg-card shadow-sm dark:border-border',
+        className,
+      )}
+      style={style}
+    >
       <div
         className={cn(
           'relative overflow-x-auto',
@@ -387,10 +399,10 @@ function TableComponent<T extends object = any>({
           style={scroll?.x ? { minWidth: scroll.x } : undefined}
           className={cn('admin-data-table', size === 'small' && 'text-sm')}
         >
-          <TableHeader className={scroll?.y ? 'sticky top-0 z-10 bg-muted/95 backdrop-blur-sm' : undefined}>
-            <TableRow className="bg-muted/40 hover:bg-muted/40">
+          <TableHeader className={scroll?.y ? 'sticky top-0 z-10 backdrop-blur-sm' : undefined}>
+            <TableRow className="hover:bg-transparent">
               {rowSelection && (
-                <TableHead style={{ width: selectionWidth }} className="h-11 text-center font-semibold text-muted-foreground">
+                <TableHead style={{ width: selectionWidth }} className="text-center">
                   <Checkbox
                     checked={allSelected}
                     indeterminate={someSelected}
@@ -402,7 +414,6 @@ function TableComponent<T extends object = any>({
               {columns.map((col, i) => (
                 <TableHead
                   key={col.key ?? String(col.dataIndex ?? i)}
-                  className="h-11 font-semibold text-muted-foreground"
                   style={{ width: col.width, minWidth: col.width, textAlign: col.align }}
                 >
                   {col.title}
@@ -443,9 +454,23 @@ function TableComponent<T extends object = any>({
             );
             })}
             {!loading && rows.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={totalColumns} className="py-8 text-center text-muted-foreground">
-                  Мэдээлэл олдсонгүй
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={totalColumns} className="p-0">
+                  {(() => {
+                    const custom = empty ?? locale?.emptyText;
+                    if (custom == null) {
+                      return (
+                        <REmpty
+                          title="Мэдээлэл олдсонгүй"
+                          description="Одоогоор бүртгэгдсэн мэдээлэл байхгүй байна."
+                        />
+                      );
+                    }
+                    if (typeof custom === 'string') {
+                      return <REmpty title={custom} description={null} />;
+                    }
+                    return custom;
+                  })()}
                 </TableCell>
               </TableRow>
             )}

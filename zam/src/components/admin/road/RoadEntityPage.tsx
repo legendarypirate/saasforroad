@@ -8,14 +8,13 @@ import {
   MoneyInput,
   Drawer,
   Select,
-  Space,
   Table,
   message,
   DatePicker,
-  Modal,
 } from '@/components/admin/primitives';
 import type { ColumnsType } from '@/components/admin/primitives';
-import { DeleteOutlined, PlusOutlined, ReloadOutlined } from '@/components/admin/icons';
+import { AdminCrudActions } from '@/components/admin/AdminCrudActions';
+import { AdminListToolbar } from '@/components/admin/AdminListToolbar';
 import { isMoneyFormField } from '@/lib/money';
 import dayjs from 'dayjs';
 import {
@@ -123,19 +122,14 @@ export default function RoadEntityPage({
     }
   };
 
-  const handleDelete = (id: number) => {
-    Modal.confirm({
-      title: 'Устгах уу?',
-      onOk: async () => {
-        try {
-          await deleteRoadRecord(resource, id);
-          message.success('Устгагдлаа');
-          load();
-        } catch (e) {
-          message.error(e instanceof Error ? e.message : 'Алдаа');
-        }
-      },
-    });
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteRoadRecord(resource, id);
+      message.success('Устгагдлаа');
+      load();
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : 'Алдаа');
+    }
   };
 
   const actionCol: ColumnsType<Record<string, unknown>> = [
@@ -143,52 +137,48 @@ export default function RoadEntityPage({
       title: 'Үйлдэл',
       key: 'actions',
       fixed: 'right',
-      width: 140,
+      width: 100,
       render: (_, row) => (
-        <Space>
-          <Button type="link" onClick={() => openEdit(row)}>
-            Засах
-          </Button>
-          <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(Number(row.id))} />
-        </Space>
+        <AdminCrudActions
+          onEdit={() => openEdit(row)}
+          onDelete={() => handleDelete(Number(row.id))}
+        />
       ),
     },
   ];
 
   return (
     <div>
-      <Space style={{ marginBottom: 12 }} wrap>
-        <Button icon={<ReloadOutlined />} onClick={load}>
-          Шинэчлэх
-        </Button>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-          Нэмэх
-        </Button>
-        {extraActions}
-      </Space>
+      <AdminListToolbar
+        onReload={load}
+        onCreate={openCreate}
+        createLabel="Нэмэх"
+        actions={extraActions}
+      />
 
       <Table
         rowKey="id"
         loading={loading}
         dataSource={rows}
         columns={[...columns, ...actionCol]}
-        pagination={{ pageSize: 15 }}
+        pagination={{ pageSize: 30, showSizeChanger: true }}
         scroll={{ x: true }}
       />
 
       <Drawer
         title={editing ? 'Засах' : 'Шинэ бүртгэл'}
+        description="Мэдээллийг бөглөөд хадгална уу."
         open={open}
         onClose={() => setOpen(false)}
-        width={520}
+        width={560}
         destroyOnClose
         footer={
-          <div className="flex justify-end gap-2">
+          <>
             <Button onClick={() => setOpen(false)}>Болих</Button>
             <Button type="primary" onClick={handleSave}>
               Хадгалах
             </Button>
-          </div>
+          </>
         }
       >
         <Form form={form} layout="vertical">

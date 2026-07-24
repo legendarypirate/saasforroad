@@ -13,15 +13,14 @@ import {
   Switch,
   Tag,
   Modal,
-  Tooltip,
   Tabs,
 } from '@/components/admin/primitives';
 import type { ColumnsType } from '@/components/admin/primitives';
-import { EyeOutlined, KeyOutlined, PlusOutlined } from '@/components/admin/icons';
+import { PlusOutlined } from '@/components/admin/icons';
+import { KeyRound } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { tenantHeaders } from '@/lib/tenant';
-
-const { Option } = Select;
+import { RActionButton, RPageToolbar, RSearch, RTableActions } from '@/components/r';
 
 interface Role {
   id: number;
@@ -58,6 +57,7 @@ export default function UsersPage() {
   const [passwordUser, setPasswordUser] = useState<User | null>(null);
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [roleFilter, setRoleFilter] = useState<number | undefined>();
+  const [q, setQ] = useState('');
   const [statusTab, setStatusTab] = useState<'active' | 'inactive'>('active');
   const [form] = Form.useForm();
   const [passwordForm] = Form.useForm();
@@ -103,14 +103,27 @@ export default function UsersPage() {
     fetchUsers(roleFilter);
   }, [roleFilter]);
 
+  const filteredBySearch = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    if (!term) return users;
+    return users.filter((u) => {
+      const hay = [u.username, u.email, u.phone, u.roleRecord?.name, u.role]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return hay.includes(term);
+    });
+  }, [users, q]);
+
   const activeUsers = useMemo(
-    () => users.filter((u) => isUserActive(u.is_active)),
-    [users],
+    () => filteredBySearch.filter((u) => isUserActive(u.is_active)),
+    [filteredBySearch],
   );
   const inactiveUsers = useMemo(
-    () => users.filter((u) => !isUserActive(u.is_active)),
-    [users],
+    () => filteredBySearch.filter((u) => !isUserActive(u.is_active)),
+    [filteredBySearch],
   );
+
   const handleDrawerClose = () => {
     setDrawerVisible(false);
     form.resetFields();
@@ -128,7 +141,7 @@ export default function UsersPage() {
       if (!result.success) throw new Error(result.message || 'Шинэчлэхэд алдаа');
 
       setUsers((prev) =>
-        prev.map((u) => (u.id === user.id ? { ...u, is_active: active ? '1' : '0' } : u))
+        prev.map((u) => (u.id === user.id ? { ...u, is_active: active ? '1' : '0' } : u)),
       );
       message.success(active ? 'Ажилтан идэвхтэй боллоо' : 'Ажилтан идэвхгүй боллоо');
       setStatusTab(active ? 'active' : 'inactive');
@@ -152,7 +165,6 @@ export default function UsersPage() {
       if (response.ok && result.success) {
         message.success('Хэрэглэгч үүслээ');
         const createdRoleId = result.data?.role_id as number | undefined;
-        // Role filter would hide a user created with a different role
         if (roleFilter && createdRoleId && roleFilter !== createdRoleId) {
           setRoleFilter(undefined);
         } else {
@@ -189,7 +201,7 @@ export default function UsersPage() {
           method: 'PATCH',
           headers: tenantHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ password: values.password }),
-        }
+        },
       );
       const result = await res.json();
       if (res.ok && result.success) {
@@ -206,14 +218,39 @@ export default function UsersPage() {
   };
 
   const columns: ColumnsType<User> = [
+    {
+      title: '№',
+      key: 'index',
+      width: 56,
+      render: (_v, _r, index) => index + 1,
+    },
+    {
+      title: 'Үйлдэл',
+      key: 'action',
+      width: 100,
+      render: (_, record) => (
+        <RTableActions>
+          <RActionButton
+            preset="view"
+            onClick={() => router.push(`/admin/user/${record.id}`)}
+          />
+          <RActionButton
+            icon={<KeyRound />}
+            label="Нууц үг солих"
+            tone="primary"
+            onClick={() => openPasswordModal(record)}
+          />
+        </RTableActions>
+      ),
+    },
     { title: 'Нэвтрэх нэр', dataIndex: 'username' },
-    { title: 'И-мэйл', dataIndex: 'email' },
+    { title: 'И-мэйл', dataIndex: 'email', render: (v) => v || '—' },
     {
       title: 'Цалин',
       dataIndex: 'salary',
       render: (v) => (v != null ? `${Number(v).toLocaleString('mn-MN')} ₮` : '—'),
     },
-    { title: 'Утас', dataIndex: 'phone' },
+    { title: 'Утас', dataIndex: 'phone', render: (v) => v || '—' },
     {
       title: 'Эрх',
       render: (_, record) => record.roleRecord?.name || record.role || '—',
@@ -221,6 +258,7 @@ export default function UsersPage() {
     {
       title: 'Төлөв',
       key: 'status',
+      width: 180,
       render: (_, record) => {
         const active = isUserActive(record.is_active);
         return (
@@ -235,53 +273,52 @@ export default function UsersPage() {
         );
       },
     },
-    {
-      title: 'Үйлдэл',
-      key: 'action',
-      width: 100,
-      render: (_, record) => (
-        <Space size={4}>
-          <Tooltip title="Дэлгэрэнгүй">
-            <Button
-              type="text"
-              icon={<EyeOutlined />}
-              onClick={() => router.push(`/admin/user/${record.id}`)}
-            />
-          </Tooltip>
-          <Tooltip title="Нууц үг солих">
-            <Button
-              type="text"
-              icon={<KeyOutlined />}
-              onClick={() => openPasswordModal(record)}
-            />
-          </Tooltip>
-        </Space>
-      ),
-    },
   ];
+
+  const tableProps = {
+    columns,
+    rowKey: 'id' as const,
+    loading,
+    pagination: { pageSize: 30, showSizeChanger: true },
+    scroll: { x: 960 },
+  };
 
   return (
     <div>
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <Select
-          allowClear
-          showSearch
-          optionFilterProp="label"
-          placeholder="Эрхээр шүүх"
-          className="w-[200px]"
-          value={roleFilter}
-          onChange={(v) => setRoleFilter(v)}
-          options={roles.map((r) => ({ value: r.id, label: r.name }))}
-        />
-        <Button
-          type="primary"
-          className="ml-auto"
-          icon={<PlusOutlined />}
-          onClick={() => setDrawerVisible(true)}
-        >
-          Хэрэглэгч үүсгэх
-        </Button>
-      </div>
+      <RPageToolbar
+        title="Хэрэглэгч"
+        actions={
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setDrawerVisible(true)}
+          >
+            + Хэрэглэгч үүсгэх
+          </Button>
+        }
+        search={
+          <RSearch
+            showButton
+            value={q}
+            onChange={setQ}
+            onSearch={setQ}
+            placeholder="Хайлт хийх"
+            containerClassName="w-full"
+          />
+        }
+        filters={
+          <Select
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            placeholder="Эрхээр шүүх"
+            style={{ minWidth: 180 }}
+            value={roleFilter}
+            onChange={(v) => setRoleFilter(v)}
+            options={roles.map((r) => ({ value: r.id, label: r.name }))}
+          />
+        }
+      />
 
       <Tabs
         activeKey={statusTab}
@@ -292,10 +329,8 @@ export default function UsersPage() {
             label: `Идэвхтэй (${activeUsers.length})`,
             children: (
               <Table
-                columns={columns}
+                {...tableProps}
                 dataSource={activeUsers}
-                rowKey="id"
-                loading={loading}
                 locale={{ emptyText: 'Идэвхтэй хэрэглэгч байхгүй' }}
               />
             ),
@@ -305,10 +340,8 @@ export default function UsersPage() {
             label: `Гарсан / идэвхгүй (${inactiveUsers.length})`,
             children: (
               <Table
-                columns={columns}
+                {...tableProps}
                 dataSource={inactiveUsers}
-                rowKey="id"
-                loading={loading}
                 locale={{ emptyText: 'Идэвхгүй хэрэглэгч байхгүй' }}
               />
             ),
@@ -316,32 +349,67 @@ export default function UsersPage() {
         ]}
       />
 
-      <Drawer title="Хэрэглэгч үүсгэх" width={400} onClose={handleDrawerClose} open={drawerVisible}>
-        <Form layout="vertical" form={form} onFinish={handleFormSubmit}>
-          <Form.Item name="username" label="Нэвтрэх нэр" rules={[{ required: true }]}>
-            <Input placeholder="Нэвтрэх нэр" />
-          </Form.Item>
-          <Form.Item name="email" label="И-мэйл">
-            <Input placeholder="И-мэйл" />
-          </Form.Item>
-          <Form.Item name="phone" label="Утас" rules={[{ required: true }]}>
-            <Input placeholder="Утасны дугаар" />
-          </Form.Item>
-          <Form.Item name="role_id" label="Эрх" rules={[{ required: true }]}>
-            <Select placeholder="Эрх сонгох">
-              {roles.map((r) => (
-                <Option key={r.id} value={r.id}>
-                  {r.name}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Form.Item name="password" label="Нууц үг" rules={[{ required: true }]}>
-            <Input.Password placeholder="Нууц үг" />
-          </Form.Item>
-          <Button type="primary" htmlType="submit" block>
-            Хадгалах
-          </Button>
+      <Drawer
+        title="Хэрэглэгч үүсгэх"
+        description="Системд нэвтрэх шинэ хэрэглэгчийн мэдээллийг бөглөнө үү."
+        width={640}
+        open={drawerVisible}
+        onClose={handleDrawerClose}
+        destroyOnClose
+        footer={
+          <>
+            <Button onClick={handleDrawerClose}>Болих</Button>
+            <Button type="primary" onClick={() => form.submit()}>
+              Хадгалах
+            </Button>
+          </>
+        }
+      >
+        <Form layout="vertical" form={form} onFinish={handleFormSubmit} className="space-y-1">
+          <div className="grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2">
+            <Form.Item
+              name="username"
+              label="Нэвтрэх нэр"
+              rules={[{ required: true, message: 'Нэвтрэх нэр оруулна уу' }]}
+              className="sm:col-span-1"
+            >
+              <Input placeholder="Ж: bold.baatar" autoComplete="off" />
+            </Form.Item>
+            <Form.Item
+              name="phone"
+              label="Утас"
+              rules={[{ required: true, message: 'Утасны дугаар оруулна уу' }]}
+            >
+              <Input placeholder="99112233" inputMode="tel" />
+            </Form.Item>
+            <Form.Item name="email" label="И-мэйл" className="sm:col-span-2">
+              <Input placeholder="name@company.mn" type="email" autoComplete="off" />
+            </Form.Item>
+            <Form.Item
+              name="role_id"
+              label="Эрх"
+              rules={[{ required: true, message: 'Эрх сонгоно уу' }]}
+              className="sm:col-span-2"
+            >
+              <Select
+                placeholder="Эрх сонгох"
+                showSearch
+                optionFilterProp="label"
+                options={roles.map((r) => ({ value: r.id, label: r.name }))}
+              />
+            </Form.Item>
+            <Form.Item
+              name="password"
+              label="Нууц үг"
+              rules={[
+                { required: true, message: 'Нууц үг оруулна уу' },
+                { min: 4, message: 'Хамгийн багадаа 4 тэмдэгт' },
+              ]}
+              className="sm:col-span-2"
+            >
+              <Input.Password placeholder="Нууц үг" autoComplete="new-password" />
+            </Form.Item>
+          </div>
         </Form>
       </Drawer>
 

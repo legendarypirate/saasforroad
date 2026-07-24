@@ -75,23 +75,22 @@ export function RTable<T>({
   return (
     <div
       className={cn(
-        'relative w-full overflow-hidden',
-        bordered && 'rounded-xl ring-1 ring-foreground/10 bg-card',
+        'relative w-full overflow-hidden shadow-sm',
+        bordered && 'rounded-xl border border-[#e5e7eb] bg-card dark:border-border',
         className,
       )}
     >
-      <Table>
+      <Table className="admin-data-table">
         <TableHeader>
-          <TableRow className="bg-muted/40 hover:bg-muted/40">
+          <TableRow className="hover:bg-transparent">
             {columns.map((col) => (
               <TableHead
                 key={col.key}
                 style={{ width: col.width }}
                 className={cn(
-                  'h-11 font-semibold text-muted-foreground',
                   cellPad,
                   ALIGN_CLASS[col.align ?? 'left'],
-                  stickyHeader && 'sticky top-0 z-10 bg-muted/60 backdrop-blur',
+                  stickyHeader && 'sticky top-0 z-10',
                   col.headerClassName,
                 )}
               >
@@ -110,7 +109,12 @@ export function RTable<T>({
           ) : data.length === 0 ? (
             <TableRow className="hover:bg-transparent">
               <TableCell colSpan={columns.length} className="p-0">
-                {empty ?? <REmpty />}
+                {empty ?? (
+                  <REmpty
+                    title="Мэдээлэл олдсонгүй"
+                    description="Одоогоор бүртгэгдсэн мэдээлэл байхгүй байна."
+                  />
+                )}
               </TableCell>
             </TableRow>
           ) : (
@@ -158,7 +162,7 @@ export function RTableActions({
 }) {
   return (
     <div
-      className={cn('flex items-center justify-end gap-1', className)}
+      className={cn('flex items-center gap-1.5', className)}
       onClick={(e) => e.stopPropagation()}
     >
       {children}

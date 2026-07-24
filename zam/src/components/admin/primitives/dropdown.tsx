@@ -31,7 +31,12 @@ type DropdownProps = {
 export function Dropdown({ children, menu, overlay }: DropdownProps) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<span className="inline-flex cursor-pointer" />}>{children}</DropdownMenuTrigger>
+      <DropdownMenuTrigger
+        nativeButton={false}
+        render={<span className="inline-flex cursor-pointer" />}
+      >
+        {children}
+      </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-48">
         {menu?.items?.map((item) => (
           <DropdownMenuItem

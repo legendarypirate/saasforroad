@@ -47,7 +47,6 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import {
   ADMIN_FOLDER_SECTIONS,
   filterFoldersForSection,
@@ -119,13 +118,12 @@ function SortableModuleFolder({
   const Icon = MODULE_ICONS[mod.id] ?? Building2;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: mod.id,
-    disabled: false,
   });
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.85 : undefined,
+    opacity: isDragging ? 0.9 : undefined,
     zIndex: isDragging ? 20 : undefined,
   };
 
@@ -136,72 +134,85 @@ function SortableModuleFolder({
 
   return (
     <div ref={setNodeRef} style={style} className="h-full touch-none">
-      <Card
+      <div
         role={isComingSoon ? undefined : 'button'}
         tabIndex={isComingSoon ? undefined : 0}
         onClick={handleOpen}
         onKeyDown={(e) => {
           if (isComingSoon) return;
-          if (e.key === 'Enter' || e.key === ' ') handleOpen();
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleOpen();
+          }
         }}
         className={cn(
-          'relative h-full transition-all duration-200 dark:bg-[oklch(0.26_0_0)] dark:ring-white/12',
-          isDragging && 'shadow-lg ring-2 ring-primary/30',
+          'group relative flex h-full min-h-[168px] flex-col rounded-2xl border border-border bg-card transition-all duration-200',
+          isDragging && 'shadow-md ring-2 ring-primary/25',
           isComingSoon
-            ? 'cursor-not-allowed opacity-70'
-            : 'cursor-pointer hover:-translate-y-1 hover:shadow-lg dark:hover:bg-[oklch(0.29_0_0)] dark:hover:border-[color:var(--neon-border)] dark:hover:shadow-[var(--neon-glow-sm)]',
+            ? 'cursor-not-allowed opacity-65'
+            : 'cursor-pointer hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md',
         )}
-        style={
-          !isComingSoon
-            ? ({
-                '--module-color': mod.color,
-              } as React.CSSProperties)
-            : undefined
-        }
       >
         <button
           type="button"
-          className="absolute left-2 top-2 z-10 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="absolute left-2.5 top-2.5 z-10 rounded-md p-1 text-muted-foreground/40 opacity-0 transition-opacity hover:bg-muted hover:text-foreground group-hover:opacity-100"
           title="Чирж байрлал солих"
           onClick={(e) => e.stopPropagation()}
           {...attributes}
           {...listeners}
         >
-          <GripVertical className="size-4" />
+          <GripVertical className="size-3.5" />
         </button>
+
         {isComingSoon && (
           <Badge
             variant="secondary"
-            className="absolute right-3 top-3 text-[10px] uppercase tracking-wide"
+            className="absolute right-3 top-3 px-1.5 py-0 text-[9px] uppercase tracking-wide"
           >
-            Coming soon
+            Soon
           </Badge>
         )}
-        <CardContent className="flex h-full flex-col items-center p-6 text-center">
+
+        <div className="flex flex-1 flex-col items-center px-6 pb-6 pt-8 text-center">
           <div
-            className="relative mb-4 flex size-[72px] items-center justify-center rounded-2xl ring-1 ring-inset ring-black/5 dark:ring-white/10"
+            className={cn(
+              'relative mb-5 flex size-11 items-center justify-center rounded-xl',
+              isComingSoon && 'grayscale',
+            )}
             style={{
-              backgroundColor: `${mod.color}18`,
+              backgroundColor: `${mod.color}16`,
               color: mod.color,
             }}
           >
-            <Icon className={cn('size-9', isComingSoon && 'grayscale')} />
+            <Icon className="size-5" strokeWidth={2} />
             <FolderOpen
-              className="absolute -bottom-1 -right-1 size-5 rounded bg-background p-0.5"
+              className="absolute -bottom-0.5 -right-0.5 size-3 rounded-sm bg-card p-px"
               style={{ color: mod.color }}
+              strokeWidth={2}
             />
           </div>
-          <h3 className={cn('mb-2 text-lg font-semibold', isComingSoon && 'text-muted-foreground')}>
+
+          <h3
+            className={cn(
+              'mb-1.5 text-sm font-semibold leading-snug text-foreground',
+              isComingSoon && 'text-muted-foreground',
+            )}
+          >
             {mod.label}
           </h3>
-          <p className="text-sm leading-relaxed text-muted-foreground">{mod.description}</p>
-          {!isComingSoon && (
-            <p className="mt-3 text-xs font-medium" style={{ color: mod.color }}>
-              {itemCount} дэд цэс
+          <p className="line-clamp-2 flex-1 text-xs leading-relaxed text-muted-foreground">
+            {mod.description}
+          </p>
+          {!isComingSoon && itemCount > 0 ? (
+            <p
+              className="mt-4 text-[11px] font-medium tabular-nums"
+              style={{ color: mod.color }}
+            >
+              {itemCount} цэс
             </p>
-          )}
-        </CardContent>
-      </Card>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
@@ -248,13 +259,18 @@ function FolderSection({
 
   return (
     <section>
-      <h2 className="mb-2 text-2xl font-semibold text-primary dark:text-[var(--neon-green)]">
-        {title}
-      </h2>
-      <p className="mb-2 text-muted-foreground">{description}</p>
-      <p className="mb-7 text-xs text-muted-foreground">
-        Зүүн дээд ▤ бариулаас чирж байрлал солино — дараагийн нэвтрэлтэд хадгалагдана
-      </p>
+      <div className="mb-4 flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold tracking-tight text-foreground">
+            {title}
+          </h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
+        </div>
+        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground tabular-nums">
+          {folders.length}
+        </span>
+      </div>
+
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={folders.map((f) => f.id)} strategy={rectSortingStrategy}>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
@@ -322,7 +338,7 @@ export default function ModuleFolderGrid({ userPermissions, userRole }: ModuleFo
   };
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-10">
       {sections.map((section) => (
         <FolderSection
           key={section.id}

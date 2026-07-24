@@ -24,7 +24,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="mn" className={nunito.variable} suppressHydrationWarning>
+    <html
+      lang="mn"
+      className={nunito.variable}
+      data-scroll-behavior="smooth"
+      suppressHydrationWarning
+    >
       <body className={`${nunito.className} antialiased`} suppressHydrationWarning>
         {/* FullCalendar v6 injects CSS into this anchor (Next.js client navigation) */}
         <style data-fullcalendar="" />

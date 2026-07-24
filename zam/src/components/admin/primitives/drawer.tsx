@@ -6,6 +6,7 @@ import { RDrawer, type RDrawerSide } from '@/components/r/RDrawer';
 
 type DrawerProps = {
   title?: React.ReactNode;
+  description?: React.ReactNode;
   open?: boolean;
   visible?: boolean;
   onClose?: () => void;
@@ -30,7 +31,7 @@ export function Drawer({
   open,
   visible,
   onClose,
-  width = 480,
+  width = 560,
   height,
   children,
   footer,
@@ -39,6 +40,7 @@ export function Drawer({
   placement = 'right',
   bodyStyle,
   destroyOnClose,
+  description,
 }: DrawerProps) {
   const side: RDrawerSide = placement ?? 'right';
   return (
@@ -46,6 +48,7 @@ export function Drawer({
       open={open ?? visible ?? false}
       onClose={() => onClose?.()}
       title={title}
+      description={description}
       extra={extra}
       footer={footer}
       side={side}

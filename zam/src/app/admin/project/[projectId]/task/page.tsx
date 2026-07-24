@@ -1,9 +1,10 @@
 import { redirect } from 'next/navigation';
 
 interface PageProps {
-  params: { projectId: string };
+  params: Promise<{ projectId: string }>;
 }
 
-export default function Page({ params }: PageProps) {
-  redirect(`/admin/project/${params.projectId}`);
+export default async function Page({ params }: PageProps) {
+  const { projectId } = await params;
+  redirect(`/admin/project/${projectId}`);
 }

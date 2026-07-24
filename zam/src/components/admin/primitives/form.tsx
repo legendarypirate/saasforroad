@@ -179,12 +179,13 @@ function FormItem({
                   ? (val as React.ChangeEvent<HTMLInputElement>).target.value
                   : val;
             store.setFieldValue(fieldPath, next);
-            const onChange = child.props.onChange as ((v: unknown, ...r: unknown[]) => void) | undefined;
-            const onCheckedChange = child.props.onCheckedChange as ((v: unknown) => void) | undefined;
+            const childProps = child.props as Record<string, unknown>;
+            const onChange = childProps.onChange as ((v: unknown, ...r: unknown[]) => void) | undefined;
+            const onCheckedChange = childProps.onCheckedChange as ((v: unknown) => void) | undefined;
             onChange?.(val, ...rest);
             onCheckedChange?.(val);
           },
-        } as Partial<typeof child.props>);
+        } as Record<string, unknown>);
 
   return (
     <div className={itemClass} style={style}>
