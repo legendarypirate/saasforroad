@@ -151,6 +151,78 @@ export type PlatformBrigade = {
   updatedAt?: string;
 };
 
+export type AssistServiceItem = {
+  id: number;
+  category_id: number;
+  name: string;
+  name_mn?: string | null;
+  description?: string | null;
+  icon?: string | null;
+  image?: string | null;
+  sort_order: number;
+  is_active: boolean;
+};
+
+export type AssistCategory = {
+  id: number;
+  name: string;
+  name_mn?: string | null;
+  icon?: string | null;
+  image?: string | null;
+  sort_order: number;
+  is_active: boolean;
+  services?: AssistServiceItem[];
+};
+
+/** SmartCar XYP WS100401_getVehicleInfo payload */
+export type SmartcarVehicleInfo = {
+  plateNumber?: string | null;
+  cabinNumber?: string | null;
+  countryName?: string | null;
+  markName?: string | null;
+  modelName?: string | null;
+  buildYear?: number | string | null;
+  colorName?: string | null;
+  type?: string | null;
+  ownerType?: string | null;
+  intent?: string | null;
+  className?: string | null;
+  motorNumber?: string | null;
+  importDate?: string | null;
+  fuelType?: string | null;
+  manCount?: number | null;
+  axleCount?: number | null;
+  capacity?: number | null;
+  mass?: number | null;
+  weight?: number | null;
+  length?: number | null;
+  width?: number | null;
+  height?: number | null;
+  transmission?: string | null;
+  wheelPosition?: string | null;
+  rfid?: string | null;
+  [key: string]: unknown;
+};
+
+/** SmartCar XYP WS100409_getVehicleInspectionInfo payload */
+export type SmartcarInspectionInfo = {
+  cabinNumber?: string | null;
+  vehicleNumber?: string | null;
+  checkDate?: string | null;
+  expireDate?: string | null;
+  passed?: boolean | null;
+  resultCode?: number | null;
+  [key: string]: unknown;
+};
+
+export const API_BASE = API;
+
+export function assetUrl(path?: string | null): string {
+  if (!path) return "";
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  return `${API}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
 export type PlatformFactory = {
   id: number;
   company_id?: number | null;
@@ -171,6 +243,28 @@ export type PlatformFactory = {
   status: string;
   is_active: boolean;
   rejection_note?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type PlatformDriverJobOpening = {
+  id: number;
+  tenant_id: number;
+  project_id?: number | null;
+  title: string;
+  description?: string | null;
+  position_type: string;
+  province?: string | null;
+  location?: string | null;
+  salary_note?: string | null;
+  requirements?: string | null;
+  headcount: number;
+  closes_at?: string | null;
+  company_name?: string | null;
+  project_name?: string | null;
+  status: string;
+  admin_note?: string | null;
+  published_at?: string | null;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -468,4 +562,111 @@ export const api = {
       `/api/platform/factories/${id}/status`,
       { method: "PATCH", body: JSON.stringify(body) }
     ),
+
+  listDriverJobOpenings: (params?: { q?: string; status?: string }) => {
+    const sp = new URLSearchParams();
+    if (params?.q) sp.set("q", params.q);
+    if (params?.status) sp.set("status", params.status);
+    const q = sp.toString() ? `?${sp}` : "";
+    return request<{
+      success: boolean;
+      openings: PlatformDriverJobOpening[];
+      total: number;
+    }>(`/api/platform/driver-job-openings${q}`);
+  },
+
+  setDriverJobOpeningStatus: (
+    id: number,
+    body: {
+      status: "approved" | "rejected" | "closed";
+      admin_note?: string;
+    }
+  ) =>
+    request<{ success: boolean; opening: PlatformDriverJobOpening }>(
+      `/api/platform/driver-job-openings/${id}/status`,
+      { method: "PATCH", body: JSON.stringify(body) }
+    ),
+
+  listAssistCatalog: () =>
+    request<{ success: boolean; data: AssistCategory[] }>(
+      "/api/assist/admin/categories"
+    ),
+
+  createAssistCategory: (body: Partial<AssistCategory>) =>
+    request<{ success: boolean; data: AssistCategory }>(
+      "/api/assist/admin/categories",
+      { method: "POST", body: JSON.stringify(body) }
+    ),
+
+  updateAssistCategory: (id: number, body: Partial<AssistCategory>) =>
+    request<{ success: boolean; data: AssistCategory }>(
+      `/api/assist/admin/categories/${id}`,
+      { method: "PATCH", body: JSON.stringify(body) }
+    ),
+
+  deleteAssistCategory: (id: number) =>
+    request<{ success: boolean; deleted: number }>(
+      `/api/assist/admin/categories/${id}`,
+      { method: "DELETE" }
+    ),
+
+  createAssistService: (body: Partial<AssistServiceItem>) =>
+    request<{ success: boolean; data: AssistServiceItem }>(
+      "/api/assist/admin/services",
+      { method: "POST", body: JSON.stringify(body) }
+    ),
+
+  updateAssistService: (id: number, body: Partial<AssistServiceItem>) =>
+    request<{ success: boolean; data: AssistServiceItem }>(
+      `/api/assist/admin/services/${id}`,
+      { method: "PATCH", body: JSON.stringify(body) }
+    ),
+
+  deleteAssistService: (id: number) =>
+    request<{ success: boolean; deleted: number }>(
+      `/api/assist/admin/services/${id}`,
+      { method: "DELETE" }
+    ),
+
+  uploadAssistImage: async (file: File) => {
+    const token = getToken();
+    const form = new FormData();
+    form.append("image", file);
+    const res = await fetch(`${API}/api/assist/admin/upload`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      body: form,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      handleAuthFailure(data.message, res.status);
+      throw new Error(data.message || `Upload failed (${res.status})`);
+    }
+    return data as {
+      success: boolean;
+      data: { url: string; path: string };
+    };
+  },
+
+  getVehicleInfo: (plateNumber: string) =>
+    request<{
+      ok: boolean;
+      plateNumber: string;
+      data: SmartcarVehicleInfo;
+      message?: string;
+    }>("/api/smartcar/vehicle-info", {
+      method: "POST",
+      body: JSON.stringify({ plateNumber }),
+    }),
+
+  getVehicleInspection: (cabinNumber: string) =>
+    request<{
+      ok: boolean;
+      cabinNumber: string;
+      data: SmartcarInspectionInfo;
+      message?: string;
+    }>("/api/smartcar/inspection-info", {
+      method: "POST",
+      body: JSON.stringify({ cabinNumber }),
+    }),
 };

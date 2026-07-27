@@ -74,6 +74,15 @@ const DEFAULT_PERMISSIONS = [
   { module: "budget", action: "delete", key: "budget:delete" },
   { module: "budget", action: "approve", key: "budget:approve" },
   { module: "budget", action: "export", key: "budget:export" },
+  { module: "assist", action: "module", key: "assist:module", label: "Замын тусламж" },
+  {
+    module: "assist",
+    action: "create",
+    key: "assist.call:create",
+    label: "Тусламж дуудах",
+    level: "action",
+    menu_key: "assist:module",
+  },
 ];
 
 const DEFAULT_ROLES = [
@@ -89,6 +98,18 @@ const DEFAULT_ROLES = [
     description: "Замын ажилчин — өдөр бүр ирц бүртгэнэ",
     mobile_access: true,
     permissionKeys: ["hse:mobile", "attendance:read"],
+  },
+  {
+    name: "Жолооч",
+    description: "Техник жолооч — замын тусламж дуудах",
+    mobile_access: true,
+    permissionKeys: [
+      "hse:mobile",
+      "attendance:read",
+      "assist:module",
+      "assist.call:create",
+      "equipment:read",
+    ],
   },
   {
     name: "Төслийн менежер",

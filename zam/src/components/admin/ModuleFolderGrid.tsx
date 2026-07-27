@@ -24,8 +24,10 @@ import {
   Signpost,
   Sparkles,
   Shirt,
+  Truck,
   UserSearch,
   Users,
+  Handshake,
   Wrench,
   type LucideIcon,
 } from 'lucide-react';
@@ -93,6 +95,8 @@ const MODULE_ICONS: Record<string, LucideIcon> = {
   'data-laboratory': Beaker,
   'data-job-seeker': UserSearch,
   'data-factory': Factory,
+  'data-collab': Handshake,
+  'data-driver-jobs': Truck,
   'data-student': GraduationCap,
   'data-road-sign': Signpost,
 };

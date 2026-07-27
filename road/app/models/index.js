@@ -176,6 +176,29 @@ db.brigade_timeline_events = require("./brigade_timeline_event.model.js")(sequel
 db.brigade_progress_reports = require("./brigade_progress_report.model.js")(sequelize, Sequelize);
 db.brigade_notifications = require("./brigade_notification.model.js")(sequelize, Sequelize);
 db.job_seekers = require("./job_seeker.model.js")(sequelize, Sequelize);
+
+// Roadside assist (freelancer + service_man apps)
+db.assist_service_categories = require("./assist_service_category.model.js")(
+  sequelize,
+  Sequelize
+);
+db.assist_services = require("./assist_service.model.js")(sequelize, Sequelize);
+db.road_drivers = require("./road_driver.model.js")(sequelize, Sequelize);
+db.service_men = require("./service_man.model.js")(sequelize, Sequelize);
+db.service_man_services = require("./service_man_service.model.js")(
+  sequelize,
+  Sequelize
+);
+db.assist_calls = require("./assist_call.model.js")(sequelize, Sequelize);
+db.assist_invoices = require("./assist_invoice.model.js")(sequelize, Sequelize);
+db.driver_job_openings = require("./driver_job_opening.model.js")(
+  sequelize,
+  Sequelize
+);
+db.driver_job_applications = require("./driver_job_application.model.js")(
+  sequelize,
+  Sequelize
+);
 db.job_seeker_schools = require("./job_seeker_school.model.js")(sequelize, Sequelize);
 db.job_seeker_families = require("./job_seeker_family.model.js")(sequelize, Sequelize);
 db.job_applications = require("./job_application.model.js")(sequelize, Sequelize);
@@ -1033,6 +1056,100 @@ db.job_seekers.hasMany(db.job_offers, {
 db.job_offers.belongsTo(db.job_seekers, {
   foreignKey: "job_seeker_id",
   as: "jobSeeker",
+});
+
+// ---- Roadside assist associations ----
+db.assist_service_categories.hasMany(db.assist_services, {
+  foreignKey: "category_id",
+  as: "services",
+  onDelete: "CASCADE",
+});
+db.assist_services.belongsTo(db.assist_service_categories, {
+  foreignKey: "category_id",
+  as: "category",
+});
+
+db.service_men.belongsToMany(db.assist_services, {
+  through: db.service_man_services,
+  foreignKey: "service_man_id",
+  otherKey: "assist_service_id",
+  as: "services",
+});
+db.assist_services.belongsToMany(db.service_men, {
+  through: db.service_man_services,
+  foreignKey: "assist_service_id",
+  otherKey: "service_man_id",
+  as: "serviceMen",
+});
+
+db.assist_calls.belongsTo(db.road_drivers, {
+  foreignKey: "driver_id",
+  as: "driver",
+});
+db.road_drivers.hasMany(db.assist_calls, {
+  foreignKey: "driver_id",
+  as: "calls",
+});
+db.assist_calls.belongsTo(db.assist_services, {
+  foreignKey: "assist_service_id",
+  as: "service",
+});
+db.assist_calls.belongsTo(db.service_men, {
+  foreignKey: "assigned_service_man_id",
+  as: "assignedServiceMan",
+});
+db.assist_calls.belongsTo(db.service_men, {
+  foreignKey: "current_service_man_id",
+  as: "currentServiceMan",
+});
+db.assist_calls.belongsTo(db.equipments, {
+  foreignKey: "equipment_id",
+  as: "equipment",
+});
+db.assist_calls.belongsTo(db.tenants, {
+  foreignKey: "tenant_id",
+  as: "tenant",
+});
+db.assist_invoices.belongsTo(db.assist_calls, {
+  foreignKey: "assist_call_id",
+  as: "call",
+});
+db.assist_calls.hasOne(db.assist_invoices, {
+  foreignKey: "assist_call_id",
+  as: "invoice",
+});
+db.assist_invoices.belongsTo(db.equipments, {
+  foreignKey: "equipment_id",
+  as: "equipment",
+});
+db.assist_invoices.belongsTo(db.tenants, {
+  foreignKey: "tenant_id",
+  as: "tenant",
+});
+
+db.driver_job_openings.belongsTo(db.projects, {
+  foreignKey: "project_id",
+  as: "project",
+});
+db.projects.hasMany(db.driver_job_openings, {
+  foreignKey: "project_id",
+  as: "driverJobOpenings",
+});
+db.driver_job_openings.hasMany(db.driver_job_applications, {
+  foreignKey: "opening_id",
+  as: "applications",
+});
+db.driver_job_applications.belongsTo(db.driver_job_openings, {
+  foreignKey: "opening_id",
+  as: "opening",
+});
+db.driver_job_applications.belongsTo(db.road_drivers, {
+  foreignKey: "driver_id",
+  as: "driver",
+});
+db.road_drivers.hasMany(db.driver_job_applications, {
+  foreignKey: "driver_id",
+  as: "jobApplications",
 });
 
 // Inject tenant_id only as a safety net if a new model forgot to declare it.

@@ -65,6 +65,7 @@ export const MODULE_SECTIONS: ModuleSection[] = [
       "data-laboratory",
       "data-job-seeker",
       "data-collab",
+      "data-driver-jobs",
       "data-student",
       "data-road-sign",
       "uniform-supply",

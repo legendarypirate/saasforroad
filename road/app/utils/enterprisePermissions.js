@@ -65,7 +65,10 @@ const MODULES = [
   {
     index: 'equipment',
     label: 'Техник',
-    menus: ['list', 'categories'].map((menuId) => ({ menuId, label: menuId })),
+    menus: ['list', 'categories', 'invoices'].map((menuId) => ({
+      menuId,
+      label: menuId,
+    })),
   },
   {
     index: 'inventory',

@@ -126,6 +126,9 @@ function registerRoutes() {
   require("./app/routes/salary.routes")(app);
   require("./app/routes/leave_request.routes")(app);
   require("./app/routes/device.routes")(app);
+  require("./app/routes/assist.routes")(app);
+  require("./app/routes/driver_job.routes")(app);
+  require("./app/routes/smartcar.routes")(app);
 
   app.all("*", (req, res) => {
     res.status(404).json({ message: "Route not found!" });
@@ -190,15 +193,28 @@ async function start() {
     }
     console.log("Synced db.");
 
+    const { seedAssistCatalog } = require("./app/utils/seedAssistCatalog");
+    const { ensureAssistSchema } = require("./app/utils/ensureAssistSchema");
+    await ensureAssistSchema(db.sequelize);
+    const assistSeed = await seedAssistCatalog(db);
+    console.log(
+      assistSeed.skipped
+        ? `Assist catalog exists (${assistSeed.count} categories).`
+        : `Assist catalog seeded (${assistSeed.count} categories).`
+    );
+
     registerRoutes();
 
     const { schedulePersonalNoteDeadlineJob } = require("./app/jobs/personalNoteDeadlineJob");
     schedulePersonalNoteDeadlineJob();
 
     const PORT = process.env.PORT || 3201;
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}.`);
     });
+
+    const { assistWsHub } = require("./app/services/assist_ws_hub");
+    assistWsHub.attach(server);
   } catch (err) {
     console.error("Failed to start server:", err.message);
     if (err.stack) console.error(err.stack);

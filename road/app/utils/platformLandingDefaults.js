@@ -111,6 +111,12 @@ const DEFAULT_DATA_ITEMS = [
     enabled: true,
   },
   {
+    id: "data-driver-jobs",
+    label: "Жолоочийн зар",
+    blurb: "Freelancer апп-д жолоочийн ажлын зар нийтлэх.",
+    enabled: true,
+  },
+  {
     id: "data-student",
     label: "Оюутан",
     blurb: "Оюутны дадлага, холбоо барих мэдээлэл.",

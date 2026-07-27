@@ -14,6 +14,7 @@ import {
 } from '@/components/admin/primitives';
 import type { ColumnsType } from '@/components/admin/primitives';
 import { CheckOutlined, CloseOutlined, ReloadOutlined, StopOutlined } from '@/components/admin/icons';
+import { tenantHeaders } from '@/lib/tenant';
 import dayjs from 'dayjs';
 
 const { Text } = Typography;
@@ -67,9 +68,12 @@ export default function DeviceApprovalPage() {
     setLoading(true);
     try {
       const q = statusFilter ? `?status=${statusFilter}` : '';
-      const res = await fetch(`${baseUrl}/api/devices${q}`);
+      const res = await fetch(`${baseUrl}/api/devices${q}`, {
+        headers: tenantHeaders(),
+      });
       const json = await res.json();
       if (json.success) setRows(json.data || []);
+      else message.error(json.message || 'Жагсаалт татахад алдаа');
     } catch (err) {
       console.error(err);
       message.error('Төхөөрөмжийн жагсаалт татахад алдаа гарлаа');
@@ -114,7 +118,7 @@ export default function DeviceApprovalPage() {
 
       const res = await fetch(`${baseUrl}/api/devices/${activeRow.id}/${endpoint}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: tenantHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ review_note: reviewNote.trim() || null }),
       });
       const json = await res.json();

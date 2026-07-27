@@ -118,6 +118,25 @@ export function DataItemIcon({ id }: { id: string }) {
           <path d="M16.5 6.5l2 1 1.2-2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       );
+    case "data-collab":
+      return (
+        <svg {...common}>
+          <path d="M8 14a4 4 0 1 1 0-8 4 4 0 0 1 0 8z" />
+          <path d="M16 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" />
+          <path d="M3.5 20c.6-2.8 2.6-4.5 4.5-4.5s3.9 1.7 4.5 4.5" strokeLinecap="round" />
+          <path d="M11.5 20c.6-2.8 2.6-4.5 4.5-4.5s3.9 1.7 4.5 4.5" strokeLinecap="round" />
+        </svg>
+      );
+    case "data-driver-jobs":
+      return (
+        <svg {...common}>
+          <path d="M3 15V8.5A1.5 1.5 0 0 1 4.5 7H14v8" strokeLinejoin="round" />
+          <path d="M14 10h3.2l2.8 3.2V15H14" strokeLinejoin="round" />
+          <circle cx="7" cy="16.5" r="1.8" />
+          <circle cx="17" cy="16.5" r="1.8" />
+          <path d="M3 15h2.2M14.8 15H15.2" strokeLinecap="round" />
+        </svg>
+      );
     case "data-student":
       return (
         <svg {...common}>

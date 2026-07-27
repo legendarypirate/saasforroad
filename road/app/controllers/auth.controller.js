@@ -7,6 +7,7 @@ const { registerOrUpdateDevice, serializeDevice } = require("../utils/deviceHelp
 const { signTenantToken, signMobileToken, isMobileAuthRequest } = require("../middleware/tenant");
 const { serializeTenant, normalizeModules } = require("../utils/tenantHelper");
 const { MODULE_CATALOG } = require("../utils/moduleCatalog");
+const { isUserInactive } = require("../utils/userActive");
 const secretKey = process.env.JWT_SECRET || "your_secret_key";
 const MOBILE_TOKEN_SECONDS = 30 * 24 * 60 * 60;
 
@@ -202,7 +203,11 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials!" });
     }
 
-    if (user.is_active === '0' || user.is_active === 0 || user.is_active === false || user.is_active === 'false') {
+    if (isUserInactive(user.is_active)) {
+      console.warn(
+        `[auth.login] blocked inactive user id=${user.id} username=${user.username} ` +
+          `is_active=${JSON.stringify(user.is_active)} tenant_id=${user.tenant_id}`
+      );
       return res.status(403).json({ message: "Энэ хэрэглэгч идэвхгүй байна" });
     }
 
@@ -259,7 +264,11 @@ exports.mobile_login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials!" });
     }
 
-    if (user.is_active === '0' || user.is_active === 0 || user.is_active === false || user.is_active === 'false') {
+    if (isUserInactive(user.is_active)) {
+      console.warn(
+        `[auth.login] blocked inactive user id=${user.id} username=${user.username} ` +
+          `is_active=${JSON.stringify(user.is_active)} tenant_id=${user.tenant_id}`
+      );
       return res.status(403).json({ message: "Энэ хэрэглэгч идэвхгүй байна" });
     }
 

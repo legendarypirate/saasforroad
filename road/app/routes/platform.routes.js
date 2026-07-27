@@ -46,6 +46,23 @@ module.exports = (app) => {
     platformFactories.setStatus
   );
 
+  const driverJobs = require("../controllers/driver_job.controller");
+  router.get(
+    "/driver-job-openings",
+    verifyPlatformToken,
+    driverJobs.platformList
+  );
+  router.get(
+    "/driver-job-openings/:id",
+    verifyPlatformToken,
+    driverJobs.platformGet
+  );
+  router.patch(
+    "/driver-job-openings/:id/status",
+    verifyPlatformToken,
+    driverJobs.platformSetStatus
+  );
+
   router.get("/modules", verifyPlatformToken, platform.listModules);
   router.get("/permissions", verifyPlatformToken, platform.listPermissions);
 

@@ -113,6 +113,7 @@ export const ADMIN_MODULES: ModuleConfig[] = [
     items: [
       { path: '/admin/equipment', label: 'Бүртгэл', menuId: 'list', permission: mk('equipment', 'list') },
       { path: '/admin/equipment/categories', label: 'Ангилал', menuId: 'categories', permission: mk('equipment', 'categories') },
+      { path: '/admin/equipment/invoices', label: 'Нэхэмжлэх', menuId: 'invoices', permission: mk('equipment', 'invoices') },
     ],
   },
   {
@@ -449,6 +450,28 @@ export const ADMIN_DATA_FOLDERS: ModuleConfig[] = [
     ],
   },
   {
+    id: 'data-driver-jobs',
+    index: 'driver_jobs',
+    moduleKey: 'collab:module',
+    label: 'Жолоочийн зар',
+    description: 'Freelancer апп-д зар — админ баталгаажуулна',
+    color: '#2563eb',
+    items: [
+      {
+        path: '/admin/data/driver-jobs',
+        label: 'Зарууд',
+        menuId: 'openings',
+        permission: mk('collab', 'ads'),
+      },
+      {
+        path: '/admin/data/driver-jobs/applications',
+        label: 'Хүсэлтүүд',
+        menuId: 'applications',
+        permission: mk('collab', 'ads'),
+      },
+    ],
+  },
+  {
     id: 'data-student',
     index: 'student',
     moduleKey: 'student:module',
@@ -584,6 +607,7 @@ export const ADMIN_FOLDER_SECTIONS: AdminFolderSection[] = [
       'data-laboratory',
       'data-job-seeker',
       'data-collab',
+      'data-driver-jobs',
       'data-student',
       'data-road-sign',
       'uniform-supply',
@@ -666,7 +690,10 @@ function filterModuleList(
         (mod) =>
           mod.alwaysVisible ||
           mod.comingSoon ||
-          enabledModuleIds.includes(mod.id),
+          enabledModuleIds.includes(mod.id) ||
+          // Show driver jobs when collab (or driver-jobs itself) is enabled
+          (mod.id === 'data-driver-jobs' &&
+            enabledModuleIds.includes('data-collab')),
       )
     : modules;
 

@@ -107,6 +107,9 @@ export default function Shell({ children }: { children: ReactNode }) {
     pathname.startsWith("/tenants") && pathname !== "/tenants/new";
   const newActive = pathname === "/tenants/new";
   const landingActive = pathname.startsWith("/landing");
+  const assistActive = pathname.startsWith("/assist");
+  const driverJobsActive = pathname.startsWith("/assist/driver-jobs");
+  const smartcarActive = pathname.startsWith("/smartcar");
 
   return (
     <div className="shell">
@@ -131,6 +134,18 @@ export default function Shell({ children }: { children: ReactNode }) {
           <Link href="/landing" className={`nav-link${landingActive ? " active" : ""}`}>
             <IconPage />
             Landing
+          </Link>
+          <Link href="/assist/catalog" className={`nav-link${assistActive && !driverJobsActive ? " active" : ""}`}>
+            <IconGrid />
+            Үйлчилгээ
+          </Link>
+          <Link href="/assist/driver-jobs" className={`nav-link${driverJobsActive ? " active" : ""}`}>
+            <IconGrid />
+            Жолоочийн зар
+          </Link>
+          <Link href="/smartcar" className={`nav-link${smartcarActive ? " active" : ""}`}>
+            <IconPage />
+            Дугаараар шалгах
           </Link>
 
           <div className="nav-group">
